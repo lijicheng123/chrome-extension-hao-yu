@@ -19,6 +19,7 @@ import {
   DesktopDownloadIcon,
   LinkExternalIcon,
   MoveToBottomIcon,
+  SidebarExpandIcon,
   SearchIcon,
 } from '@primer/octicons-react'
 import { Pin, WindowDesktop, XLg } from 'react-bootstrap-icons'
@@ -440,7 +441,7 @@ function ConversationCard(props) {
               <LinkExternalIcon size={16} />
             </a>
           )}
-          <span
+          {/* <span
             className="gpt-util-icon"
             title={t('Float the Window')}
             onClick={() => {
@@ -460,8 +461,8 @@ function ConversationCard(props) {
             }}
           >
             <WindowDesktop size={16} />
-          </span>
-          <DeleteButton
+          </span> */}
+          {/* <DeleteButton
             size={16}
             text={t('Clear Conversation')}
             onConfirm={async () => {
@@ -481,33 +482,24 @@ function ConversationCard(props) {
               newSession.sessionId = session.sessionId
               setSession(newSession)
             }}
-          />
+          /> */}
           {!props.pageMode && (
             <span
-              title={t('Store to Independent Conversation Page')}
+              title={t('Open Conversation Page')}
               className="gpt-util-icon"
               onClick={() => {
-                const newSession = {
-                  ...session,
-                  sessionName: new Date().toLocaleString(),
-                  autoClean: false,
-                  sessionId: uuidv4(),
-                }
-                setSession(newSession)
-                createSession(newSession).then(() =>
-                  Browser.runtime.sendMessage({
-                    type: 'OPEN_URL',
-                    data: {
-                      url: Browser.runtime.getURL('IndependentPanel.html') + '?from=store',
-                    },
-                  }),
-                )
+                Browser.runtime.sendMessage({
+                  type: 'OPEN_URL',
+                  data: {
+                    url: Browser.runtime.getURL('IndependentPanel.html'),
+                  },
+                })
               }}
             >
-              <ArchiveIcon size={16} />
+              <SidebarExpandIcon size={16} />
             </span>
           )}
-          {conversationItemData.length > 0 && (
+          {/* {conversationItemData.length > 0 && (
             <span
               title={t('Jump to bottom')}
               className="gpt-util-icon"
@@ -536,7 +528,7 @@ function ConversationCard(props) {
             }}
           >
             <DesktopDownloadIcon size={16} />
-          </span>
+          </span> */}
         </span>
       </div>
       <hr />

@@ -1,5 +1,5 @@
 {
-  "name": "chatgptbox",
+  "name": "haoyu",
   "scripts": {
     "build": "node build.mjs --production",
     "build:safari": "bash ./safari/build.sh",
@@ -19,6 +19,7 @@
     "lint"
   ],
   "dependencies": {
+    "@babel/runtime": "^7.25.7",
     "@mozilla/readability": "^0.5.0",
     "@nem035/gpt-3-encoder": "^1.1.7",
     "@picocss/pico": "^1.5.13",
@@ -31,6 +32,7 @@
     "github-markdown-css": "^5.6.1",
     "gpt-3-encoder": "^1.1.4",
     "graphql": "^16.9.0",
+    "highlight.js": "^11.10.0",
     "i18next": "^22.4.15",
     "js-sha3": "^0.9.3",
     "jsonwebtoken": "8.5.1",

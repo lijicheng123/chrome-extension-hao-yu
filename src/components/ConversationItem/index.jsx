@@ -28,8 +28,8 @@ export function ConversationItem({ type, content, descName, onRetry }) {
             <p>{t('You')}:</p>
             <div className="gpt-util-group">
               <CopyButton contentFn={() => content.replace(/\n<hr\/>$/, '')} size={14} />
-              <ReadButton contentFn={() => content} size={14} />
-              {!collapsed ? (
+              {/* <ReadButton contentFn={() => content} size={14} /> */}
+              {/* {!collapsed ? (
                 <span
                   title={t('Collapse')}
                   className="gpt-util-icon"
@@ -45,7 +45,7 @@ export function ConversationItem({ type, content, descName, onRetry }) {
                 >
                   <ChevronDownIcon size={14} />
                 </span>
-              )}
+              )} */}
             </div>
           </div>
           {!collapsed && <MarkdownRender>{content}</MarkdownRender>}
@@ -65,8 +65,8 @@ export function ConversationItem({ type, content, descName, onRetry }) {
               {descName && (
                 <CopyButton contentFn={() => content.replace(/\n<hr\/>$/, '')} size={14} />
               )}
-              {descName && <ReadButton contentFn={() => content} size={14} />}
-              {!collapsed ? (
+              {/* {descName && <ReadButton contentFn={() => content} size={14} />} */}
+              {/* {!collapsed ? (
                 <span
                   title={t('Collapse')}
                   className="gpt-util-icon"
@@ -82,7 +82,7 @@ export function ConversationItem({ type, content, descName, onRetry }) {
                 >
                   <ChevronDownIcon size={14} />
                 </span>
-              )}
+              )} */}
             </div>
           </div>
           {!collapsed && <MarkdownRender>{content}</MarkdownRender>}
@@ -100,26 +100,9 @@ export function ConversationItem({ type, content, descName, onRetry }) {
                 </span>
               )}
               <CopyButton contentFn={() => content.replace(/\n<hr\/>$/, '')} size={14} />
-              {!collapsed ? (
-                <span
-                  title={t('Collapse')}
-                  className="gpt-util-icon"
-                  onClick={() => setCollapsed(true)}
-                >
-                  <XCircleIcon size={14} />
-                </span>
-              ) : (
-                <span
-                  title={t('Expand')}
-                  className="gpt-util-icon"
-                  onClick={() => setCollapsed(false)}
-                >
-                  <ChevronDownIcon size={14} />
-                </span>
-              )}
             </div>
           </div>
-          {!collapsed && <MarkdownRender>{content}</MarkdownRender>}
+          <MarkdownRender>{content}</MarkdownRender>
         </div>
       )
   }
