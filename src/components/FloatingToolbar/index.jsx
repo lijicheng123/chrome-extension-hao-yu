@@ -10,6 +10,7 @@ import { useConfig } from '../../hooks/use-config.mjs'
 
 // const logo = Browser.runtime.getURL('logo.png')
 
+
 function FloatingToolbar(props) {
   const { t } = useTranslation()
   const [selection, setSelection] = useState(props.selection)
@@ -20,8 +21,10 @@ function FloatingToolbar(props) {
   const [position, setPosition] = useState(getClientPosition(props.container))
   const [virtualPosition, setVirtualPosition] = useState({ x: 0, y: 0 })
   const windowSize = useClampWindowSize([750, 1500], [0, Infinity])
+
   const config = useConfig(() => {
     setRender(true)
+    // NOTE: 研究一下triggered和selection
     if (!triggered && selection) {
       props.container.style.position = 'absolute'
       setTimeout(() => {
@@ -83,9 +86,8 @@ function FloatingToolbar(props) {
     }, [position])
 
     if (config.alwaysPinWindow) onDock()
-
     return (
-      <div data-theme={config.themeMode}>
+      <div data-theme={config.themeMode} style={{ height: '100%' }}>
         <Draggable
           handle=".draggable"
           onDrag={dragEvent.onDrag}
@@ -94,9 +96,12 @@ function FloatingToolbar(props) {
         >
           <div
             className="chatgptbox-selection-window"
-            style={{ width: windowSize[0] * 0.4 + 'px' }}
+            style={{ height: '100%' }}
+            // style={{
+            //   width: windowSize[0] * 0.6 + 'px',
+            // }}
           >
-            <div className="chatgptbox-container">
+            <div className="chatgptbox-container" style={{ height: '100%' }}>
               <ConversationCard
                 session={props.session}
                 question={prompt}
@@ -123,8 +128,8 @@ function FloatingToolbar(props) {
     const tools = []
     const pushTool = (iconKey, name, genPrompt) => {
       tools.push(
-        cloneElement(toolsConfig[iconKey].icon, {
-          size: 24,
+        cloneElement(<div>{toolsConfig[iconKey].icon}</div>, {
+          size: 18,
           className: 'chatgptbox-selection-toolbar-button',
           title: name,
           onClick: async () => {
@@ -168,6 +173,9 @@ FloatingToolbar.propTypes = {
   closeable: PropTypes.bool,
   dockable: PropTypes.bool,
   prompt: PropTypes.string,
+  containerType: PropTypes.string,
 }
 
 export default FloatingToolbar
+
+

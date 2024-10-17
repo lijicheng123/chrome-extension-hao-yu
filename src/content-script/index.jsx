@@ -19,7 +19,7 @@ import {
   endsWithQuestionMark,
   getApiModesStringArrayFromConfig,
   getClientPosition,
-  getPossibleElementByQuerySelector,
+  getPossibleElementByQuerySelector
 } from '../utils'
 import FloatingToolbar from '../components/FloatingToolbar'
 import Browser from 'webextension-polyfill'
@@ -31,6 +31,11 @@ import { getChatGptAccessToken, registerPortListener } from '../services/wrapper
 import { generateAnswersWithChatgptWebApi } from '../services/apis/chatgpt-web.mjs'
 import WebJumpBackNotification from '../components/WebJumpBackNotification'
 import { DraggableBar } from './draggable-bar'
+
+const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
+const sideBarContainer = document.createElement('div')
+sideBarContainer.id = "chatgptbox-sidebar-container"
+document.body.appendChild(sideBarContainer)
 
 /**
  * @param {SiteConfig} siteConfig
@@ -177,6 +182,9 @@ const createSelectionTools = async (toolbarContainer, selection) => {
   )
 }
 
+/**
+ * 在PC端使用
+ */
 async function prepareForSelectionTools() {
   document.addEventListener('mouseup', (e) => {
     if (toolbarContainer && toolbarContainer.contains(e.target)) return
@@ -232,6 +240,12 @@ async function prepareForSelectionTools() {
   })
 }
 
+/**
+ * 主要在移动设备上使用touch
+ * 该函数主要用于在触摸设备上处理选择工具的准备和显示逻辑
+ * 它通过监听触摸开始和结束的事件来管理工具栏的显示和隐藏
+ * 以及更新用户的选中内容
+ */
 async function prepareForSelectionToolsTouch() {
   document.addEventListener('touchend', (e) => {
     if (toolbarContainer && toolbarContainer.contains(e.target)) return
@@ -268,12 +282,16 @@ async function prepareForSelectionToolsTouch() {
 let menuX, menuY
 
 async function prepareForRightClickMenu() {
+  // 鼠标右键的时候会触发下面的监听
   document.addEventListener('contextmenu', (e) => {
+    console.log('contextmenucontextmenucontextmenu', e)
     menuX = e.clientX
     menuY = e.clientY
   })
 
+  // 别的地方PostMessage过来的
   Browser.runtime.onMessage.addListener(async (message) => {
+    console.log('messagemessagemessage', message)
     if (message.type === 'CREATE_CHAT') {
       const data = message.data
       let prompt = ''
@@ -285,11 +303,10 @@ async function prepareForRightClickMenu() {
         else prompt = await menuItem.genPrompt()
         if (prompt) prompt = await cropText(`Reply in ${await getPreferredLanguage()}.\n` + prompt)
       }
-
       const position = data.useMenuPosition
         ? { x: menuX, y: menuY }
         : { x: window.innerWidth / 2 - 300, y: window.innerHeight / 2 - 200 }
-      const container = createElementAtPosition(position.x, position.y)
+      const container = createElementAtPosition(position.x, position.y, data.containerType)
       container.className = 'chatgptbox-toolbar-container-not-queryable'
       const userConfig = await getUserConfig()
       render(
@@ -307,6 +324,8 @@ async function prepareForRightClickMenu() {
         />,
         container,
       )
+    } else if (message.type === 'CLOSE_TOOLBAR') {
+      deleteToolbar()
     }
   })
 }
@@ -342,6 +361,7 @@ async function prepareForStaticCard() {
   }
 }
 
+// 借助chatgpt.com和kimi原有的token覆盖accessToken
 async function overwriteAccessToken() {
   if (location.hostname !== 'chatgpt.com') {
     if (location.hostname === 'kimi.moonshot.cn') {
@@ -524,13 +544,28 @@ async function run() {
     }
   })
 
+  // 只有在ChatGPT和Kimi的页面才执行
   await overwriteAccessToken()
+
+  // 这个方法只有在chatgpt.com页面才会执行，后面要考虑是否干掉
   await prepareForForegroundRequests()
 
+  // 渲染侧边Bar
+  renderSidebar()
+
+  // pc 端划词准备
   prepareForSelectionTools()
+
+  // 移动端划词准备
   prepareForSelectionToolsTouch()
+
+  // 网站适配准备
   prepareForStaticCard()
+
+  // 右键菜单准备
   prepareForRightClickMenu()
+
+  // 顶部通知返回条
   prepareForJumpBackNotification()
 }
 

@@ -379,13 +379,13 @@ export const defaultConfig = {
       active: false,
     },
   ],
-  activeSelectionTools: ['translate', 'summary', 'polish', 'code', 'ask'],
+  activeSelectionTools: ['translate', 'summary', 'ask'],
   customSelectionTools: [
     {
-      name: '',
+      name: 'explain',
       iconKey: 'explain',
       prompt: 'sample prompt: {{selection}}',
-      active: false,
+      active: true,
     },
   ],
   activeSiteAdapters: [
