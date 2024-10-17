@@ -30,6 +30,7 @@ import { initSession } from '../services/init-session.mjs'
 import { getChatGptAccessToken, registerPortListener } from '../services/wrappers.mjs'
 import { generateAnswersWithChatgptWebApi } from '../services/apis/chatgpt-web.mjs'
 import WebJumpBackNotification from '../components/WebJumpBackNotification'
+import { DraggableBar } from './draggable-bar'
 
 /**
  * @param {SiteConfig} siteConfig
@@ -469,6 +470,47 @@ async function prepareForJumpBackNotification() {
       div,
     )
   }
+}
+
+/**
+ * 渲染侧边栏
+ * 
+ * 此函数负责渲染一个可拖动的工具栏到指定的容器中这个工具栏可以展开或折叠，
+ * 并且可以通过回调函数来传递当前工具栏的折叠或展开状态此外，它还接收一个
+ * 图标作为折叠状态的显示，以及一个回调函数来设置工具栏的是否活着的状态
+ * @param {React.Element} DraggableBar - 要渲染的可拖动工具栏组件
+ * @param {HTMLElement} sideBarContainer - 工具栏要被渲染进去的DOM容器
+ * @param {function} setLiving - 是否活着 暂未实现
+ */
+function renderSidebar() {
+  render(
+    <DraggableBar
+      openToolBar={async () => {
+        const container = createElementAtPosition(0, 0, "sideWindow")
+        container.className = 'chatgptbox-toolbar-container-not-queryable'
+        const userConfig = await getUserConfig()
+        const session = initSession({
+          modelName: userConfig.modelName,
+          apiMode: userConfig.apiMode,
+          extraCustomModelName: userConfig.customModelName,
+        })
+        render(
+          <FloatingToolbar
+            session={session}
+            selection=""
+            container={container}
+            triggered={true}
+            closeable={true}
+            prompt=""
+          />,
+          container,
+        )
+      }}
+      foldedIcon={sideLogo}
+      setLiving={(living) => { }}
+    />,
+    sideBarContainer
+  )
 }
 
 async function run() {
