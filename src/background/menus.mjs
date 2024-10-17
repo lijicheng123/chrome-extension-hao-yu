@@ -6,7 +6,7 @@ import { config as menuConfig } from '../content-script/menu-tools/index.mjs'
 const menuId = 'ChatGPTBox-Menu'
 const onClickMenu = (info, tab) => {
   Browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-    const currentTab = tabs[0]
+    const currentTab = tabs[0] || {}
     const message = {
       itemId: info.menuItemId.replace(menuId, ''),
       selectionText: info.selectionText,
@@ -25,6 +25,9 @@ const onClickMenu = (info, tab) => {
       }
 
       if (menuConfig[message.itemId].genPrompt) {
+        if (message.itemId === 'openSidePanel') {
+          message.containerType = 'sideWindow'
+        }
         Browser.tabs.sendMessage(currentTab.id, {
           type: 'CREATE_CHAT',
           data: message,

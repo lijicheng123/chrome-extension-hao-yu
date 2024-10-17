@@ -50,6 +50,10 @@ async function runWebpack(isWithoutKatex, isWithoutTiktoken, minimal, callback) 
         import: './src/pages/IndependentPanel/index.jsx',
         dependOn: 'shared',
       },
+      AIPic: {
+        import: './src/pages/AIPic/index.jsx',
+        dependOn: 'shared',
+      },
       shared: shared,
     },
     output: {
@@ -298,6 +302,9 @@ async function finishOutput(outputDirSuffix) {
 
     { src: 'build/IndependentPanel.js', dst: 'IndependentPanel.js' },
     { src: 'src/pages/IndependentPanel/index.html', dst: 'IndependentPanel.html' },
+
+    { src: 'build/AIPic.js', dst: 'AIPic.js' },
+    { src: 'src/pages/AIPic/index.html', dst: 'AIPic.html' },
   ]
 
   // chromium
@@ -306,6 +313,7 @@ async function finishOutput(outputDirSuffix) {
     [...commonFiles, { src: 'src/manifest.json', dst: 'manifest.json' }],
     chromiumOutputDir,
   )
+  await copyImages('src/imgs', `${chromiumOutputDir}/imgs`)
   if (isProduction) await zipFolder(chromiumOutputDir)
 
   // firefox
@@ -314,6 +322,7 @@ async function finishOutput(outputDirSuffix) {
     [...commonFiles, { src: 'src/manifest.v2.json', dst: 'manifest.json' }],
     firefoxOutputDir,
   )
+  await copyImages('src/imgs', `${firefoxOutputDir}/imgs`)
   if (isProduction) await zipFolder(firefoxOutputDir)
 }
 
@@ -355,3 +364,23 @@ async function build() {
 }
 
 build()
+
+async function copyImages(src, dst) {
+  const allFiles = await fs.readdir(src, { withFileTypes: true })
+
+  console.log('Copying images...', allFiles)
+
+  const images = allFiles
+    .filter((file) => file.isFile())
+    .map((file) => file.name)
+    .filter((name) => name.match(/.*\.(png|jpg|webp)$/))
+
+  await fs.mkdir(dst, { recursive: true }) // 添加此行以创建目标目录
+
+  await Promise.all(
+    images.map(async (image) => {
+      const outputPath = `${dst}/${image}`
+      await fs.copyFile(path.join(src, image), outputPath)
+    }),
+  )
+}
