@@ -54,6 +54,10 @@ async function runWebpack(isWithoutKatex, isWithoutTiktoken, minimal, callback) 
         import: './src/pages/AIPic/index.jsx',
         dependOn: 'shared',
       },
+      options: {
+        import: './src/pages/options/index.jsx',
+        dependOn: 'shared',
+      },
       shared: shared,
     },
     output: {
@@ -310,6 +314,9 @@ async function finishOutput(outputDirSuffix) {
 
     { src: 'build/AIPic.js', dst: 'AIPic.js' },
     { src: 'src/pages/AIPic/index.html', dst: 'AIPic.html' },
+
+    { src: 'build/options.js', dst: 'options.js' },
+    { src: 'src/pages/options/index.html', dst: 'options.html' },
   ]
 
   // chromium
