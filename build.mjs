@@ -177,6 +177,11 @@ async function runWebpack(isWithoutKatex, isWithoutTiktoken, minimal, callback) 
             },
             {
               loader: 'less-loader',
+              options: {
+                lessOptions: {
+                  javascriptEnabled: true,
+                },
+              },
             },
           ],
         },
