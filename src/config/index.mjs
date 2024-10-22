@@ -544,10 +544,15 @@ export async function getPreferredLanguageKey() {
  * @returns {Promise<UserConfig>}
  */
 export async function getUserConfig() {
-  const options = await Browser.storage.local.get(Object.keys(defaultConfig))
-  if (options.customChatGptWebApiUrl === 'https://chat.openai.com')
-    options.customChatGptWebApiUrl = 'https://chatgpt.com'
-  return defaults(options, defaultConfig)
+  try {
+    const options = await Browser.storage.local.get(Object.keys(defaultConfig))
+    if (options.customChatGptWebApiUrl === 'https://chat.openai.com')
+      options.customChatGptWebApiUrl = 'https://chatgpt.com'
+    return defaults(options, defaultConfig)
+  } catch (e) {
+    return defaults({}, defaultConfig)
+  }
+
 }
 
 /**
