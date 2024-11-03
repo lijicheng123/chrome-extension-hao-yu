@@ -37,6 +37,8 @@ import { initSession } from '../../services/init-session.mjs'
 import { findLastIndex } from 'lodash-es'
 import { generateAnswersWithBingWebApi } from '../../services/apis/bing-web.mjs'
 import { handlePortError } from '../../services/wrappers.mjs'
+import CustomerDev from '../CustomerDev'
+import { WINDOW_TYPE } from '../../constants/index.jsx'
 
 const logo = Browser.runtime.getURL('logo.png')
 
@@ -56,6 +58,7 @@ class ConversationItemData extends Object {
 
 function ConversationCard(props) {
   const { t } = useTranslation()
+  const { windowType } = props
   const [isReady, setIsReady] = useState(!props.question)
   const [port, setPort] = useState(() => Browser.runtime.connect())
   const [triggered, setTriggered] = useState(!props.waitForTrigger)
@@ -344,26 +347,19 @@ function ConversationCard(props) {
         }
         style="user-select:none;"
       >
-        <span
+        <div
           className="gpt-util-group"
           style={{
-            padding: '15px 0 15px 15px',
+            padding: '14px 0 14px 16px',
             ...(props.notClampSize ? {} : { flexGrow: isSafari() ? 0 : 1 }),
             ...(isSafari() ? { maxWidth: '200px' } : {}),
           }}
         >
-          {props.closeable ? (
-            <span
-              className="gpt-util-icon"
-              title={t('Close the Window')}
-              onClick={() => {
-                port.disconnect()
-                if (props.onClose) props.onClose()
-              }}
-            >
-              <XLg size={16} />
-            </span>
-          ) : props.dockable ? (
+          <img src={logo} style="user-select:none;width:20px;height:20px;" />
+          <span className="slogan">
+            好雨AI-更懂外贸的AI
+          </span>
+          {props.dockable ? (
             <span
               className="gpt-util-icon"
               title={t('Pin the Window')}
@@ -373,10 +369,8 @@ function ConversationCard(props) {
             >
               <Pin size={16} />
             </span>
-          ) : (
-            <img src={logo} style="user-select:none;width:20px;height:20px;" />
-          )}
-          <select
+          ) : null}
+          {/* <select
             style={props.notClampSize ? {} : { width: 0, flexGrow: 1 }}
             className="normal-button"
             required
@@ -416,8 +410,8 @@ function ConversationCard(props) {
             <option value={-1} selected={!session.apiMode && session.modelName === 'customModel'}>
               {t(Models.customModel.desc)}
             </option>
-          </select>
-        </span>
+          </select> */}
+        </div>
         {props.draggable && !completeDraggable && (
           <div className="draggable" style={{ flexGrow: 2, cursor: 'move', height: '55px' }} />
         )}
@@ -499,6 +493,17 @@ function ConversationCard(props) {
               <SidebarExpandIcon size={16} />
             </span>
           )}
+          {props.closeable ?? <span
+            className="gpt-util-icon"
+            title={t('Close the Window')}
+            onClick={() => {
+              port.disconnect()
+              if (props.onClose) props.onClose()
+            }}
+          >
+            <XLg size={16} />
+          </span>}
+
           {/* {conversationItemData.length > 0 && (
             <span
               title={t('Jump to bottom')}
@@ -570,6 +575,8 @@ function ConversationCard(props) {
             <SearchIcon size="small" /> {t('Ask ChatGPT')}
           </span>
         </p>
+      ) : windowType === WINDOW_TYPE.CUSTOMER_DEV ? (
+        <><CustomerDev /></>
       ) : (
         <InputBox
           enabled={isReady}
@@ -614,6 +621,7 @@ ConversationCard.propTypes = {
   notClampSize: PropTypes.bool,
   pageMode: PropTypes.bool,
   waitForTrigger: PropTypes.bool,
+  windowType: PropTypes.string,
 }
 
 export default memo(ConversationCard)

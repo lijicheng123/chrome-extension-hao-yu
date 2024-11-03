@@ -1324,8 +1324,12 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
     color: var(--font-color);
+    .slogan {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1;
+    }
 
     svg {
       width: 16px;

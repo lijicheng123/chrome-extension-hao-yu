@@ -31,6 +31,7 @@ import { getChatGptAccessToken, registerPortListener } from '../services/wrapper
 import { generateAnswersWithChatgptWebApi } from '../services/apis/chatgpt-web.mjs'
 import WebJumpBackNotification from '../components/WebJumpBackNotification'
 import { DraggableBar } from './draggable-bar'
+import { WINDOW_TYPE } from '../constants'
 
 const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
 const sideBarContainer = document.createElement('div')
@@ -492,6 +493,35 @@ async function prepareForJumpBackNotification() {
   }
 }
 
+
+async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
+  const container = createElementAtPosition(x, y, "sideWindow")
+  container.className = 'chatgptbox-toolbar-container-not-queryable'
+  const userConfig = await getUserConfig()
+  const session = initSession({
+    modelName: userConfig.modelName,
+    apiMode: userConfig.apiMode,
+    extraCustomModelName: userConfig.customModelName,
+  })
+  render(
+    <FloatingToolbar
+      session={session}
+      selection=""
+      container={container}
+      triggered={true}
+      closeable={true}
+      windowType={windowType}
+      prompt=""
+    />,
+    container,
+  )
+}
+
+
+async function renderCustomerDev() {
+  renderFloatingToolbar({ x: 0, y: 0, windowType: WINDOW_TYPE.CUSTOMER_DEV })
+}
+
 /**
  * 渲染侧边栏
  * 
@@ -505,26 +535,8 @@ async function prepareForJumpBackNotification() {
 function renderSidebar() {
   render(
     <DraggableBar
-      openToolBar={async () => {
-        const container = createElementAtPosition(0, 0, "sideWindow")
-        container.className = 'chatgptbox-toolbar-container-not-queryable'
-        const userConfig = await getUserConfig()
-        const session = initSession({
-          modelName: userConfig.modelName,
-          apiMode: userConfig.apiMode,
-          extraCustomModelName: userConfig.customModelName,
-        })
-        render(
-          <FloatingToolbar
-            session={session}
-            selection=""
-            container={container}
-            triggered={true}
-            closeable={true}
-            prompt=""
-          />,
-          container,
-        )
+      openToolBar={async ({ windowType }) => {
+        renderFloatingToolbar({ x: 0, y: 0, windowType })
       }}
       foldedIcon={sideLogo}
       setLiving={(living) => { }}
@@ -567,6 +579,11 @@ async function run() {
 
   // 顶部通知返回条
   prepareForJumpBackNotification()
+
+  setTimeout(() => {
+    // 渲染 customerDev
+    renderCustomerDev()
+  }, 3000)
 }
 
 run()

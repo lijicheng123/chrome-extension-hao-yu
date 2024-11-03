@@ -7,6 +7,7 @@ let originalTransformY = 0;
 let transformY = 0;
 
 import './index.scss'
+import { WINDOW_TYPE } from '/src/constants';
 
 export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
   const containerRef = useRef(null);
@@ -52,8 +53,9 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
       onMouseLeave={onMouseLeave}
       onMouseUp={onMouseLeave}>
       <div className="bar-standby-container">
-        <div className="tool">总结网页</div>
-        <div className="tool">总结网页</div>
+        <div className="tool">网页翻译</div>
+        <div className="tool">网页总结</div>
+        <div className="tool" onClick={() => { openToolBar({ windowType: WINDOW_TYPE.CUSTOMER_DEV }) }}>客户开发</div>
         <div className="tool-wrapper">
           <a>
             工具箱
@@ -64,7 +66,7 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
           </div>
         </div>
         <div className="bar-standby-icon-wrapper">
-          <img onClick={openToolBar} className="folded-icon" src={foldedIcon} />
+          <img onClick={() => { openToolBar() }} className="folded-icon" src={foldedIcon} />
           <>
             <span
               onClick={() => {

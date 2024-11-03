@@ -13,6 +13,7 @@ import { useConfig } from '../../hooks/use-config.mjs'
 
 function FloatingToolbar(props) {
   const { t } = useTranslation()
+  const { windowType } = props
   const [selection, setSelection] = useState(props.selection)
   const [prompt, setPrompt] = useState(props.prompt)
   const [triggered, setTriggered] = useState(props.triggered)
@@ -112,6 +113,7 @@ function FloatingToolbar(props) {
                 onDock={onDock}
                 onUpdate={onUpdate}
                 waitForTrigger={prompt && !triggered && !selection}
+                windowType={windowType}
               />
             </div>
           </div>
