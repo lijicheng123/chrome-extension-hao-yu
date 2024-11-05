@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Card, Typography } from "antd";
+import { Card, Typography, Space } from "antd";
 const { Paragraph, Text } = Typography;
-
 import { getPageText, matchEmailsInText, removeDuplicates, scrollToEmail, highlightEmail } from "./crawler";
+import { message } from "antd";
+import style from './index.modules.scss'
 function CustomerDev() {
   // email
   const [emailList, setEmailList] = useState([]);
@@ -21,10 +22,11 @@ function CustomerDev() {
   }
   const handleClick = (email) => {
     const emailElement = document.querySelector(`[data-email='${email}']`)
-
     if (emailElement) {
       scrollToEmail(emailElement)
       highlightEmail(emailElement)
+    } else {
+      message.error("这个我不好找，你自己 ctr+F 找吧")
     }
   }
   useEffect(() => {
@@ -34,15 +36,23 @@ function CustomerDev() {
 
   }, [document.body.innerText])
   return (
-    <div>
+    <div className={style["email-list"]}>
       {emailList.map((email) => {
-        return <Card key={email}>
+        return <Card key={email} style={{ marginBottom: '8px' }}>
+          <div className={style['email-list-card']}>
           <Paragraph copyable={{ text: email }}>
             <Text>{email}</Text>
-            <a onClick={() => handleClick(email)}>
-              定位
-            </a>
-          </Paragraph>
+            </Paragraph>
+            <Space>
+              <a onClick={() => handleClick(email)}>
+                删除
+              </a>
+              <a onClick={() => handleClick(email)}>
+                定位
+              </a>
+            </Space>
+          </div>
+
         </Card>;
       })}
     </div>
