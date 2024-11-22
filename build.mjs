@@ -317,6 +317,13 @@ async function finishOutput(outputDirSuffix) {
 
     { src: 'build/options.js', dst: 'options.js' },
     { src: 'src/pages/options/index.html', dst: 'options.html' },
+
+    // TWP
+    { src: 'src/lib/twp/languages.js', dst: 'lib/twp/languages.js' },
+    { src: 'src/lib/twp/config.js', dst: 'lib/twp/twpconfig.js' },
+    { src: 'src/lib/twp/i18n.js', dst: 'lib/twp/i18n.js' },
+    { src: 'src/lib/twp/platformInfo.js', dst: 'lib/twp/platformInfo.js' },
+    { src: 'src/lib/twp/specialRules.js', dst: 'lib/twp/specialRules.js' },
   ]
 
   // chromium

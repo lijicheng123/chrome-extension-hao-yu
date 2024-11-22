@@ -17,6 +17,8 @@
     "https://*.google.com/*",
     "https://claude.ai/*",
     "https://*.moonshot.cn/*",
+    "http://*/*",
+    "https://*/*",
     "<all_urls>"
   ],
   "permissions": [
@@ -25,6 +27,7 @@
     "contextMenus",
     "unlimitedStorage",
     "tabs",
+    "activeTab",
     "webRequest",
     "declarativeNetRequestWithHostAccess",
     "sidePanel"
@@ -67,14 +70,20 @@
       ],
       "css": [
         "content-script.css"
-      ]
+      ],
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
       "resources": [
         "logo.png",
-        "imgs/*"
+        "imgs/*",
+        "lib/twp/languages.js",
+        "lib/twp/config.js",
+        "lib/twp/i18n.js",
+        "lib/twp/platformInfo.js",
+        "lib/twp/specialRules.js"
       ],
       "matches": [
         "<all_urls>"

@@ -9,12 +9,16 @@
     "48": "logo.png",
     "128": "logo.png"
   },
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "permissions": [
     "cookies",
     "storage",
     "contextMenus",
     "unlimitedStorage",
     "tabs",
+    "activeTab",
     "webRequest",
     "https://*.chatgpt.com/*",
     "https://*.openai.com/",
@@ -52,11 +56,17 @@
       ],
       "css": [
         "content-script.css"
-      ]
+      ],
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
-    "logo.png"
+    "logo.png",
+    "lib/twp/languages.js",
+    "lib/twp/config.js",
+    "lib/twp/i18n.js",
+    "lib/twp/platformInfo.js",
+    "lib/twp/specialRules.js"
   ],
   "commands": {
     "newChat": {

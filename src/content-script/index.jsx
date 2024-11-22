@@ -19,7 +19,7 @@ import {
   endsWithQuestionMark,
   getApiModesStringArrayFromConfig,
   getClientPosition,
-  getPossibleElementByQuerySelector
+  getPossibleElementByQuerySelector,
 } from '../utils'
 import FloatingToolbar from '../components/FloatingToolbar'
 import Browser from 'webextension-polyfill'
@@ -31,10 +31,12 @@ import { getChatGptAccessToken, registerPortListener } from '../services/wrapper
 import { generateAnswersWithChatgptWebApi } from '../services/apis/chatgpt-web.mjs'
 import WebJumpBackNotification from '../components/WebJumpBackNotification'
 import { DraggableBar } from './draggable-bar'
+import twpConfig from '../lib/config.mjs'
+import { pageTranslatorReady } from './translate/index.mjs'
 
 const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
 const sideBarContainer = document.createElement('div')
-sideBarContainer.id = "chatgptbox-sidebar-container"
+sideBarContainer.id = 'chatgptbox-sidebar-container'
 document.body.appendChild(sideBarContainer)
 
 /**
@@ -494,7 +496,7 @@ async function prepareForJumpBackNotification() {
 
 /**
  * 渲染侧边栏
- * 
+ *
  * 此函数负责渲染一个可拖动的工具栏到指定的容器中这个工具栏可以展开或折叠，
  * 并且可以通过回调函数来传递当前工具栏的折叠或展开状态此外，它还接收一个
  * 图标作为折叠状态的显示，以及一个回调函数来设置工具栏的是否活着的状态
@@ -503,10 +505,12 @@ async function prepareForJumpBackNotification() {
  * @param {function} setLiving - 是否活着 暂未实现
  */
 function renderSidebar() {
+  const port = chrome.runtime.connect({ name: 'activeTabPort' })
+
   render(
     <DraggableBar
       openToolBar={async () => {
-        const container = createElementAtPosition(0, 0, "sideWindow")
+        const container = createElementAtPosition(0, 0, 'sideWindow')
         container.className = 'chatgptbox-toolbar-container-not-queryable'
         const userConfig = await getUserConfig()
         const session = initSession({
@@ -527,9 +531,26 @@ function renderSidebar() {
         )
       }}
       foldedIcon={sideLogo}
-      setLiving={(living) => { }}
+      setLiving={(living) => {}}
+      handleTranslate={async () => {
+        pageTranslatorReady()
+        console.log('🚀 ~ handleTranslate={ ~ twpConfig:', twpConfig.get('translateClickingOnce'))
+        // 获取当前活动标签页的 tabId
+        port.postMessage({ action: 'queryActiveTab' })
+        port.onMessage.addListener((response) => {
+          console.log('🚀 ~ port.onMessage.addListener ~ response:', response)
+          if (response && response.tabId) {
+            console.log('Current Tab ID:', response.tabId)
+            // 使用 tabId 执行其他操作
+            console.log('🚀 ~ port.onMessage.addListener ~ tabs:', chrome, chrome.tabs)
+            // chrome.tabs.sendMessage(response.tabId, { action: 'toggle-translation' })
+          } else {
+            console.error('No response or tabId received:', response)
+          }
+        })
+      }}
     />,
-    sideBarContainer
+    sideBarContainer,
   )
 }
 
