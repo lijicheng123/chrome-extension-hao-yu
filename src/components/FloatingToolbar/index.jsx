@@ -10,7 +10,6 @@ import { useConfig } from '../../hooks/use-config.mjs'
 
 // const logo = Browser.runtime.getURL('logo.png')
 
-
 function FloatingToolbar(props) {
   const { t } = useTranslation()
   const { windowType } = props
@@ -179,5 +178,3 @@ FloatingToolbar.propTypes = {
 }
 
 export default FloatingToolbar
-
-

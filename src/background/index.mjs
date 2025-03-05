@@ -153,6 +153,49 @@ async function executeApi(session, port, config) {
   }
 }
 
+Browser.runtime.onMessage.addListener((message, sender) => {
+  if (message.action === 'apiRequest') {
+    const { id, method, url, data, headers, params } = message.request
+
+    let fullUrl = url
+    if (params) {
+      const queryString = new URLSearchParams(params).toString()
+      fullUrl += (fullUrl.includes('?') ? '&' : '?') + queryString
+    }
+
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+    }
+
+    if (data && (method === 'POST' || method === 'PUT')) {
+      options.body = data
+    }
+
+    fetch(fullUrl, options)
+      .then((response) => response.json())
+      .then((responseData) => {
+        // 发送响应回 content script
+        Browser.tabs.sendMessage(sender.tab.id, {
+          action: 'apiResponse',
+          id,
+          response: responseData,
+        })
+      })
+      .catch((error) => {
+        // 发送错误回 content script
+        Browser.tabs.sendMessage(sender.tab.id, {
+          action: 'apiResponse',
+          id,
+          error: error.message,
+        })
+      })
+  }
+})
+
 Browser.runtime.onMessage.addListener(async (message, sender) => {
   switch (message.type) {
     case 'FEEDBACK': {
@@ -243,6 +286,19 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
     case 'GET_COOKIE': {
       return (await Browser.cookies.get({ url: message.data.url, name: message.data.name }))?.value
     }
+  }
+})
+
+// 处理需要登录的消息
+Browser.runtime.onMessage.addListener(async (message) => {
+  if (message.type === 'NEED_LOGIN') {
+    const currentTab = await Browser.tabs.query({ active: true, currentWindow: true })
+    const currentUrl = currentTab[0]?.url
+
+    // 打开登录页面，并传递重定向地址
+    await Browser.tabs.create({
+      url: Browser.runtime.getURL(`login.html?redirect=${encodeURIComponent(currentUrl)}`),
+    })
   }
 })
 

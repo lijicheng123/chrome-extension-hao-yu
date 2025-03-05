@@ -1,1 +1,54 @@
-@import 'IndependentPanel/styles.scss';
+.config-panel {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+
+  .ant-tabs-nav {
+    margin-bottom: 24px;
+  }
+
+  .ant-form {
+    .ant-form-item {
+      margin-bottom: 24px;
+    }
+  }
+
+  .button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f2f5;
+
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 20px;
+
+    .ant-card-head-title {
+      text-align: center;
+      font-size: 24px;
+      padding: 12px 0;
+    }
+
+    .verification-code {
+      display: flex;
+      gap: 12px;
+
+      .ant-form-item {
+        flex: 1;
+      }
+
+      button {
+        min-width: 120px;
+      }
+    }
+  }
+}

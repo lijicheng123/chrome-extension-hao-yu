@@ -3,36 +3,13 @@ import PropTypes from 'prop-types'
 import Browser from 'webextension-polyfill'
 import InputBox from '../InputBox'
 import ConversationItem from '../ConversationItem'
-import {
-  apiModeToModelName,
-  createElementAtPosition,
-  getApiModesFromConfig,
-  isApiModeSelected,
-  isFirefox,
-  isMobile,
-  isSafari,
-  isUsingModelName,
-  modelNameToDesc,
-} from '../../utils'
-import {
-  ArchiveIcon,
-  DesktopDownloadIcon,
-  LinkExternalIcon,
-  MoveToBottomIcon,
-  SidebarExpandIcon,
-  SearchIcon,
-} from '@primer/octicons-react'
-import { Pin, WindowDesktop, XLg } from 'react-bootstrap-icons'
-import FileSaver from 'file-saver'
-import { render } from 'preact'
-import FloatingToolbar from '../FloatingToolbar'
+import { getApiModesFromConfig, isFirefox, isMobile, isSafari, isUsingModelName } from '../../utils'
+import { LinkExternalIcon, SidebarExpandIcon, SearchIcon } from '@primer/octicons-react'
+import { Pin, XLg } from 'react-bootstrap-icons'
 import { useClampWindowSize } from '../../hooks/use-clamp-window-size'
-import { getUserConfig, isUsingBingWebModel, Models } from '../../config/index.mjs'
+import { getUserConfig, isUsingBingWebModel } from '../../config/index.mjs'
 import { useTranslation } from 'react-i18next'
-import DeleteButton from '../DeleteButton'
 import { useConfig } from '../../hooks/use-config.mjs'
-import { createSession } from '../../services/local-session.mjs'
-import { v4 as uuidv4 } from 'uuid'
 import { initSession } from '../../services/init-session.mjs'
 import { findLastIndex } from 'lodash-es'
 import { generateAnswersWithBingWebApi } from '../../services/apis/bing-web.mjs'
@@ -356,9 +333,7 @@ function ConversationCard(props) {
           }}
         >
           <img src={logo} style="user-select:none;width:20px;height:20px;" />
-          <span className="slogan">
-            好雨AI-更懂外贸的AI
-          </span>
+          <span className="slogan">好雨AI-更懂外贸的AI</span>
           {props.dockable ? (
             <span
               className="gpt-util-icon"
@@ -493,16 +468,18 @@ function ConversationCard(props) {
               <SidebarExpandIcon size={16} />
             </span>
           )}
-          {props.closeable ?? <span
-            className="gpt-util-icon"
-            title={t('Close the Window')}
-            onClick={() => {
-              port.disconnect()
-              if (props.onClose) props.onClose()
-            }}
-          >
-            <XLg size={16} />
-          </span>}
+          {props.closeable ?? (
+            <span
+              className="gpt-util-icon"
+              title={t('Close the Window')}
+              onClick={() => {
+                port.disconnect()
+                if (props.onClose) props.onClose()
+              }}
+            >
+              <XLg size={16} />
+            </span>
+          )}
 
           {/* {conversationItemData.length > 0 && (
             <span
@@ -576,7 +553,9 @@ function ConversationCard(props) {
           </span>
         </p>
       ) : windowType === WINDOW_TYPE.CUSTOMER_DEV ? (
-        <><CustomerDev /></>
+        <>
+          <CustomerDev />
+        </>
       ) : (
         <InputBox
           enabled={isReady}

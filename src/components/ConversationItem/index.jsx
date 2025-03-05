@@ -1,7 +1,6 @@
 import { memo, useState } from 'react'
-import { ChevronDownIcon, XCircleIcon, SyncIcon } from '@primer/octicons-react'
+import { SyncIcon } from '@primer/octicons-react'
 import CopyButton from '../CopyButton'
-import ReadButton from '../ReadButton'
 import PropTypes from 'prop-types'
 import MarkdownRender from '../MarkdownRender/markdown.jsx'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +17,7 @@ AnswerTitle.propTypes = {
 
 export function ConversationItem({ type, content, descName, onRetry }) {
   const { t } = useTranslation()
+  // eslint-disable-next-line no-unused-vars
   const [collapsed, setCollapsed] = useState(false)
 
   switch (type) {
