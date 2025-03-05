@@ -19,7 +19,7 @@ import {
   endsWithQuestionMark,
   getApiModesStringArrayFromConfig,
   getClientPosition,
-  getPossibleElementByQuerySelector
+  getPossibleElementByQuerySelector,
 } from '../utils'
 import FloatingToolbar from '../components/FloatingToolbar'
 import Browser from 'webextension-polyfill'
@@ -35,7 +35,7 @@ import { WINDOW_TYPE } from '../constants'
 
 const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
 const sideBarContainer = document.createElement('div')
-sideBarContainer.id = "chatgptbox-sidebar-container"
+sideBarContainer.id = 'chatgptbox-sidebar-container'
 document.body.appendChild(sideBarContainer)
 
 /**
@@ -493,9 +493,8 @@ async function prepareForJumpBackNotification() {
   }
 }
 
-
 async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
-  const container = createElementAtPosition(x, y, "sideWindow")
+  const container = createElementAtPosition(x, y, 'sideWindow')
   container.className = 'chatgptbox-toolbar-container-not-queryable'
   const userConfig = await getUserConfig()
   const session = initSession({
@@ -517,14 +516,13 @@ async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
   )
 }
 
-
 async function renderCustomerDev() {
   renderFloatingToolbar({ x: 0, y: 0, windowType: WINDOW_TYPE.CUSTOMER_DEV })
 }
 
 /**
  * 渲染侧边栏
- * 
+ *
  * 此函数负责渲染一个可拖动的工具栏到指定的容器中这个工具栏可以展开或折叠，
  * 并且可以通过回调函数来传递当前工具栏的折叠或展开状态此外，它还接收一个
  * 图标作为折叠状态的显示，以及一个回调函数来设置工具栏的是否活着的状态
@@ -539,9 +537,9 @@ function renderSidebar() {
         renderFloatingToolbar({ x: 0, y: 0, windowType })
       }}
       foldedIcon={sideLogo}
-      setLiving={(living) => { }}
+      setLiving={(living) => {}}
     />,
-    sideBarContainer
+    sideBarContainer,
   )
 }
 
@@ -582,7 +580,7 @@ async function run() {
 
   setTimeout(() => {
     // 渲染 customerDev
-    renderCustomerDev()
+    // renderCustomerDev()
   }, 3000)
 }
 

@@ -3,5 +3,5 @@
  * CUSTOMER_DEV 客户开发
  */
 export const WINDOW_TYPE = {
-  CUSTOMER_DEV: "customer-dev",
+  CUSTOMER_DEV: 'customer-dev',
 }

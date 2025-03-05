@@ -1,5 +1,5 @@
 import { calcContainerStyle } from './calc-container-style.mjs'
-export function createElementAtPosition(x = 0, y = 0, containerType, zIndex = 2147483647) {
+export function createElementAtPosition(x = 0, y = 0, containerType, zIndex = 999) {
   const containerStyle = calcContainerStyle(containerType)
 
   console.log('containerStyle:', containerStyle)

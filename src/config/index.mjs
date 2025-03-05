@@ -552,7 +552,6 @@ export async function getUserConfig() {
   } catch (e) {
     return defaults({}, defaultConfig)
   }
-
 }
 
 /**

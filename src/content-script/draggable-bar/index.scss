@@ -1,6 +1,6 @@
 .bar-standby-container {
   display: flex;
-  justify-content:center;
+  justify-content: center;
   align-items: flex-end;
   flex-direction: column;
   position: fixed;
@@ -21,11 +21,10 @@
     &:hover {
       .tool-item-wrapper {
         display: flex;
-        
       }
     }
   }
- 
+
   .tool {
     cursor: pointer;
     margin-bottom: 12px;
