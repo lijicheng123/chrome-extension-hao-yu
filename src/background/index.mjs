@@ -50,6 +50,7 @@ import { generateAnswersWithClaudeWebApi } from '../services/apis/claude-web.mjs
 import { generateAnswersWithMoonshotCompletionApi } from '../services/apis/moonshot-api.mjs'
 import { generateAnswersWithMoonshotWebApi } from '../services/apis/moonshot-web.mjs'
 import { isUsingModelName } from '../utils/model-name-convert.mjs'
+import { configManager } from '../services/config/config-manager'
 
 function setPortProxy(port, proxyTabId) {
   port.proxy = Browser.tabs.connect(proxyTabId)
@@ -153,10 +154,10 @@ async function executeApi(session, port, config) {
   }
 }
 
-Browser.runtime.onMessage.addListener((message, sender) => {
+Browser.runtime.onMessage.addListener(async (message, sender) => {
   if (message.action === 'apiRequest') {
     const { id, method, url, data, headers, params } = message.request
-
+    const userInfo = await configManager.getUserInfo()
     let fullUrl = url
     if (params) {
       const queryString = new URLSearchParams(params).toString()
@@ -168,6 +169,7 @@ Browser.runtime.onMessage.addListener((message, sender) => {
       headers: {
         'Content-Type': 'application/json',
         ...headers,
+        token: userInfo.token,
       },
     }
 
@@ -295,9 +297,13 @@ Browser.runtime.onMessage.addListener(async (message) => {
     const currentTab = await Browser.tabs.query({ active: true, currentWindow: true })
     const currentUrl = currentTab[0]?.url
 
+    // 清除用户信息缓存
+    await setUserConfig({
+      userInfo: null,
+    })
     // 打开登录页面，并传递重定向地址
     await Browser.tabs.create({
-      url: Browser.runtime.getURL(`login.html?redirect=${encodeURIComponent(currentUrl)}`),
+      url: Browser.runtime.getURL(`/options.html?redirect=${encodeURIComponent(currentUrl)}#user`),
     })
   }
 })

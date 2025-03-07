@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Form, Input, Button, message, Card } from 'antd'
+import Browser from 'webextension-polyfill'
 import { MailOutlined } from '@ant-design/icons'
 import { authService } from '../../../../services/auth/auth-service'
 import { configManager } from '../../../../services/config/config-manager'
@@ -87,13 +88,63 @@ function LoginPage() {
       message.success('登录成功')
 
       // 登录成功后跳转
-      // const urlParams = new URLSearchParams(window.location.search)
-      // const redirect = urlParams.get('redirect') || '/'
-      // window.location.href = redirect
+      const urlParams = new URLSearchParams(window.location.search)
+      const redirect = urlParams.get('redirect') || '/'
+      // 回到过来的tab
+      setTimeout(() => {
+        handleRedirect(redirect)
+      }, 1000)
     } catch (error) {
       message.error(error.message || '登录失败')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleRedirect(redirectUrl) {
+    if (!redirectUrl) {
+      console.log('没有重定向地址')
+      return
+    }
+
+    try {
+      // 查询url为redirectUrl的tab
+      const [tab] = await Browser.tabs.query({
+        url: redirectUrl,
+      })
+
+      if (!tab) {
+        throw new Error('未找到活动标签页')
+      }
+
+      // 验证重定向URL
+      if (!isValidUrl(redirectUrl)) {
+        throw new Error('无效的重定向地址')
+      }
+
+      // 获取当前tab
+      const [currentTab] = await Browser.tabs.query({ active: true, currentWindow: true })
+      // 关闭当前tab
+      await Browser.tabs.remove(currentTab.id)
+
+      // 更新标签页
+      await Browser.tabs.update(tab.id, {
+        url: redirectUrl,
+      })
+      // 刷新标签页
+      await Browser.tabs.reload(tab.id)
+    } catch (error) {
+      console.error('重定向失败:', error)
+      throw new Error('重定向失败，请刷新页面重试')
+    }
+  }
+
+  function isValidUrl(url) {
+    try {
+      new URL(url)
+      return true
+    } catch {
+      return false
     }
   }
 
