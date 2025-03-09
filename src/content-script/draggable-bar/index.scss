@@ -7,6 +7,9 @@
   right: 0;
   top: 50vh;
   z-index: 2147483647;
+  max-height: calc(100vh - 92px);
+  min-height: 32px;
+  pointer-events: auto;
   .tool-wrapper {
     .tool-item-wrapper {
       display: none;
@@ -33,6 +36,7 @@
     width: 32px;
     height: 32px;
     cursor: pointer;
+    user-select: none;
   }
   .close-btn {
     display: none;

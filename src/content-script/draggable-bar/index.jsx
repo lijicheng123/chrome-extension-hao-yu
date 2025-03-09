@@ -1,39 +1,26 @@
-import React, { useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import Browser from 'webextension-polyfill'
-
-let mouseDownY = 0
-let isMouseDown = false
-let originalTransformY = 0
-let transformY = 0
-
+import Draggable from 'react-draggable'
 import './index.scss'
-import { WINDOW_TYPE } from '/src/constants'
+import { WINDOW_TYPE } from '../../constants'
 
 export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
-  const containerRef = useRef(null)
-  let innerHeight = window.innerHeight
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [bounds, setBounds] = useState({ top: 0, bottom: 0 })
 
-  const onMouseDown = (e) => {
-    e.preventDefault()
-    mouseDownY = e.clientY
-    isMouseDown = true
-    innerHeight = window.innerHeight
+  const updateBounds = () => {
+    const windowHeight = window.innerHeight
+    setBounds({
+      top: -windowHeight / 2 + 46, // 上边界保留46px
+      bottom: windowHeight / 2 - 46, // 下边界保留46px
+    })
   }
-
-  const onMouseMove = (e) => {
-    if (!containerRef.current || isMouseDown === false) return
-    if (e.clientY <= 46 || e.clientY + 46 >= innerHeight) {
-      console.log('stop moving')
-      return
-    }
-    transformY = originalTransformY + e.clientY - mouseDownY
-    containerRef.current.style.transform = `translateY(${transformY}px)`
-  }
-
-  const onMouseLeave = (e) => {
-    isMouseDown = false
-    originalTransformY = transformY
-  }
+  // 计算拖动边界
+  useEffect(() => {
+    updateBounds()
+    window.addEventListener('resize', updateBounds)
+    return () => window.removeEventListener('resize', updateBounds)
+  }, [])
 
   const openAIPic = () => {
     const url = Browser.runtime.getURL('AIPic.html')
@@ -46,12 +33,11 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
   }
 
   return (
-    <div
-      ref={containerRef}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
-      onMouseUp={onMouseLeave}
+    <Draggable
+      axis="y" // 只允许垂直方向拖动
+      position={position}
+      bounds={bounds}
+      onDrag={(e, data) => setPosition({ x: 0, y: data.y })}
     >
       <div className="bar-standby-container">
         <div className="tool">网页翻译</div>
@@ -109,6 +95,6 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
           </>
         </div>
       </div>
-    </div>
+    </Draggable>
   )
 }
