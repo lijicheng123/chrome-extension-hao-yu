@@ -17,6 +17,7 @@
     "https://*.google.com/*",
     "https://claude.ai/*",
     "https://*.moonshot.cn/*",
+    "http://localhost:8069/*",
     "<all_urls>"
   ],
   "permissions": [

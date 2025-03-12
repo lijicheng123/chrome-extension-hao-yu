@@ -51,7 +51,7 @@ import { generateAnswersWithMoonshotCompletionApi } from '../services/apis/moons
 import { generateAnswersWithMoonshotWebApi } from '../services/apis/moonshot-web.mjs'
 import { isUsingModelName } from '../utils/model-name-convert.mjs'
 import { configManager } from '../services/config/config-manager'
-
+import { registerCookieListener } from './syncCookies.mjs'
 function setPortProxy(port, proxyTabId) {
   port.proxy = Browser.tabs.connect(proxyTabId)
   const proxyOnMessage = (msg) => {
@@ -157,7 +157,7 @@ async function executeApi(session, port, config) {
 Browser.runtime.onMessage.addListener(async (message, sender) => {
   if (message.action === 'apiRequest') {
     const { id, method, url, data, headers, params } = message.request
-    const userInfo = await configManager.getUserInfo()
+    // const userInfo = await configManager.getUserInfo()
     let fullUrl = url
     if (params) {
       const queryString = new URLSearchParams(params).toString()
@@ -166,10 +166,10 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
 
     const options = {
       method,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...headers,
-        token: userInfo.token,
       },
     }
 
@@ -371,3 +371,4 @@ try {
 registerPortListener(async (session, port, config) => await executeApi(session, port, config))
 registerCommands()
 refreshMenu()
+registerCookieListener()

@@ -227,6 +227,57 @@ function CustomerDev() {
     }
   }
 
+  const handleSubmitLeads = async () => {
+    try {
+      // 构建 Odoo JSON-RPC 请求
+      const payload = {
+        jsonrpc: '2.0',
+        method: 'call',
+        params: {
+          model: 'crm.lead',
+          method: 'create',
+          args: [
+            {
+              name: '线索标题', // 根据实际数据替换
+              contact_name: '联系人姓名',
+              email_from: '联系人邮箱',
+              phone: '联系电话',
+              description: '线索描述',
+              // 其他需要的字段...
+            },
+          ],
+          kwargs: {},
+        },
+        id: new Date().getTime(), // 请求ID
+      }
+
+      // 发送请求到 background script
+      const response = await Browser.runtime.sendMessage({
+        action: 'apiRequest',
+        request: {
+          method: 'POST',
+          url: 'http://localhost:8069/web/dataset/call_kw', // Odoo的标准RPC接口
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          data: JSON.stringify(payload),
+        },
+      })
+      debugger
+
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      // 处理成功响应
+      console.log('线索创建成功:', response)
+      // 可以添加成功提示或其他操作
+    } catch (error) {
+      console.error('创建线索失败:', error)
+      // 可以添加错误提示
+    }
+  }
+
   const handleEditEmail = (email) => {
     setEditingEmail(email)
     setNewEmailValue(email)
@@ -286,6 +337,7 @@ function CustomerDev() {
             <Switch />
           </Item>
           <Button onClick={handleSubmit}>保存</Button>
+          <Button onClick={handleSubmitLeads}>提交线索</Button>
           <Button onClick={fetchTaskList}>刷新任务列表</Button>
           <Button onClick={handleAutoCrawl} style={{ marginLeft: '8px' }}>
             开始
