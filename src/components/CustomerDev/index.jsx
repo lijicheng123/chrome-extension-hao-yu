@@ -22,7 +22,7 @@ import {
   highlightEmail,
 } from './crawler'
 import { scrollToBottom, clickNextPage } from './google'
-import { requestManager } from '../../services/api/request'
+import { customerDevService } from '../../services/api/customerDev'
 import style from './index.modules.scss'
 
 function CustomerDev() {
@@ -39,12 +39,13 @@ function CustomerDev() {
   useEffect(() => {
     const fetchTaskListFromStorage = async () => {
       const storedTaskList = await getTaskList()
-      if (storedTaskList) {
+      if (storedTaskList?.length > 0) {
         setTaskList(storedTaskList)
         const storedSelectedTask = await Browser.storage.local.get('selectedTask')
+
         if (storedSelectedTask.selectedTask) {
           setSelectedTask(storedSelectedTask.selectedTask)
-          form.setFieldsValue({ currentTask: storedSelectedTask.selectedTask.task_id })
+          form.setFieldsValue({ currentTask: storedSelectedTask.selectedTask.id })
         }
       }
     }
@@ -56,7 +57,7 @@ function CustomerDev() {
     // 判断关键词是否匹配
     if (selectedTask?.id) {
       const { sites = '', keywords = '' } = selectedTask
-      const siteMatched = sites.split('\n').some((site) => {
+      const siteMatched = sites?.split('\n').some((site) => {
         const regex = new RegExp(site, 'i')
         return regex.test(window.location.hostname)
       })
@@ -77,98 +78,84 @@ function CustomerDev() {
   }
 
   async function getTaskList() {
-    let taskList = await Browser.storage.local.get('taskList')
-    if (!taskList || !taskList.taskList) {
-      taskList = await fetchTaskList()
-    }
-    return taskList.taskList || []
+    let taskList = await Browser.storage.local.get('taskList')?.taskList || []
+    // if (!taskList || !taskList.taskList) {
+    taskList = await fetchTaskList()
+    // }
+    return taskList || []
   }
 
   async function fetchTaskList() {
     try {
-      const response = await requestManager.get('/api/leads/task/list', {
-        body: {},
-      })
-      console.log('Raw response from background:', response)
-      if (response === null || response === undefined || response.success !== true) {
-        throw new Error(
-          'Response from background script is null or undefined, or success is false.',
-        )
-      }
-      const taskList = response.data
-      await Browser.storage.local.set({ taskList: taskList.items })
-      setTaskList(taskList.items)
-      await Browser.storage.local.set({ selectedTask: taskList.items?.[0] || [] })
-      return taskList.items
+      const taskList = await customerDevService.getTaskList()
+      await Browser.storage.local.set({ taskList: taskList })
+      setTaskList(taskList)
+      await Browser.storage.local.set({ selectedTask: taskList?.[0] || [] })
+      return taskList
     } catch (error) {
-      console.error('Error in getData:', error)
-      throw error
+      console.error('fetchTaskList:', error)
+      // 显示更详细的错误信息
+      message.error({
+        content: `获取任务列表失败: ${error.message}}`,
+        duration: 5, // 显示时间更长，便于查看
+      })
+      // throw error
     }
   }
 
   async function updateCustomer(customerId, customerData) {
     try {
-      const response = await requestManager.post(`/api/leads/customer/${customerId}/update`, {
-        body: customerData,
-      })
-      console.log('Raw response from background:', response)
-      if (response === null || response === undefined || response.success !== true) {
-        throw new Error(
-          'Response from background script is null or undefined, or success is false.',
-        )
-      }
-      return response.data
+      return await customerDevService.updateCustomer(customerId, customerData)
     } catch (error) {
-      console.error('Error in updateCustomer:', error)
+      console.error('更新客户信息失败:', error)
       throw error
     }
   }
 
   async function handleUpdateCustomer(customerId, customerData) {
-    const updatedCustomer = await updateCustomer(customerId, customerData)
-    console.log('Updated Customer:', updatedCustomer)
+    try {
+      const updatedCustomer = await updateCustomer(customerId, customerData)
+      console.log('Updated Customer:', updatedCustomer)
+      message.success('客户信息更新成功')
+    } catch (error) {
+      // 显示更详细的错误信息
+      message.error({
+        content: `客户信息更新失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+        duration: 5,
+      })
+    }
   }
 
   async function batchCreateCustomers(customers = []) {
     try {
-      const response = await requestManager.post('/api/leads/customer/create', {
-        customers,
-      })
-      console.log('Raw response from background:', response)
-      if (response === null || response === undefined || response.success !== true) {
-        throw new Error(
-          'Response from background script is null or undefined, or success is false.',
-        )
-      }
-      return response.data
+      return await customerDevService.batchCreateCustomers(customers)
     } catch (error) {
-      console.error('Error in batchCreateCustomers:', error)
+      console.error('批量创建客户失败:', error)
       throw error
     }
   }
 
   async function deleteCustomer(customerId) {
     try {
-      const response = await requestManager.post(`/api/leads/customer/${customerId}/delete`, {
-        body: {},
-      })
-      console.log('Raw response from background:', response)
-      if (response === null || response === undefined || response.success !== true) {
-        throw new Error(
-          'Response from background script is null or undefined, or success is false.',
-        )
-      }
-      return response.data
+      return await customerDevService.deleteCustomer(customerId)
     } catch (error) {
-      console.error('Error in deleteCustomer:', error)
+      console.error('删除客户失败:', error)
       throw error
     }
   }
 
   async function handleDeleteCustomer(customerId) {
-    const deletedCustomer = await deleteCustomer(customerId)
-    console.log('Deleted Customer:', deletedCustomer)
-    setEmailList(emailList.filter((email) => email !== customerId))
+    try {
+      await deleteCustomer(customerId)
+      message.success('客户删除成功')
+      setEmailList(emailList.filter((email) => email !== customerId))
+    } catch (error) {
+      // 显示更详细的错误信息
+      message.error({
+        content: `客户删除失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+        duration: 5,
+      })
+    }
   }
 
   const extractContactInfoFromPage = () => {
@@ -222,66 +209,81 @@ function CustomerDev() {
     try {
       const createdCustomers = await batchCreateCustomers(customersToCreate)
       console.log('Created Customers:', createdCustomers)
+      message.success('客户创建成功')
     } catch (error) {
       console.error('Error in handleBatchCreate:', error)
+      // 显示更详细的错误信息
+      message.error({
+        content: `客户创建失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+        duration: 5,
+      })
     }
   }
 
   const handleSubmitLeads = async () => {
     try {
-      // 构建 Odoo JSON-RPC 请求
-      const payload = {
-        jsonrpc: '2.0',
-        method: 'call',
-        params: {
-          model: 'crm.lead',
-          method: 'create',
-          args: [
-            {
-              name: '线索标题', // 根据实际数据替换
-              contact_name: '联系人姓名',
-              email_from: '联系人邮箱',
-              phone: '联系电话',
-              description: '线索描述',
-              // 其他需要的字段...
-            },
-          ],
-          kwargs: {},
-        },
-        id: new Date().getTime(), // 请求ID
-      }
+      // 构建线索数据
+      const leadData = {
+        // 联系人信息
+        "user_name": "张三11",                           // 联系人姓名（必填）
+        "user_function": "销售总监",                    // 联系人职位
+        "user_email": "zhangsan@example.com",         // 联系人邮箱
+        "user_phone": "13800138000",                  // 联系人电话
+        "user_mobile": "13900139000",                 // 联系人手机
+        "user_website": "https://personal.example.com", // 联系人网站
+        "user_street": "朝阳区建国路88号",              // 联系人地址
+        "user_street2": "2号楼3层",                    // 联系人地址2
+        "user_city": "北京",                           // 联系人城市
+        "user_country_id": 233,                        // 联系人国家ID
+        "user_state_id": 13,                          // 联系人省份ID
+        "user_title_id": 3,                           // 联系人称谓ID
 
-      // 发送请求到 background script
-      const response = await Browser.runtime.sendMessage({
-        action: 'apiRequest',
-        request: {
-          method: 'POST',
-          url: 'http://localhost:8069/web/dataset/call_kw', // Odoo的标准RPC接口
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          data: JSON.stringify(payload),
-        },
-      })
-      debugger
+        // 公司信息
+        "company_name": "示例科技有限公司11",              // 公司名称（必填）
+        "company_street": "朝阳区建国路88号",           // 公司地址
+        "company_street2": "2号楼整栋",                // 公司地址2
+        "company_city": "北京",                        // 公司城市
+        "company_country_id": 233,                     // 公司国家ID
+        "company_state_id": 13,                       // 公司省份ID
+        "company_phone": "010-12345678",              // 公司电话
+        "company_email": "contact@example.com",       // 公司邮箱
+        "company_website": "https://www.example.com", // 公司网站
 
-      if (response.error) {
-        throw new Error(response.error)
-      }
+        // 线索信息
+        "thread_name": "示例科技合作机会11",               // 线索名称（必填）
+        "thread_type": "lead",                 // 线索类型：lead(线索)或opportunity(商机)
+        "linkin_site": "https://linkedin.com/in/zhangsan", // LinkedIn链接
+        "city": "北京",                                // 线索城市
+        "country_id": 233,                             // 线索国家ID
+        "state_id": 13,                               // 线索省份ID
+        "street": "朝阳区建国路88号",                   // 线索地址
+        "street2": "2号楼",                           // 线索地址2
+        "tag_names": ["潜在客户", "高价值", "科技行业"],   // 标签名称列表
+        "priority": "2",                              // 优先级：0(低)、1(中)、2(高)、3(很高)
+        // 来源信息
+        "task_id": selectedTask?.id,           // 关联的任务ID
+        "leads_source_url": window.location.href,
+        "leads_target_url": window.location.href,
+        'leads_keywords': 'bottle \n water bottle',
+      };
 
-      // 处理成功响应
-      console.log('线索创建成功:', response)
-      // 可以添加成功提示或其他操作
+      const result = await customerDevService.submitLead(leadData);
+      console.log('线索创建成功:', result);
+      message.success('线索创建成功');
     } catch (error) {
-      console.error('创建线索失败:', error)
-      // 可以添加错误提示
+      console.error('创建线索失败:', error);
+      // 显示更详细的错误信息
+      message.error({
+        content: `创建线索失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+        duration: 5,
+      });
     }
   }
 
   const handleEditEmail = (email) => {
     setEditingEmail(email)
     setNewEmailValue(email)
-    const note = getNoteForEmail(email)
+    const note = getNoteForEmail(email) || ''
     setNewNoteValue(note)
   }
 
@@ -289,15 +291,23 @@ function CustomerDev() {
     if (editingEmail) {
       const updatedEmail = newEmailValue
       const updatedNote = newNoteValue
-      await handleUpdateCustomer(editingEmail, { email: updatedEmail, notes: updatedNote })
-      setEmailList((prev) => prev.map((email) => (email === editingEmail ? updatedEmail : email)))
-      setEditingEmail(null)
-      setNewEmailValue('')
-      setNewNoteValue('')
+      try {
+        await handleUpdateCustomer(editingEmail, { email: updatedEmail, notes: updatedNote })
+        setEmailList((prev) => prev.map((email) => (email === editingEmail ? updatedEmail : email)))
+        setEditingEmail(null)
+        setNewEmailValue('')
+        setNewNoteValue('')
+      } catch (error) {
+        // 显示更详细的错误信息
+        message.error({
+          content: `更新邮箱失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+          duration: 5,
+        })
+      }
     }
   }
 
-  const getNoteForEmail = (email) => {
+  const getNoteForEmail = () => {
     // 这里应该实现获取邮箱对应注释的逻辑
     // 暂时返回空字符串
     return ''
@@ -320,14 +330,15 @@ function CustomerDev() {
               },
             ]}
             style={{ marginBottom: 0 }}
+            defaultValue={taskList?.[0]?.id}
           >
             <Select
               placeholder="请选择挖掘任务"
               onChange={handleTaskSelect}
               style={{ width: 200, marginBottom: '16px' }}
             >
-              {taskList.map((task) => (
-                <Select.Option key={task.task_id} value={task.task_id}>
+              {taskList?.map((task) => (
+                <Select.Option key={task.id} value={task.id}>
                   {task.name}
                 </Select.Option>
               ))}
