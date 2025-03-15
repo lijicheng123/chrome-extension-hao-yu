@@ -156,13 +156,15 @@ async function executeApi(session, port, config) {
 
 Browser.runtime.onMessage.addListener(async (message, sender) => {
   if (message.action === 'apiRequest') {
-    const { id, method, url, data, headers, params } = message.request
+    const { id, method, url, data, headers, params, type = '' } = message.request
     // const userInfo = await configManager.getUserInfo()
     let fullUrl = url
     if (params) {
       const queryString = new URLSearchParams(params).toString()
       fullUrl += (fullUrl.includes('?') ? '&' : '?') + queryString
     }
+
+    let bodyData = data
 
     const options = {
       method,
@@ -174,8 +176,17 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
     }
 
     if (data && (method === 'POST' || method === 'PUT')) {
-      options.body = data
+      bodyData = data
     }
+    debugger
+    if (type === 'odoo') {
+      bodyData = {
+        jsonrpc: '2.0',
+        method: 'call',
+        params: data,
+      }
+    }
+    options.body = JSON.stringify(bodyData)
 
     fetch(fullUrl, options)
       .then((response) => response.json())

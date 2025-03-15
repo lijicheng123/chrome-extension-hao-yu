@@ -1,4 +1,4 @@
-import { message } from 'antd'
+// import { message } from 'antd'
 import Browser from 'webextension-polyfill'
 import { API_CONFIG } from './config'
 class RequestManager {
@@ -99,8 +99,8 @@ class RequestManager {
         // GET请求将body转换为查询参数
         params = { ...params, ...body }
       } else {
-        // 其他请求JSON序列化
-        processedBody = JSON.stringify(body)
+        // 其他请求到background再JSON序列化
+        processedBody = body
       }
     }
 
@@ -122,15 +122,15 @@ class RequestManager {
     const processedOptions = await this.prepareRequestOptions(options)
     const url = this.buildUrl(endpoint, processedOptions.params)
     const requestId = this._requestId++
-
     // 构建请求参数
     const requestOptions = {
       headers: processedOptions.headers,
       data: processedOptions.body,
       params: processedOptions.params,
+      type: processedOptions.type,
     }
-
-    return new Promise(async (resolve, reject) => {
+    // TODO: 在这里统一处理错误
+    return new Promise((resolve, reject) => {
       try {
         // 设置回调
         this._callbacks[requestId] = {
@@ -146,25 +146,85 @@ class RequestManager {
               reject(new Error('资源不存在'))
             } else if (response.code === 429) {
               reject(new Error('请求过于频繁'))
+            } else if (processedOptions.type === 'odoo') {
+              if (response.error) {
+                // 创建一个自定义错误对象，包含更多详细信息
+                const errorObj = new Error(`Odoo请求失败: ${response.error.message || '未知错误'}`)
+                // 添加额外的错误信息
+                errorObj.details = response.error.data || {}
+                errorObj.code = response.error.code
+                errorObj.type = 'odoo_error'
+                errorObj.originalError = response.error
+                // 记录详细错误到控制台，方便调试
+                console.error('request错误:', {
+                  message: response.error.message,
+                  data: response.error.data,
+                  code: response.error.code,
+                  request: {
+                    url,
+                    method: processedOptions.method,
+                    body: processedOptions.body,
+                  },
+                })
+                reject(errorObj)
+              } else {
+                resolve(response.result)
+              }
             } else {
               resolve(response)
             }
           },
-          reject: (error) => reject(new Error(error.message || '请求失败')),
+          reject: (error) => {
+            // 创建一个包含更多信息的错误对象
+            const errorObj = new Error(error.message || '请求失败')
+            errorObj.originalError = error
+            errorObj.request = {
+              url,
+              method: processedOptions.method,
+              body: processedOptions.body,
+            }
+            // 记录详细错误到控制台
+            console.error('request reject错误:', errorObj)
+            reject(errorObj)
+          },
         }
 
-        // 发送消息
-        await Browser.runtime.sendMessage({
-          action: 'apiRequest',
-          request: {
-            id: requestId,
-            method: processedOptions.method,
-            url,
-            ...requestOptions,
-          },
-        })
+        // 发送消息让background去请求
+        Browser.runtime
+          .sendMessage({
+            action: 'apiRequest',
+            request: {
+              id: requestId,
+              method: processedOptions.method,
+              url,
+              ...requestOptions,
+            },
+          })
+          .catch((error) => {
+            // 创建一个包含更多信息的错误对象
+            const errorObj = new Error(error.message || '请求发送失败')
+            errorObj.originalError = error
+            errorObj.request = {
+              url,
+              method: processedOptions.method,
+              body: processedOptions.body,
+            }
+            // 记录详细错误到控制台
+            console.error('请求发送详细错误:', errorObj)
+            reject(errorObj)
+          })
       } catch (error) {
-        reject(new Error(error.message || '请求失败'))
+        // 创建一个包含更多信息的错误对象
+        const errorObj = new Error(error.message || '请求异常')
+        errorObj.originalError = error
+        errorObj.request = {
+          url,
+          method: processedOptions.method,
+          body: processedOptions.body,
+        }
+        // 记录详细错误到控制台
+        console.error('请求异常详细错误:', errorObj)
+        reject(errorObj)
       }
     })
   }
@@ -191,6 +251,16 @@ class RequestManager {
     })
   }
 
+  /**
+   * odoo请求快捷方法
+   */
+  async odooCall(endpoint, body = {}, options = { type: 'odoo' }) {
+    return this.request(endpoint, {
+      method: 'POST',
+      body,
+      ...options,
+    })
+  }
   /**
    * PUT请求快捷方法
    */
