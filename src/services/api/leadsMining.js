@@ -126,47 +126,6 @@ class LeadsMiningService {
    */
   async submitLead(leadData = {}) {
     try {
-      // 构建完整的请求数据，包含所有必要字段
-      const requestData = {
-        // 联系人信息
-        user_name: leadData.user_name || '', // 联系人姓名（必填）
-        user_function: leadData.user_function || '', // 联系人职位
-        user_email: leadData.user_email || '', // 联系人邮箱
-        user_phone: leadData.user_phone || '', // 联系人电话
-        user_mobile: leadData.user_mobile || '', // 联系人手机
-        user_website: leadData.user_website || '', // 联系人网站
-        user_street: leadData.user_street || '', // 联系人地址
-        user_street2: leadData.user_street2 || '', // 联系人地址2
-        user_city: leadData.user_city || '', // 联系人城市
-        user_country_id: leadData.user_country_id || null, // 联系人国家ID
-        user_state_id: leadData.user_state_id || null, // 联系人省份ID
-        user_title_id: leadData.user_title_id || null, // 联系人称谓ID
-
-        // 公司信息
-        company_name: leadData.company_name || '', // 公司名称（必填）
-        company_street: leadData.company_street || '', // 公司地址
-        company_street2: leadData.company_street2 || '', // 公司地址2
-        company_city: leadData.company_city || '', // 公司城市
-        company_country_id: leadData.company_country_id || null, // 公司国家ID
-        company_state_id: leadData.company_state_id || null, // 公司省份ID
-        company_phone: leadData.company_phone || '', // 公司电话
-        company_email: leadData.company_email || '', // 公司邮箱
-        company_website: leadData.company_website || '', // 公司网站
-
-        // 线索信息
-        thread_name: leadData.thread_name || '', // 线索名称（必填）
-        thread_type: leadData.thread_type || 'opportunity', // 线索类型：lead(线索)或opportunity(商机)
-        linkin_site: leadData.linkin_site || '', // LinkedIn链接
-        city: leadData.city || '', // 线索城市
-        country_id: leadData.country_id || null, // 线索国家ID
-        state_id: leadData.state_id || null, // 线索省份ID
-        street: leadData.street || '', // 线索地址
-        street2: leadData.street2 || '', // 线索地址2
-        tag_names: leadData.tag_names || [], // 标签名称列表
-        priority: leadData.priority || '1', // 优先级：0(低)、1(中)、2(高)、3(很高)
-        task_id: leadData.task_id || null, // 关联的任务ID
-      }
-
       // 验证必填字段
       if (!leadData.user_name) {
         throw new Error('联系人姓名不能为空')
