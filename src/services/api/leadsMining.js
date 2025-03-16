@@ -3,7 +3,7 @@ import { requestManager } from './request'
 /**
  * 客户开发 API 服务
  */
-class CustomerDevService {
+class LeadsMiningService {
   /**
    * 获取任务列表
    * @returns {Promise<Array>} 任务列表
@@ -39,7 +39,7 @@ class CustomerDevService {
       console.log('getTaskList response:', response)
       return response.records || []
     } catch (error) {
-      console.error('customerDev:获取任务列表失败:getTaskList:catch:', {
+      console.error('leadsMining:获取任务列表失败:getTaskList:catch:', {
         message: error.message,
         details: error.details,
         code: error.code,
@@ -263,4 +263,4 @@ class CustomerDevService {
   }
 }
 
-export const customerDevService = new CustomerDevService()
+export const customerDevService = new LeadsMiningService()

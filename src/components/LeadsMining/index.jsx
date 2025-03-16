@@ -25,7 +25,7 @@ import { scrollToBottom, clickNextPage } from './google'
 import { customerDevService } from '../../services/api/leadsMining'
 import style from './index.modules.scss'
 
-function CustomerDev() {
+function LeadsMining() {
   const [form] = Form.useForm()
   const Item = Form.Item
 
@@ -391,4 +391,4 @@ function CustomerDev() {
   )
 }
 
-export default CustomerDev
+export default LeadsMining

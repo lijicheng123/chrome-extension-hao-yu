@@ -14,7 +14,7 @@ import { initSession } from '../../services/init-session.mjs'
 import { findLastIndex } from 'lodash-es'
 import { generateAnswersWithBingWebApi } from '../../services/apis/bing-web.mjs'
 import { handlePortError } from '../../services/wrappers.mjs'
-import CustomerDev from '../CustomerDev'
+import LeadsMining from '../LeadsMining'
 import { WINDOW_TYPE } from '../../constants/index.jsx'
 
 const logo = Browser.runtime.getURL('logo.png')
@@ -554,7 +554,7 @@ function ConversationCard(props) {
         </p>
       ) : windowType === WINDOW_TYPE.CUSTOMER_DEV ? (
         <>
-          <CustomerDev />
+            <LeadsMining />
         </>
       ) : (
         <InputBox

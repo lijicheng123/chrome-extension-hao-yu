@@ -516,7 +516,7 @@ async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
   )
 }
 
-async function renderCustomerDev() {
+async function renderLeadsMining() {
   renderFloatingToolbar({ x: 0, y: 0, windowType: WINDOW_TYPE.CUSTOMER_DEV })
 }
 
@@ -579,8 +579,8 @@ async function run() {
   prepareForJumpBackNotification()
 
   setTimeout(() => {
-    // 渲染 customerDev
-    // renderCustomerDev()
+    // 渲染 leadsMining
+    // renderLeadsMining()
   }, 3000)
 }
 
