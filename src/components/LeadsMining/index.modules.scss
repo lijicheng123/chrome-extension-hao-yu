@@ -1,9 +1,33 @@
 .email-list {
-  padding: 12px;
+  padding: 16px;
   overflow-y: auto;
+
+  &-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
-.email-list-card {
-  margin-bottom: 12px;
+
+.task-status {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.control-buttons {
   display: flex;
-  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.marked-email {
+  background-color: rgba(255, 255, 0, 0.3);
+  border: 1px dashed #f00;
+  padding: 2px 4px;
+  border-radius: 2px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: rgba(255, 255, 0, 0.5);
+  }
 }

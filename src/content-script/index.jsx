@@ -580,8 +580,8 @@ async function run() {
 
   setTimeout(() => {
     // 渲染 leadsMining
-    // renderLeadsMining()
-  }, 3000)
+    renderLeadsMining()
+  }, 1000)
 }
 
 run()

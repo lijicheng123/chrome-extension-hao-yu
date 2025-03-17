@@ -1,10 +1,17 @@
-// 1. 提取页面文本
+/**
+ * 提取页面文本
+ * @returns {string} 页面文本内容
+ */
 export function getPageText() {
   const bodyText = document.body.innerText
   return bodyText
 }
 
-// 2. 从文本中匹配邮箱地址
+/**
+ * 从文本中匹配邮箱地址
+ * @param {string} text - 要匹配的文本
+ * @returns {string[]} 匹配到的邮箱地址数组
+ */
 export function matchEmailsInText(text) {
   // 更完善的邮箱正则表达式
   const emailRegEx = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi
@@ -38,20 +45,54 @@ export function matchEmailsInText(text) {
   return filteredMatches
 }
 
-// 3. 删除重复的邮箱地址
+/**
+ * 删除重复的邮箱地址
+ * @param {string[]} array - 邮箱地址数组
+ * @returns {string[]} 去重后的邮箱地址数组
+ */
 export function removeDuplicates(array) {
   const uniqueEmails = Array.from(new Set(array))
-  setTimeout(() => {
-    markEmails(uniqueEmails)
-  }, 1000)
+
+  // 只在搜索结果页面（深度为0）标记邮箱，避免在详情页重复标记
+  const urlParams = new URLSearchParams(window.location.search)
+  const pageDepth = urlParams.get('leadsMining_pageDepth')
+
+  if (pageDepth === null || pageDepth === '0') {
+    setTimeout(() => {
+      markEmails(uniqueEmails)
+    }, 1000)
+  }
+
   return uniqueEmails
 }
 
-// 标记页面中的邮箱地址
+// 用于跟踪已标记的邮箱，防止重复标记
+const markedEmailsSet = new Set()
+
+/**
+ * 标记页面中的邮箱地址
+ * @param {string[]} emails - 邮箱地址数组
+ * @returns {Element[]} 标记的邮箱元素数组
+ */
 export function markEmails(emails) {
   const markedEmails = []
 
+  // 检查是否已经运行过标记操作
+  if (document.querySelector('.marked-email-container')) {
+    console.log('页面已经包含标记的邮箱，跳过重复标记')
+    return markedEmails
+  }
+
   emails.forEach((email) => {
+    // 检查此邮箱是否已被标记
+    if (markedEmailsSet.has(email)) {
+      console.log(`邮箱 ${email} 已被标记，跳过`)
+      return
+    }
+
+    // 将邮箱添加到已标记集合
+    markedEmailsSet.add(email)
+
     const emailRegExp = new RegExp(
       '\\b' + email.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\b',
       'g',
@@ -65,13 +106,26 @@ export function markEmails(emails) {
 
     while ((node = walker.nextNode())) {
       if (emailRegExp.test(node.nodeValue)) {
-        nodesToReplace.push(node)
+        // 检查父节点是否已经在处理列表中
+        const parent = node.parentNode
+        if (
+          parent &&
+          !parent.classList?.contains('marked-email-container') &&
+          !parent.closest('.marked-email-container')
+        ) {
+          nodesToReplace.push(node)
+        }
       }
     }
 
     nodesToReplace.forEach((textNode) => {
       const parent = textNode.parentNode
-      if (parent && !parent.classList?.contains('marked-email-container')) {
+      // 额外检查，确保父节点不在已标记的容器内
+      if (
+        parent &&
+        !parent.classList?.contains('marked-email-container') &&
+        !parent.closest('.marked-email-container')
+      ) {
         const content = textNode.nodeValue
         const fragment = document.createDocumentFragment()
         let lastIndex = 0
@@ -122,7 +176,10 @@ export function markEmails(emails) {
   return markedEmails
 }
 
-// 滚动到邮箱元素位置
+/**
+ * 滚动到邮箱元素位置
+ * @param {Element} element - 邮箱元素
+ */
 export const scrollToEmail = (element) => {
   if (!element) return
 
@@ -132,7 +189,10 @@ export const scrollToEmail = (element) => {
   })
 }
 
-// 高亮显示邮箱元素
+/**
+ * 高亮显示邮箱元素
+ * @param {Element} element - 邮箱元素
+ */
 export const highlightEmail = (element) => {
   if (!element) return
 
@@ -149,20 +209,31 @@ export const highlightEmail = (element) => {
   }, 3000)
 }
 
-// 检查是否为有效的邮箱格式
+/**
+ * 检查是否为有效的邮箱格式
+ * @param {string} email - 邮箱地址
+ * @returns {boolean} 是否为有效邮箱
+ */
 export const isValidEmail = (email) => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
   return emailRegex.test(email)
 }
 
-// 从页面中提取所有可能的邮箱
+/**
+ * 从页面中提取所有可能的邮箱
+ * @returns {string[]} 邮箱地址数组
+ */
 export const extractAllEmails = () => {
   const pageText = getPageText()
   const emails = matchEmailsInText(pageText)
   return removeDuplicates(emails)
 }
 
-// 从特定元素中提取邮箱
+/**
+ * 从特定元素中提取邮箱
+ * @param {Element} element - 要提取邮箱的元素
+ * @returns {string[]} 邮箱地址数组
+ */
 export const extractEmailsFromElement = (element) => {
   if (!element) return []
 
@@ -171,12 +242,23 @@ export const extractEmailsFromElement = (element) => {
   return removeDuplicates(emails)
 }
 
-// 检测页面中是否存在验证码
-export const detectCaptcha = () => {
-  // 检查是否存在验证码相关元素
-  const captchaElements = document.querySelectorAll('form[action*="captcha"]')
-  const recaptchaElements = document.querySelectorAll('div.g-recaptcha, iframe[src*="recaptcha"]')
-  const captchaImages = document.querySelectorAll('img[src*="captcha"]')
+/**
+ * 清除页面上所有标记的邮箱
+ */
+export const clearMarkedEmails = () => {
+  // 清除已标记的邮箱集合
+  markedEmailsSet.clear()
 
-  return captchaElements.length > 0 || recaptchaElements.length > 0 || captchaImages.length > 0
+  // 移除所有标记的邮箱容器
+  const containers = document.querySelectorAll('.marked-email-container')
+  containers.forEach((container) => {
+    // 获取容器的文本内容
+    const text = container.textContent
+    // 创建文本节点替换容器
+    const textNode = document.createTextNode(text)
+    // 替换容器
+    if (container.parentNode) {
+      container.parentNode.replaceChild(textNode, container)
+    }
+  })
 }

@@ -52,6 +52,8 @@ import { generateAnswersWithMoonshotWebApi } from '../services/apis/moonshot-web
 import { isUsingModelName } from '../utils/model-name-convert.mjs'
 import { configManager } from '../services/config/config-manager'
 import { registerCookieListener } from './syncCookies.mjs'
+import { initLeadsMiningManager } from './leadsMiningManager.mjs'
+
 function setPortProxy(port, proxyTabId) {
   port.proxy = Browser.tabs.connect(proxyTabId)
   const proxyOnMessage = (msg) => {
@@ -383,3 +385,8 @@ registerPortListener(async (session, port, config) => await executeApi(session, 
 registerCommands()
 refreshMenu()
 registerCookieListener()
+
+// 初始化线索挖掘管理器
+initLeadsMiningManager().catch((error) => {
+  console.error('初始化线索挖掘管理器失败:', error)
+})
