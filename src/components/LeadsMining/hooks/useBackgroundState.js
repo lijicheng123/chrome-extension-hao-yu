@@ -104,12 +104,13 @@ export const useBackgroundState = (selectedTask) => {
   // 从background获取任务状态
   const getStateFromBackground = useCallback(async () => {
     if (!selectedTask?.id) return
-
     try {
       // 使用新的消息传递方式
       const state = await sendMessageToBackground('LEADS_MINING_GET_STATE', {
         taskId: selectedTask.id,
       })
+
+      console.log('getStateFromBackground state =========>', state)
 
       if (state) {
         setTaskStatus(state.taskStatus || 'idle')
@@ -125,6 +126,8 @@ export const useBackgroundState = (selectedTask) => {
         const response = await sendMessageToBackground('LEADS_MINING_GET_EMAILS', {
           taskId: selectedTask.id,
         })
+
+        console.log('getEmailListFromBackground response =========>', response)
 
         if (response && response.emails) {
           setEmailList(response.emails)
@@ -261,14 +264,24 @@ export const useBackgroundState = (selectedTask) => {
       if (!selectedTask?.id || !url) return false
 
       try {
+        console.log(`正在检查URL是否已处理: ${url}`, `任务ID: ${selectedTask.id}`)
+
         const response = await sendMessageToBackground('LEADS_MINING_CHECK_URL', {
           taskId: selectedTask.id,
           url,
         })
 
-        return response && response.isProcessed
+        console.log('isUrlProcessed response =========>', response, `URL: ${url}`)
+
+        // 添加额外检查，确保返回的response是预期格式
+        if (!response || typeof response.isProcessed !== 'boolean') {
+          console.warn('检查URL处理状态时收到异常响应:', response, `URL: ${url}`)
+          return false
+        }
+
+        return response.isProcessed
       } catch (error) {
-        console.error('检查URL失败:', error)
+        console.error('检查URL失败:', error, `URL: ${url}`)
         return false
       }
     },

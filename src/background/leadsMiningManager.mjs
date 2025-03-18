@@ -128,7 +128,17 @@ function registerMessageListeners() {
           break
 
         case 'LEADS_MINING_CHECK_URL':
-          response = { isProcessed: handleCheckUrl(data.taskId, data.url) }
+          console.log(`收到检查URL请求: ${data.url}, 任务ID: ${data.taskId}`)
+          if (!data.taskId || !data.url) {
+            console.warn('检查URL请求缺少taskId或url参数')
+            response = { isProcessed: false }
+          } else {
+            const isProcessed = handleCheckUrl(data.taskId, data.url)
+            console.log(
+              `URL处理状态检查结果: ${isProcessed ? '已处理' : '未处理'}, URL: ${data.url}`,
+            )
+            response = { isProcessed }
+          }
           break
 
         case 'LEADS_MINING_REGISTER_URL':
@@ -300,6 +310,52 @@ function handleGetEmails(taskId) {
 }
 
 /**
+ * 规范化URL，去除无关参数
+ * @param {string} url - 原始URL
+ * @returns {string} 规范化后的URL
+ */
+function normalizeUrl(url) {
+  try {
+    // 解析URL
+    const urlObj = new URL(url)
+
+    // 忽略这些常见的跟踪参数
+    const paramsToIgnore = [
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'utm_term',
+      'utm_content',
+      'fbclid',
+      'gclid',
+      'msclkid',
+      'ref',
+      'source',
+      'ref_src',
+      '_ga',
+      'yclid',
+      'leadsMining_pageDepth',
+    ]
+
+    // 移除这些参数
+    paramsToIgnore.forEach((param) => {
+      urlObj.searchParams.delete(param)
+    })
+
+    // 返回基本URL，对于大多数情况，我们只关心域名和路径
+    // 如果有必要的查询参数，保留它们
+    if (urlObj.search) {
+      return `${urlObj.origin}${urlObj.pathname}${urlObj.search}`
+    }
+
+    return `${urlObj.origin}${urlObj.pathname}`
+  } catch (error) {
+    console.error('URL规范化失败:', error)
+    return url // 如果解析失败，返回原始URL
+  }
+}
+
+/**
  * 处理检查URL是否已处理请求
  * @param {string} taskId - 任务ID
  * @param {string} url - URL地址
@@ -312,7 +368,14 @@ function handleCheckUrl(taskId, url) {
     taskStates[taskId].processedUrls = []
   }
 
-  return taskStates[taskId].processedUrls.includes(url)
+  // 规范化URL
+  const normalizedUrl = normalizeUrl(url)
+
+  // 检查规范化的URL是否已被处理
+  return taskStates[taskId].processedUrls.some((processedUrl) => {
+    const normalizedProcessedUrl = normalizeUrl(processedUrl)
+    return normalizedProcessedUrl === normalizedUrl
+  })
 }
 
 /**
@@ -327,10 +390,26 @@ function handleRegisterUrl(taskId, url) {
     taskStates[taskId].processedUrls = []
   }
 
-  // 检查URL是否已存在
-  if (!taskStates[taskId].processedUrls.includes(url)) {
+  // 规范化URL
+  const normalizedUrl = normalizeUrl(url)
+
+  // 检查URL是否已存在（比较规范化后的URL）
+  const exists = taskStates[taskId].processedUrls.some((processedUrl) => {
+    const normalizedProcessedUrl = normalizeUrl(processedUrl)
+    return normalizedProcessedUrl === normalizedUrl
+  })
+
+  // 如果URL不存在，则添加原始URL（保留完整信息）
+  if (!exists) {
     taskStates[taskId].processedUrls.push(url)
     persistTaskStates()
+    console.log(
+      `URL已注册: ${url} (规范化为: ${normalizedUrl}), 已处理URL总数: ${taskStates[taskId].processedUrls.length}`,
+    )
+  } else {
+    console.log(
+      `URL已存在，不重复注册: ${url} (规范化为: ${normalizedUrl}), 已处理URL总数: ${taskStates[taskId].processedUrls.length}`,
+    )
   }
 }
 
