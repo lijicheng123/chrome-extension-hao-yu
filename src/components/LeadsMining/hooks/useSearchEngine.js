@@ -309,6 +309,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     }
 
     if (taskStatus !== 'running') return
+
     try {
       // 如果当前页面深度大于0，说明是详情页，不执行搜索
       if (pageDepthRef.current > 0) {
@@ -374,54 +375,53 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
               el.removeAttribute('data-visited')
             })
 
-            // 存储链接及其状态信息
-            const linksWithStatus = []
-            let visitedCount = 0
+          // 存储链接及其状态信息
+          const linksWithStatus = []
+          let visitedCount = 0
 
-            // 检查每个链接是否已处理，并标记其状态
-            for (const link of searchResults) {
-              try {
-                const url = link.href
-                const processed = await isUrlProcessed(url)
-                const status = processed ? 'visited' : 'to-visit'
-                
-                // 标记链接状态
-                markLinkStatus(link, status)
-                
-                // 存储链接及其状态
-                linksWithStatus.push({
-                  link,
-                  url,
-                  status,
-                  processed
-                })
-                
-                if (processed) {
-                  visitedCount++
-                }
-              } catch (error) {
-                console.error('检查链接处理状态时出错:', error)
-                // 出错时默认标记为待访问
-                markLinkStatus(link, 'to-visit')
-                // 存储链接及其状态
-                linksWithStatus.push({
-                  link,
-                  url: link.href,
-                  status: 'to-visit',
-                  processed: false
-                })
+          // 检查每个链接是否已处理，并标记其状态
+          for (const link of searchResults) {
+            try {
+              const url = link.href
+              const processed = await isUrlProcessed(url)
+              const status = processed ? 'visited' : 'to-visit'
+
+              // 标记链接状态
+              markLinkStatus(link, status)
+
+              // 存储链接及其状态
+              linksWithStatus.push({
+                link,
+                url,
+                status,
+                processed,
+              })
+
+              if (processed) {
+                visitedCount++
               }
+            } catch (error) {
+              console.error('检查链接处理状态时出错:', error)
+              // 出错时默认标记为待访问
+              markLinkStatus(link, 'to-visit')
+              // 存储链接及其状态
+              linksWithStatus.push({
+                link,
+                url: link.href,
+                status: 'to-visit',
+                processed: false,
+              })
             }
-
-            // 更新搜索结果引用
-            searchResultsRef.current = linksWithStatus
-
-            console.log(
-              `已标记${visitedCount}个链接为已访问状态，${
-                searchResults.length - visitedCount
-              }个链接为待访问状态`,
-            )
           }
+
+          // 更新搜索结果引用
+          searchResultsRef.current = linksWithStatus
+
+          console.log(
+            `已标记${visitedCount}个链接为已访问状态，${
+              searchResults.length - visitedCount
+            }个链接为待访问状态`,
+          )
         }
       }
 

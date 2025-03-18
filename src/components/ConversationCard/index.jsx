@@ -554,7 +554,7 @@ function ConversationCard(props) {
         </p>
       ) : windowType === WINDOW_TYPE.CUSTOMER_DEV ? (
         <>
-            <LeadsMining />
+          <LeadsMining />
         </>
       ) : (
         <InputBox

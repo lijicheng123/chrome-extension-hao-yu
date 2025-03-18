@@ -78,7 +78,7 @@ function CustomerDev() {
   }
 
   async function getTaskList() {
-    let taskList = await Browser.storage.local.get('taskList')?.taskList || []
+    let taskList = (await Browser.storage.local.get('taskList')?.taskList) || []
     // if (!taskList || !taskList.taskList) {
     taskList = await fetchTaskList()
     // }
@@ -120,7 +120,9 @@ function CustomerDev() {
     } catch (error) {
       // 显示更详细的错误信息
       message.error({
-        content: `客户信息更新失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+        content: `客户信息更新失败: ${error.message}${
+          error.details ? ' - ' + JSON.stringify(error.details) : ''
+        }`,
         duration: 5,
       })
     }
@@ -152,7 +154,9 @@ function CustomerDev() {
     } catch (error) {
       // 显示更详细的错误信息
       message.error({
-        content: `客户删除失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+        content: `客户删除失败: ${error.message}${
+          error.details ? ' - ' + JSON.stringify(error.details) : ''
+        }`,
         duration: 5,
       })
     }
@@ -214,7 +218,9 @@ function CustomerDev() {
       console.error('Error in handleBatchCreate:', error)
       // 显示更详细的错误信息
       message.error({
-        content: `客户创建失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+        content: `客户创建失败: ${error.message}${
+          error.details ? ' - ' + JSON.stringify(error.details) : ''
+        }`,
         duration: 5,
       })
     }
@@ -225,58 +231,60 @@ function CustomerDev() {
       // 构建线索数据
       const leadData = {
         // 联系人信息
-        "user_name": "张三11",                           // 联系人姓名（必填）
-        "user_function": "销售总监",                    // 联系人职位
-        "user_email": "zhangsan@example.com",         // 联系人邮箱
-        "user_phone": "13800138000",                  // 联系人电话
-        "user_mobile": "13900139000",                 // 联系人手机
-        "user_website": "https://personal.example.com", // 联系人网站
-        "user_street": "朝阳区建国路88号",              // 联系人地址
-        "user_street2": "2号楼3层",                    // 联系人地址2
-        "user_city": "北京",                           // 联系人城市
-        "user_country_id": 233,                        // 联系人国家ID
-        "user_state_id": 13,                          // 联系人省份ID
-        "user_title_id": 3,                           // 联系人称谓ID
+        user_name: '张三11', // 联系人姓名（必填）
+        user_function: '销售总监', // 联系人职位
+        user_email: 'zhangsan@example.com', // 联系人邮箱
+        user_phone: '13800138000', // 联系人电话
+        user_mobile: '13900139000', // 联系人手机
+        user_website: 'https://personal.example.com', // 联系人网站
+        user_street: '朝阳区建国路88号', // 联系人地址
+        user_street2: '2号楼3层', // 联系人地址2
+        user_city: '北京', // 联系人城市
+        user_country_id: 233, // 联系人国家ID
+        user_state_id: 13, // 联系人省份ID
+        user_title_id: 3, // 联系人称谓ID
 
         // 公司信息
-        "company_name": "示例科技有限公司11",              // 公司名称（必填）
-        "company_street": "朝阳区建国路88号",           // 公司地址
-        "company_street2": "2号楼整栋",                // 公司地址2
-        "company_city": "北京",                        // 公司城市
-        "company_country_id": 233,                     // 公司国家ID
-        "company_state_id": 13,                       // 公司省份ID
-        "company_phone": "010-12345678",              // 公司电话
-        "company_email": "contact@example.com",       // 公司邮箱
-        "company_website": "https://www.example.com", // 公司网站
+        company_name: '示例科技有限公司11', // 公司名称（必填）
+        company_street: '朝阳区建国路88号', // 公司地址
+        company_street2: '2号楼整栋', // 公司地址2
+        company_city: '北京', // 公司城市
+        company_country_id: 233, // 公司国家ID
+        company_state_id: 13, // 公司省份ID
+        company_phone: '010-12345678', // 公司电话
+        company_email: 'contact@example.com', // 公司邮箱
+        company_website: 'https://www.example.com', // 公司网站
 
         // 线索信息
-        "thread_name": "示例科技合作机会11",               // 线索名称（必填）
-        "thread_type": "lead",                 // 线索类型：lead(线索)或opportunity(商机)
-        "linkin_site": "https://linkedin.com/in/zhangsan", // LinkedIn链接
-        "city": "北京",                                // 线索城市
-        "country_id": 233,                             // 线索国家ID
-        "state_id": 13,                               // 线索省份ID
-        "street": "朝阳区建国路88号",                   // 线索地址
-        "street2": "2号楼",                           // 线索地址2
-        "tag_names": ["潜在客户", "高价值", "科技行业"],   // 标签名称列表
-        "priority": "2",                              // 优先级：0(低)、1(中)、2(高)、3(很高)
+        thread_name: '示例科技合作机会11', // 线索名称（必填）
+        thread_type: 'lead', // 线索类型：lead(线索)或opportunity(商机)
+        linkin_site: 'https://linkedin.com/in/zhangsan', // LinkedIn链接
+        city: '北京', // 线索城市
+        country_id: 233, // 线索国家ID
+        state_id: 13, // 线索省份ID
+        street: '朝阳区建国路88号', // 线索地址
+        street2: '2号楼', // 线索地址2
+        tag_names: ['潜在客户', '高价值', '科技行业'], // 标签名称列表
+        priority: '2', // 优先级：0(低)、1(中)、2(高)、3(很高)
         // 来源信息
-        "task_id": selectedTask?.id,           // 关联的任务ID
-        "leads_source_url": window.location.href,
-        "leads_target_url": window.location.href,
-        'leads_keywords': 'bottle \n water bottle',
-      };
+        task_id: selectedTask?.id, // 关联的任务ID
+        leads_source_url: window.location.href,
+        leads_target_url: window.location.href,
+        leads_keywords: 'bottle \n water bottle',
+      }
 
-      const result = await customerDevService.submitLead(leadData);
-      console.log('线索创建成功:', result);
-      message.success('线索创建成功');
+      const result = await customerDevService.submitLead(leadData)
+      console.log('线索创建成功:', result)
+      message.success('线索创建成功')
     } catch (error) {
-      console.error('创建线索失败:', error);
+      console.error('创建线索失败:', error)
       // 显示更详细的错误信息
       message.error({
-        content: `创建线索失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+        content: `创建线索失败: ${error.message}${
+          error.details ? ' - ' + JSON.stringify(error.details) : ''
+        }`,
         duration: 5,
-      });
+      })
     }
   }
 
@@ -300,7 +308,9 @@ function CustomerDev() {
       } catch (error) {
         // 显示更详细的错误信息
         message.error({
-          content: `更新邮箱失败: ${error.message}${error.details ? ' - ' + JSON.stringify(error.details) : ''}`,
+          content: `更新邮箱失败: ${error.message}${
+            error.details ? ' - ' + JSON.stringify(error.details) : ''
+          }`,
           duration: 5,
         })
       }
