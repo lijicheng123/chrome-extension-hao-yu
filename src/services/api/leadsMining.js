@@ -9,7 +9,9 @@ class LeadsMiningService {
    * @returns {Promise<Array>} 任务列表
    */
   async getTaskList() {
+    console.log('LeadsMiningService.getTaskList() 开始执行')
     try {
+      console.log('准备发送odooCall请求到/web/dataset/call_kw')
       const response = await requestManager.odooCall('/web/dataset/call_kw', {
         model: 'leads.mining.task',
         method: 'web_search_read',
@@ -36,8 +38,8 @@ class LeadsMiningService {
           domain: [],
         },
       })
-      console.log('getTaskList response:', response)
-      return response.records || []
+      console.log('getTaskList请求成功, 收到响应:', response)
+      return response?.result?.records || []
     } catch (error) {
       console.error('leadsMining:获取任务列表失败:getTaskList:catch:', {
         message: error.message,
@@ -45,6 +47,7 @@ class LeadsMiningService {
         code: error.code,
         type: error.type,
         request: error.request,
+        stack: error.stack,
       })
 
       throw error

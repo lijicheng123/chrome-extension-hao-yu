@@ -36,14 +36,17 @@ export const useTaskManager = () => {
   // 获取任务列表
   const getTaskList = async () => {
     let taskList = (await Browser.storage.local.get('taskList')?.taskList) || []
+
     taskList = await fetchTaskList()
     return taskList || []
   }
 
   // 从API获取任务列表
   const fetchTaskList = async () => {
+    console.log('fetchTaskList===> start')
     try {
       const taskList = await customerDevService.getTaskList()
+      console.log('fetchTaskList===> taskList', taskList)
       await Browser.storage.local.set({ taskList: taskList })
       setTaskList(taskList)
 

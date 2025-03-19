@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import Browser from 'webextension-polyfill'
+import { useState, useEffect, useCallback } from 'react'
+import { LeadsMiningContentAPI, LEADS_MINING_API } from '../../../services/messaging/leadsMining'
+import leadsMiningService from '../../../services/messaging/leadsMining'
 
 /**
  * 与background脚本通信的Hook
@@ -16,59 +17,25 @@ export const useBackgroundState = (selectedTask) => {
   const [statusMessage, setStatusMessage] = useState('')
   const [emailList, setEmailList] = useState([])
 
-  // 用于存储回调函数的引用
-  const callbacksRef = useRef({})
-  const requestIdRef = useRef(0)
-
   // 初始化消息监听器
   useEffect(() => {
-    const handleMessage = (message) => {
-      if (!message.action || message.action !== 'LEADS_MINING_RESPONSE') {
-        return
-      }
-
-      const { id, response, error } = message
-      const callback = callbacksRef.current[id]
-
-      if (callback) {
-        if (error) {
-          callback.reject(new Error(error))
-        } else {
-          callback.resolve(response)
-        }
-        delete callbacksRef.current[id]
+    // 使用消息服务监听任务被接管事件
+    const handleTaskTakenOver = (data) => {
+      console.log('收到任务被接管事件', data)
+      if (data.taskId === selectedTask?.id) {
+        setTaskStatus('paused')
+        setStatusMessage('任务已在其他标签页中启动')
       }
     }
 
-    Browser.runtime.onMessage.addListener(handleMessage)
+    // 注册消息处理器
+    leadsMiningService.registerHandler(LEADS_MINING_API.TASK_TAKEN_OVER, handleTaskTakenOver)
 
     return () => {
-      Browser.runtime.onMessage.removeListener(handleMessage)
+      // 清理处理器
+      leadsMiningService._handlers[LEADS_MINING_API.TASK_TAKEN_OVER] = undefined
     }
-  }, [])
-
-  // 发送消息到background并等待响应
-  const sendMessageToBackground = useCallback((type, data = {}) => {
-    const requestId = requestIdRef.current++
-
-    return new Promise((resolve, reject) => {
-      // 存储回调
-      callbacksRef.current[requestId] = { resolve, reject }
-
-      // 发送消息
-      Browser.runtime
-        .sendMessage({
-          action: 'LEADS_MINING_REQUEST',
-          id: requestId,
-          type,
-          data,
-        })
-        .catch((error) => {
-          delete callbacksRef.current[requestId]
-          reject(error)
-        })
-    })
-  }, [])
+  }, [selectedTask])
 
   // 初始化：从background获取任务状态
   useEffect(() => {
@@ -77,38 +44,12 @@ export const useBackgroundState = (selectedTask) => {
     }
   }, [selectedTask])
 
-  // 监听来自background的消息
-  useEffect(() => {
-    const handleMessage = (message) => {
-      if (!message.type || !message.type.startsWith('LEADS_MINING_')) {
-        return
-      }
-
-      switch (message.type) {
-        case 'LEADS_MINING_TASK_TAKEN_OVER':
-          if (message.taskId === selectedTask?.id) {
-            setTaskStatus('paused')
-            setStatusMessage('任务已在其他标签页中启动')
-          }
-          break
-      }
-    }
-
-    Browser.runtime.onMessage.addListener(handleMessage)
-
-    return () => {
-      Browser.runtime.onMessage.removeListener(handleMessage)
-    }
-  }, [selectedTask])
-
   // 从background获取任务状态
   const getStateFromBackground = useCallback(async () => {
     if (!selectedTask?.id) return
     try {
-      // 使用新的消息传递方式
-      const state = await sendMessageToBackground('LEADS_MINING_GET_STATE', {
-        taskId: selectedTask.id,
-      })
+      // 使用新的API获取任务状态
+      const state = await LeadsMiningContentAPI.getState(selectedTask.id)
 
       console.log('getStateFromBackground state =========>', state)
 
@@ -123,9 +64,7 @@ export const useBackgroundState = (selectedTask) => {
         setStatusMessage(state.statusMessage || '')
 
         // 获取邮箱列表
-        const response = await sendMessageToBackground('LEADS_MINING_GET_EMAILS', {
-          taskId: selectedTask.id,
-        })
+        const response = await LeadsMiningContentAPI.getEmails(selectedTask.id)
 
         console.log('getEmailListFromBackground response =========>', response)
 
@@ -136,7 +75,7 @@ export const useBackgroundState = (selectedTask) => {
     } catch (error) {
       console.error('获取任务状态失败:', error)
     }
-  }, [selectedTask, sendMessageToBackground])
+  }, [selectedTask])
 
   // 保存状态到background
   const saveStateToBackground = useCallback(
@@ -144,19 +83,17 @@ export const useBackgroundState = (selectedTask) => {
       if (!selectedTask?.id) return
 
       try {
-        await sendMessageToBackground('LEADS_MINING_SAVE_STATE', {
-          payload: {
-            taskId: selectedTask.id,
-            taskStatus,
-            currentSearchTerm,
-            currentCombinationIndex,
-            currentPage,
-            progress,
-            discoveredEmails,
-            captchaDetected,
-            statusMessage,
-            ...state,
-          },
+        await LeadsMiningContentAPI.saveState({
+          taskId: selectedTask.id,
+          taskStatus,
+          currentSearchTerm,
+          currentCombinationIndex,
+          currentPage,
+          progress,
+          discoveredEmails,
+          captchaDetected,
+          statusMessage,
+          ...state,
         })
       } catch (error) {
         console.error('保存任务状态失败:', error)
@@ -172,7 +109,6 @@ export const useBackgroundState = (selectedTask) => {
       discoveredEmails,
       captchaDetected,
       statusMessage,
-      sendMessageToBackground,
     ],
   )
 
@@ -181,9 +117,7 @@ export const useBackgroundState = (selectedTask) => {
     if (!selectedTask?.id) return
 
     try {
-      await sendMessageToBackground('LEADS_MINING_START_TASK', {
-        taskId: selectedTask.id,
-      })
+      await LeadsMiningContentAPI.startTask(selectedTask.id)
 
       setTaskStatus('running')
       setCaptchaDetected(false)
@@ -199,51 +133,68 @@ export const useBackgroundState = (selectedTask) => {
     } catch (error) {
       console.error('开始任务失败:', error)
     }
-  }, [
-    selectedTask,
-    currentCombinationIndex,
-    currentPage,
-    saveStateToBackground,
-    sendMessageToBackground,
-  ])
+  }, [selectedTask, currentCombinationIndex, currentPage, saveStateToBackground])
 
   // 暂停任务
   const pauseTask = useCallback(async () => {
-    setTaskStatus('paused')
-    setStatusMessage('任务已暂停')
-    await saveStateToBackground()
-  }, [saveStateToBackground])
+    if (!selectedTask?.id) return
+
+    try {
+      await LeadsMiningContentAPI.pauseTask(selectedTask.id)
+
+      setTaskStatus('paused')
+      setStatusMessage('任务已暂停')
+      await saveStateToBackground()
+    } catch (error) {
+      console.error('暂停任务失败:', error)
+    }
+  }, [selectedTask, saveStateToBackground])
 
   // 继续任务
   const resumeTask = useCallback(async () => {
-    setTaskStatus('running')
-    setStatusMessage('任务继续执行')
-    await saveStateToBackground()
-  }, [saveStateToBackground])
+    if (!selectedTask?.id) return
+
+    try {
+      await LeadsMiningContentAPI.resumeTask(selectedTask.id)
+
+      setTaskStatus('running')
+      setStatusMessage('任务继续执行')
+      await saveStateToBackground()
+    } catch (error) {
+      console.error('继续任务失败:', error)
+    }
+  }, [selectedTask, saveStateToBackground])
 
   // 停止任务
   const stopTask = useCallback(async () => {
     if (!selectedTask?.id) return
 
     try {
-      await sendMessageToBackground('LEADS_MINING_STOP_TASK', {
-        taskId: selectedTask.id,
-      })
+      await LeadsMiningContentAPI.stopTask(selectedTask.id)
 
       setTaskStatus('idle')
       setStatusMessage('任务已停止')
+      await saveStateToBackground()
     } catch (error) {
       console.error('停止任务失败:', error)
     }
-  }, [selectedTask, sendMessageToBackground])
+  }, [selectedTask, saveStateToBackground])
 
   // 完成任务
   const completeTask = useCallback(async () => {
-    setTaskStatus('completed')
-    setStatusMessage('任务已完成')
-    setProgress(100)
-    await saveStateToBackground()
-  }, [saveStateToBackground])
+    if (!selectedTask?.id) return
+
+    try {
+      await LeadsMiningContentAPI.completeTask(selectedTask.id)
+
+      setTaskStatus('completed')
+      setStatusMessage('任务已完成')
+      setProgress(100)
+      await saveStateToBackground()
+    } catch (error) {
+      console.error('完成任务失败:', error)
+    }
+  }, [selectedTask, saveStateToBackground])
 
   // 处理验证码检测
   const handleCaptchaDetected = useCallback(async () => {
@@ -266,26 +217,17 @@ export const useBackgroundState = (selectedTask) => {
       try {
         console.log(`正在检查URL是否已处理: ${url}`, `任务ID: ${selectedTask.id}`)
 
-        const response = await sendMessageToBackground('LEADS_MINING_CHECK_URL', {
-          taskId: selectedTask.id,
-          url,
-        })
+        const response = await LeadsMiningContentAPI.checkUrl(selectedTask.id, url)
 
         console.log('isUrlProcessed response =========>', response, `URL: ${url}`)
 
-        // 添加额外检查，确保返回的response是预期格式
-        if (!response || typeof response.isProcessed !== 'boolean') {
-          console.warn('检查URL处理状态时收到异常响应:', response, `URL: ${url}`)
-          return false
-        }
-
-        return response.isProcessed
+        return response
       } catch (error) {
         console.error('检查URL失败:', error, `URL: ${url}`)
         return false
       }
     },
-    [selectedTask, sendMessageToBackground],
+    [selectedTask],
   )
 
   // 注册已处理的URL
@@ -294,15 +236,12 @@ export const useBackgroundState = (selectedTask) => {
       if (!selectedTask?.id || !url) return
 
       try {
-        await sendMessageToBackground('LEADS_MINING_REGISTER_URL', {
-          taskId: selectedTask.id,
-          url,
-        })
+        await LeadsMiningContentAPI.registerUrl(selectedTask.id, url)
       } catch (error) {
         console.error('注册URL失败:', error)
       }
     },
-    [selectedTask, sendMessageToBackground],
+    [selectedTask],
   )
 
   // 注册发现的邮箱
@@ -311,10 +250,7 @@ export const useBackgroundState = (selectedTask) => {
       if (!selectedTask?.id || !email) return
 
       try {
-        await sendMessageToBackground('LEADS_MINING_REGISTER_EMAIL', {
-          taskId: selectedTask.id,
-          email,
-        })
+        await LeadsMiningContentAPI.registerEmail(selectedTask.id, email)
 
         // 更新本地邮箱列表
         if (!emailList.includes(email)) {
@@ -325,7 +261,7 @@ export const useBackgroundState = (selectedTask) => {
         console.error('注册邮箱失败:', error)
       }
     },
-    [selectedTask, emailList, sendMessageToBackground],
+    [selectedTask, emailList],
   )
 
   // 更新状态

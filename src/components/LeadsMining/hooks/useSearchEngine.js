@@ -11,6 +11,10 @@ import {
   markLinkStatus,
 } from '../utils/searchEngine'
 import { scrollToEmail, highlightEmail } from '../utils/emailExtractor'
+import {
+  leadsMiningWindowMessenger,
+  LEADS_MINING_WINDOW_ACTIONS,
+} from '../../../services/messaging/contentWindow'
 
 /**
  * 创建延时函数
@@ -252,28 +256,16 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
     // 如果有opener，发送邮箱回主页面
     if (window.opener && emails && emails.length > 0) {
-      window.opener.postMessage(
-        {
-          action: 'LEADS_MINING_EXTRACTED_EMAILS',
-          emails: emails,
-        },
-        '*',
-      )
+      leadsMiningWindowMessenger.sendExtractedEmails(window.opener, emails)
     }
   }, [extractAndProcessEmails])
 
   // 监听消息，用于从详情页接收提取的邮箱
   useEffect(() => {
-    const handleMessage = (event) => {
-      // 处理滚动和提取邮箱的请求
-      if (event.data && event.data.action === 'LEADS_MINING_SCROLL_AND_EXTRACT') {
-        console.log('收到滚动和提取邮箱的请求')
-        handleDetailPageProcessing()
-      }
-
-      // 处理提取到的邮箱
-      if (event.data && event.data.action === 'LEADS_MINING_EXTRACTED_EMAILS') {
-        const { emails } = event.data
+    // 注册窗口消息处理器
+    leadsMiningWindowMessenger.registerHandlers({
+      [LEADS_MINING_WINDOW_ACTIONS.EXTRACTED_EMAILS]: (data) => {
+        const { emails } = data
         if (emails && emails.length > 0) {
           console.log('收到详情页提取的邮箱:', emails)
 
@@ -289,12 +281,16 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
             }
           })
         }
-      }
-    }
+      },
+      [LEADS_MINING_WINDOW_ACTIONS.SCROLL_AND_EXTRACT]: () => {
+        console.log('收到滚动和提取邮箱的请求')
+        handleDetailPageProcessing()
+      },
+    })
 
-    window.addEventListener('message', handleMessage)
+    // 清理函数由ContentWindowMessenger内部处理
     return () => {
-      window.removeEventListener('message', handleMessage)
+      // 不需要手动移除事件监听器
     }
   }, [registerEmail, handleDetailPageProcessing])
 
@@ -592,17 +588,9 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     if (!detailWindow || detailWindow.closed) return
 
     try {
-      // 不再使用eval，而是使用postMessage机制
+      // 使用ContentWindowMessenger发送消息
       console.log('向详情页发送滚动和提取邮箱的消息')
-
-      // 发送消息到详情页，请求滚动和提取邮箱
-      detailWindow.postMessage(
-        {
-          action: 'LEADS_MINING_SCROLL_AND_EXTRACT',
-          depth: pageDepthRef.current + 1,
-        },
-        '*',
-      )
+      leadsMiningWindowMessenger.sendScrollAndExtract(detailWindow, pageDepthRef.current + 1)
     } catch (error) {
       console.error('处理详情页时出错:', error)
     }

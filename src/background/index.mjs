@@ -50,9 +50,13 @@ import { generateAnswersWithClaudeWebApi } from '../services/apis/claude-web.mjs
 import { generateAnswersWithMoonshotCompletionApi } from '../services/apis/moonshot-api.mjs'
 import { generateAnswersWithMoonshotWebApi } from '../services/apis/moonshot-web.mjs'
 import { isUsingModelName } from '../utils/model-name-convert.mjs'
-import { configManager } from '../services/config/config-manager'
 import { registerCookieListener } from './syncCookies.mjs'
 import { initLeadsMiningManager } from './leadsMiningManager.mjs'
+import leadsMiningService from '../services/messaging/leadsMining'
+import { ApiBackgroundHandlers } from '../services/messaging/api'
+import { UiBackgroundHandlers } from '../services/messaging/ui'
+import i18nService from '../services/messaging/i18n'
+import { AuthBackgroundHandlers } from '../services/messaging/auth'
 
 function setPortProxy(port, proxyTabId) {
   port.proxy = Browser.tabs.connect(proxyTabId)
@@ -157,61 +161,6 @@ async function executeApi(session, port, config) {
 }
 
 Browser.runtime.onMessage.addListener(async (message, sender) => {
-  if (message.action === 'apiRequest') {
-    const { id, method, url, data, headers, params, type = '' } = message.request
-    // const userInfo = await configManager.getUserInfo()
-    let fullUrl = url
-    if (params) {
-      const queryString = new URLSearchParams(params).toString()
-      fullUrl += (fullUrl.includes('?') ? '&' : '?') + queryString
-    }
-
-    let bodyData = data
-
-    const options = {
-      method,
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-    }
-
-    if (data && (method === 'POST' || method === 'PUT')) {
-      bodyData = data
-    }
-    debugger
-    if (type === 'odoo') {
-      bodyData = {
-        jsonrpc: '2.0',
-        method: 'call',
-        params: data,
-      }
-    }
-    options.body = JSON.stringify(bodyData)
-
-    fetch(fullUrl, options)
-      .then((response) => response.json())
-      .then((responseData) => {
-        // 发送响应回 content script
-        Browser.tabs.sendMessage(sender.tab.id, {
-          action: 'apiResponse',
-          id,
-          response: responseData,
-        })
-      })
-      .catch((error) => {
-        // 发送错误回 content script
-        Browser.tabs.sendMessage(sender.tab.id, {
-          action: 'apiResponse',
-          id,
-          error: error.message,
-        })
-      })
-  }
-})
-
-Browser.runtime.onMessage.addListener(async (message, sender) => {
   switch (message.type) {
     case 'FEEDBACK': {
       const token = await getChatGptAccessToken()
@@ -304,23 +253,6 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
   }
 })
 
-// 处理需要登录的消息
-Browser.runtime.onMessage.addListener(async (message) => {
-  if (message.type === 'NEED_LOGIN') {
-    const currentTab = await Browser.tabs.query({ active: true, currentWindow: true })
-    const currentUrl = currentTab[0]?.url
-
-    // 清除用户信息缓存
-    await setUserConfig({
-      userInfo: null,
-    })
-    // 打开登录页面，并传递重定向地址
-    await Browser.tabs.create({
-      url: Browser.runtime.getURL(`/options.html?redirect=${encodeURIComponent(currentUrl)}#user`),
-    })
-  }
-})
-
 try {
   Browser.webRequest.onBeforeRequest.addListener(
     (details) => {
@@ -381,10 +313,36 @@ try {
   console.log(error)
 }
 
+// 初始化消息服务
+console.log('初始化消息服务...')
+
+// 注册API处理器
+ApiBackgroundHandlers.registerHandlers()
+
+// 注册UI处理器
+UiBackgroundHandlers.registerHandlers()
+
+// 注册i18n处理器
+i18nService.registerHandlers({
+  // 示例：获取当前语言
+  GET_LANGUAGE: async () => {
+    const storage = await Browser.storage.local.get('language')
+    return storage.language || 'zh-CN'
+  },
+})
+
+// 确保在初始化leadsMiningManager之前正确加载leadsMiningService
+console.log('初始化LeadsMining消息服务...')
+leadsMiningService
+
+// 继续正常初始化
 registerPortListener(async (session, port, config) => await executeApi(session, port, config))
 registerCommands()
 refreshMenu()
 registerCookieListener()
+
+// 注册认证处理器
+AuthBackgroundHandlers.registerHandlers()
 
 // 初始化线索挖掘管理器
 initLeadsMiningManager().catch((error) => {

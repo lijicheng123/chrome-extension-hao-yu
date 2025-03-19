@@ -1,6 +1,17 @@
 import Browser from 'webextension-polyfill'
 import { requestManager } from '../api/request'
 import { API_CONFIG } from '../api/config'
+import { MessagingService } from '../messaging/index'
+
+// 创建配置消息服务
+const configService = new MessagingService('CONFIG')
+
+// 定义配置API常量
+export const CONFIG_API = {
+  LOCAL_CONFIG_UPDATED: 'LOCAL_CONFIG_UPDATED',
+  CLOUD_CONFIG_UPDATED: 'CLOUD_CONFIG_UPDATED',
+  USER_INFO_UPDATED: 'USER_INFO_UPDATED',
+}
 
 class ConfigManager {
   constructor() {
@@ -74,7 +85,7 @@ class ConfigManager {
   async saveLocalConfig(config) {
     await Browser.storage.local.set({ localConfig: config })
     this.localCache = config
-    await this.notifyConfigUpdate('LOCAL_CONFIG_UPDATED', config)
+    await this.notifyConfigUpdate(CONFIG_API.LOCAL_CONFIG_UPDATED, config)
   }
 
   async saveCloudConfig(config) {
@@ -84,11 +95,12 @@ class ConfigManager {
     })
     this.cloudCache = config
     this.lastCloudFetchTime = Date.now()
-    await this.notifyConfigUpdate('CLOUD_CONFIG_UPDATED', config)
+    await this.notifyConfigUpdate(CONFIG_API.CLOUD_CONFIG_UPDATED, config)
   }
 
-  async notifyConfigUpdate(type, config) {
-    Browser.runtime.sendMessage({ type, config })
+  async notifyConfigUpdate(action, config) {
+    // 只使用新的消息服务
+    await configService.broadcastMessage(action, { config })
   }
 
   async getLocalConfig() {
@@ -114,7 +126,7 @@ class ConfigManager {
   async saveUserInfo(userInfo) {
     await Browser.storage.local.set({ userInfo })
     this.userInfo = userInfo
-    await this.notifyConfigUpdate('USER_INFO_UPDATED', userInfo)
+    await this.notifyConfigUpdate(CONFIG_API.USER_INFO_UPDATED, userInfo)
   }
 
   async getUserInfo() {
@@ -128,8 +140,11 @@ class ConfigManager {
   async clearUserInfo() {
     await Browser.storage.local.remove('userInfo')
     this.userInfo = null
-    await this.notifyConfigUpdate('USER_INFO_UPDATED', null)
+    await this.notifyConfigUpdate(CONFIG_API.USER_INFO_UPDATED, null)
   }
 }
 
 export const configManager = new ConfigManager()
+
+// 导出服务实例，供其他模块使用
+export default configService

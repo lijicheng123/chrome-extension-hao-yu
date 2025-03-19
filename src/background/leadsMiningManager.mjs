@@ -1,4 +1,5 @@
 import Browser from 'webextension-polyfill'
+import leadsMiningService, { LEADS_MINING_API } from '../services/messaging/leadsMining'
 
 /**
  * 线索挖掘任务管理器
@@ -22,153 +23,46 @@ export async function initLeadsMiningManager() {
   // 监听标签页关闭事件
   Browser.tabs.onRemoved.addListener(handleTabRemoved)
 
-  // 注册消息监听器
-  registerMessageListeners()
+  // 注册消息处理器
+  registerMessageHandlers()
 
   console.log('线索挖掘任务管理器初始化完成')
 }
 
 /**
- * 注册消息监听器
+ * 注册消息处理器
  */
-function registerMessageListeners() {
-  // 保留原有的消息监听器，用于向前兼容
-  Browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (!message.type || !message.type.startsWith('LEADS_MINING_')) {
-      return false
-    }
+function registerMessageHandlers() {
+  // 只保留新的消息处理器
+  leadsMiningService.registerHandlers({
+    // 状态管理
+    [LEADS_MINING_API.GET_STATE]: (data) => handleGetState(data.taskId),
+    [LEADS_MINING_API.SAVE_STATE]: (data, sender) => handleSaveState(data.payload, sender.tab?.id),
 
-    const tabId = sender.tab?.id
-    let state, emails, isProcessed
+    // 任务控制
+    [LEADS_MINING_API.START_TASK]: (data, sender) => handleStartTask(data.taskId, sender.tab?.id),
+    [LEADS_MINING_API.PAUSE_TASK]: (data) => handlePauseTask(data.taskId),
+    [LEADS_MINING_API.RESUME_TASK]: (data, sender) => handleResumeTask(data.taskId, sender.tab?.id),
+    [LEADS_MINING_API.STOP_TASK]: (data) => handleStopTask(data.taskId),
+    [LEADS_MINING_API.COMPLETE_TASK]: (data) => handleCompleteTask(data.taskId),
 
-    switch (message.type) {
-      case 'LEADS_MINING_SAVE_STATE':
-        handleSaveState(message.payload, tabId)
-        sendResponse({ success: true })
-        break
+    // 邮箱管理
+    [LEADS_MINING_API.REGISTER_EMAIL]: (data) => handleRegisterEmail(data.taskId, data.email),
+    [LEADS_MINING_API.GET_EMAILS]: (data) => ({ emails: handleGetEmails(data.taskId) }),
 
-      case 'LEADS_MINING_GET_STATE':
-        state = handleGetState(message.taskId)
-        sendResponse(state)
-        break
-
-      case 'LEADS_MINING_START_TASK':
-        handleStartTask(message.taskId, tabId)
-        sendResponse({ success: true })
-        break
-
-      case 'LEADS_MINING_STOP_TASK':
-        handleStopTask(message.taskId)
-        sendResponse({ success: true })
-        break
-
-      case 'LEADS_MINING_REGISTER_EMAIL':
-        handleRegisterEmail(message.taskId, message.email)
-        sendResponse({ success: true })
-        break
-
-      case 'LEADS_MINING_GET_EMAILS':
-        emails = handleGetEmails(message.taskId)
-        sendResponse({ emails })
-        break
-
-      case 'LEADS_MINING_CHECK_URL':
-        isProcessed = handleCheckUrl(message.taskId, message.url)
-        sendResponse({ isProcessed })
-        break
-
-      case 'LEADS_MINING_REGISTER_URL':
-        handleRegisterUrl(message.taskId, message.url)
-        sendResponse({ success: true })
-        break
-    }
-
-    return true // 保持消息通道开放，以支持异步响应
-  })
-
-  // 添加新的基于回调的消息监听器
-  Browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (!message.action || message.action !== 'LEADS_MINING_REQUEST') {
-      return false
-    }
-
-    const { id, type, data } = message
-    const tabId = sender.tab?.id
-    let response = null
-    let error = null
-
-    try {
-      switch (type) {
-        case 'LEADS_MINING_SAVE_STATE':
-          handleSaveState(data.payload, tabId)
-          response = { success: true }
-          break
-
-        case 'LEADS_MINING_GET_STATE':
-          response = handleGetState(data.taskId)
-          break
-
-        case 'LEADS_MINING_START_TASK':
-          handleStartTask(data.taskId, tabId)
-          response = { success: true }
-          break
-
-        case 'LEADS_MINING_STOP_TASK':
-          handleStopTask(data.taskId)
-          response = { success: true }
-          break
-
-        case 'LEADS_MINING_REGISTER_EMAIL':
-          handleRegisterEmail(data.taskId, data.email)
-          response = { success: true }
-          break
-
-        case 'LEADS_MINING_GET_EMAILS':
-          response = { emails: handleGetEmails(data.taskId) }
-          break
-
-        case 'LEADS_MINING_CHECK_URL':
-          console.log(`收到检查URL请求: ${data.url}, 任务ID: ${data.taskId}`)
-          if (!data.taskId || !data.url) {
-            console.warn('检查URL请求缺少taskId或url参数')
-            response = { isProcessed: false }
-          } else {
-            const isProcessed = handleCheckUrl(data.taskId, data.url)
-            console.log(
-              `URL处理状态检查结果: ${isProcessed ? '已处理' : '未处理'}, URL: ${data.url}`,
-            )
-            response = { isProcessed }
-          }
-          break
-
-        case 'LEADS_MINING_REGISTER_URL':
-          handleRegisterUrl(data.taskId, data.url)
-          response = { success: true }
-          break
-
-        default:
-          error = `未知的消息类型: ${type}`
+    // URL管理
+    [LEADS_MINING_API.CHECK_URL]: (data) => {
+      console.log(`收到检查URL请求: ${data.url}, 任务ID: ${data.taskId}`)
+      if (!data.taskId || !data.url) {
+        console.warn('检查URL请求缺少taskId或url参数')
+        return { isProcessed: false }
       }
-    } catch (err) {
-      error = err.message || '处理请求时出错'
-      console.error('处理请求时出错:', err)
-    }
 
-    // 发送响应回content script
-    Browser.tabs
-      .sendMessage(tabId, {
-        action: 'LEADS_MINING_RESPONSE',
-        id,
-        response,
-        error,
-      })
-      .catch((err) => {
-        console.error('发送响应时出错:', err)
-      })
-
-    // 立即返回true，表示我们会异步处理
-    sendResponse(true)
-    return true
+      const isProcessed = handleCheckUrl(data.taskId, data.url)
+      console.log(`URL处理状态检查结果: ${isProcessed ? '已处理' : '未处理'}, URL: ${data.url}`)
+      return { isProcessed }
+    },
+    [LEADS_MINING_API.REGISTER_URL]: (data) => handleRegisterUrl(data.taskId, data.url),
   })
 }
 
@@ -178,7 +72,7 @@ function registerMessageListeners() {
  * @param {number} tabId - 标签页ID
  */
 function handleSaveState(state, tabId) {
-  if (!state || !state.taskId) return
+  if (!state || !state.taskId) return { success: false, error: '缺少必要参数' }
 
   const taskId = state.taskId
 
@@ -198,6 +92,8 @@ function handleSaveState(state, tabId) {
 
   // 持久化到存储
   persistTaskStates()
+
+  return { success: true }
 }
 
 /**
@@ -215,17 +111,14 @@ function handleGetState(taskId) {
  * @param {number} tabId - 标签页ID
  */
 function handleStartTask(taskId, tabId) {
-  if (!taskId || !tabId) return
+  if (!taskId || !tabId) return { success: false, error: '缺少必要参数' }
 
   // 检查任务是否已在其他标签页中运行
   const existingTabId = activeTaskTabs[taskId]
   if (existingTabId && existingTabId !== tabId) {
     // 通知原标签页停止任务
-    Browser.tabs
-      .sendMessage(existingTabId, {
-        type: 'LEADS_MINING_TASK_TAKEN_OVER',
-        taskId,
-      })
+    leadsMiningService
+      .sendMessageToTab(existingTabId, LEADS_MINING_API.TASK_TAKEN_OVER, { taskId })
       .catch(() => {
         // 如果发送失败，可能标签页已关闭，直接更新映射
         activeTaskTabs[taskId] = tabId
@@ -258,6 +151,69 @@ function handleStartTask(taskId, tabId) {
   }
 
   persistTaskStates()
+
+  return { success: true }
+}
+
+/**
+ * 处理暂停任务请求
+ * @param {string} taskId - 任务ID
+ */
+function handlePauseTask(taskId) {
+  if (!taskId || !taskStates[taskId]) return { success: false, error: '任务不存在' }
+
+  taskStates[taskId].taskStatus = 'paused'
+  taskStates[taskId].statusMessage = '任务已暂停'
+  taskStates[taskId].lastUpdated = Date.now()
+
+  if (activeTaskTabs[taskId]) {
+    delete activeTaskTabs[taskId]
+  }
+
+  persistTaskStates()
+
+  return { success: true }
+}
+
+/**
+ * 处理继续任务请求
+ * @param {string} taskId - 任务ID
+ * @param {number} tabId - 标签页ID
+ */
+function handleResumeTask(taskId, tabId) {
+  if (!taskId || !tabId || !taskStates[taskId]) return { success: false, error: '任务不存在' }
+
+  taskStates[taskId].taskStatus = 'running'
+  taskStates[taskId].statusMessage = '任务继续执行'
+  taskStates[taskId].lastUpdated = Date.now()
+  taskStates[taskId].tabId = tabId
+
+  activeTaskTabs[taskId] = tabId
+
+  persistTaskStates()
+
+  return { success: true }
+}
+
+/**
+ * 处理完成任务请求
+ * @param {string} taskId - 任务ID
+ */
+function handleCompleteTask(taskId) {
+  if (!taskId || !taskStates[taskId]) return { success: false, error: '任务不存在' }
+
+  taskStates[taskId].taskStatus = 'completed'
+  taskStates[taskId].statusMessage = '任务已完成'
+  taskStates[taskId].progress = 100
+  taskStates[taskId].lastUpdated = Date.now()
+
+  if (activeTaskTabs[taskId]) {
+    delete activeTaskTabs[taskId]
+  }
+
+  persistTaskStates()
+
+  return { success: true }
 }
 
 /**
@@ -265,15 +221,18 @@ function handleStartTask(taskId, tabId) {
  * @param {string} taskId - 任务ID
  */
 function handleStopTask(taskId) {
-  if (!taskId || !taskStates[taskId]) return
+  if (!taskId || !taskStates[taskId]) return { success: false, error: '任务不存在' }
 
   taskStates[taskId].taskStatus = 'idle'
+  taskStates[taskId].lastUpdated = Date.now()
 
   if (activeTaskTabs[taskId]) {
     delete activeTaskTabs[taskId]
   }
 
   persistTaskStates()
+
+  return { success: true }
 }
 
 /**
@@ -449,7 +408,7 @@ function persistTaskStates() {
  */
 function cleanupTaskStates() {
   const now = Date.now()
-  const maxAge = 7 * 24 * 60 * 60 * 1000 // 7天
+  const maxAge = 1 * 24 * 60 * 60 * 1000 // 1天
 
   for (const taskId in taskStates) {
     // 删除超过7天未更新的任务状态

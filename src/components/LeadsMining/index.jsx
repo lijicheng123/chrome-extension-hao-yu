@@ -132,6 +132,15 @@ function LeadsMining() {
               </Select>
             </Form.Item>
 
+            <Button
+              type="primary"
+              onClick={() => {
+                fetchTaskList()
+              }}
+            >
+              刷新任务
+            </Button>
+
             {!isSearchPage && taskStatus !== 'idle' && (
               <Alert
                 message="提示"

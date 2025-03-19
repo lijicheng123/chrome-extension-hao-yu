@@ -32,6 +32,9 @@ import { generateAnswersWithChatgptWebApi } from '../services/apis/chatgpt-web.m
 import WebJumpBackNotification from '../components/WebJumpBackNotification'
 import { DraggableBar } from './draggable-bar'
 import { WINDOW_TYPE } from '../constants'
+import { UI_API } from '../services/messaging/ui'
+import uiService from '../services/messaging/ui'
+import i18nService, { I18N_API } from '../services/messaging/i18n'
 
 const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
 const sideBarContainer = document.createElement('div')
@@ -290,11 +293,10 @@ async function prepareForRightClickMenu() {
     menuY = e.clientY
   })
 
-  // 别的地方PostMessage过来的
-  Browser.runtime.onMessage.addListener(async (message) => {
-    console.log('messagemessagemessage', message)
-    if (message.type === 'CREATE_CHAT') {
-      const data = message.data
+  // 注册UI消息处理器
+  uiService.registerHandlers({
+    [UI_API.CREATE_CHAT]: async (data) => {
+      console.log('接收到CREATE_CHAT消息', data)
       let prompt = ''
       if (data.itemId in toolsConfig) {
         prompt = await toolsConfig[data.itemId].genPrompt(data.selectionText)
@@ -325,8 +327,11 @@ async function prepareForRightClickMenu() {
         />,
         container,
       )
-    } else if (message.type === 'CLOSE_TOOLBAR') {
+      return { success: true }
+    },
+    [UI_API.CLOSE_TOOLBAR]: () => {
       deleteToolbar()
+      return { success: true }
     }
   })
 }
@@ -547,11 +552,13 @@ async function run() {
   await getPreferredLanguageKey().then((lang) => {
     changeLanguage(lang)
   })
-  Browser.runtime.onMessage.addListener(async (message) => {
-    if (message.type === 'CHANGE_LANG') {
-      const data = message.data
+
+  // 使用i18n服务注册语言变更处理器
+  i18nService.registerHandler(I18N_API.CHANGE_LANGUAGE, (data) => {
+    if (data && data.lang) {
       changeLanguage(data.lang)
     }
+    return { success: true }
   })
 
   // 只有在ChatGPT和Kimi的页面才执行

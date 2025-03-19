@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { isEdge, isFirefox, isMobile, isSafari, openUrl } from '../../utils/index.mjs'
 import Browser from 'webextension-polyfill'
 import PropTypes from 'prop-types'
+import { UiContentAPI } from '../../services/messaging/ui'
 
 FeaturePages.propTypes = {
   config: PropTypes.object.isRequired,
@@ -34,12 +35,7 @@ export function FeaturePages({ config, updateConfig }) {
       <button
         type="button"
         onClick={() => {
-          Browser.runtime.sendMessage({
-            type: 'OPEN_URL',
-            data: {
-              url: Browser.runtime.getURL('IndependentPanel.html'),
-            },
-          })
+          UiContentAPI.openUrl(Browser.runtime.getURL('IndependentPanel.html'))
         }}
       >
         {t('Open Conversation Page')}
@@ -48,10 +44,7 @@ export function FeaturePages({ config, updateConfig }) {
         <button
           type="button"
           onClick={() => {
-            Browser.runtime.sendMessage({
-              type: 'OPEN_CHAT_WINDOW',
-              data: {},
-            })
+            UiContentAPI.openChatWindow()
           }}
         >
           {t('Open Conversation Window')}

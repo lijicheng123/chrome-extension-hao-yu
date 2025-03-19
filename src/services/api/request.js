@@ -1,43 +1,43 @@
 // import { message } from 'antd'
 import Browser from 'webextension-polyfill'
 import { API_CONFIG } from './config'
-class RequestManager {
+import { apiClient } from '../messaging/api'
+import { authClient } from '../messaging/auth'
+
+/**
+ * API请求管理器
+ * 负责管理请求配置、认证等
+ */
+export class RequestManager {
   constructor() {
     this.baseURL = API_CONFIG.BASE_URL
     this.token = null
-    this._requestId = 0
-    this._callbacks = {}
 
-    // 初始化消息监听器
-    Browser.runtime.onMessage.addListener((message) => {
-      if (message.action === 'apiResponse') {
-        const { id, response, error } = message
-        const callback = this._callbacks[id]
-        if (callback) {
-          if (error) {
-            callback.reject(new Error(error))
-          } else {
-            callback.resolve(response)
-          }
-          delete this._callbacks[id]
-        }
-      }
-    })
+    // 设置API客户端的基础URL
+    apiClient.setBaseURL(this.baseURL)
   }
 
   async initToken() {
     const storage = await Browser.storage.local.get('authToken')
     this.token = storage.authToken
+
+    // 设置API客户端的认证令牌
+    if (this.token) {
+      apiClient.setToken(this.token)
+    }
+
     return this.token
   }
 
   async setToken(token) {
     this.token = token
+    apiClient.setToken(token)
     await Browser.storage.local.set({ authToken: token })
   }
 
   async clearToken() {
     this.token = null
+    apiClient.setToken(null)
     await Browser.storage.local.remove('authToken')
   }
 
@@ -48,7 +48,17 @@ class RequestManager {
    * @returns {string} 完整的URL
    */
   buildUrl(endpoint, params) {
-    const url = new URL(`${this.baseURL}${endpoint}`)
+    // 检查endpoint是否已经是完整URL
+    let fullUrl
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+      // 如果endpoint已经是完整URL，直接使用
+      fullUrl = endpoint
+    } else {
+      // 否则添加baseURL
+      fullUrl = `${this.baseURL}${endpoint}`
+    }
+
+    const url = new URL(fullUrl)
     if (params) {
       Object.keys(params).forEach((key) => {
         if (params[key] !== undefined && params[key] !== null) {
@@ -65,7 +75,7 @@ class RequestManager {
    * @returns {object} 处理后的请求配置
    */
   async prepareRequestOptions(options) {
-    const { method = 'GET', body, headers = {}, ...restOptions } = options
+    const { method = 'GET', body, headers = {}, type, ...restOptions } = options
     let params = options.params || {}
 
     // 确保token已初始化
@@ -108,10 +118,49 @@ class RequestManager {
       method,
       headers: { ...defaultHeaders, ...headers },
       body: processedBody,
+      ...(type ? { type } : {}),
       ...restOptions,
       params,
     }
   }
+
+  /**
+   * 处理请求响应
+   * @param {object} response - 响应对象
+   * @returns {object} 处理后的响应数据
+   * @private
+   */
+  _handleResponse(response) {
+    // 处理401未授权错误
+    if (response && response.status === 401) {
+      console.warn('API请求返回401未授权，触发登录流程')
+      authClient.needLogin()
+      throw new Error('用户未登录或登录已过期')
+    }
+
+    // 处理API错误
+    if (
+      response === null ||
+      response === undefined ||
+      (response.jsonrpc === '2.0' && response.error)
+    ) {
+      const errorObj = new Error(
+        '请求失败: ' + (response?.error?.message || response?.message || '未知错误'),
+      )
+
+      if (response?.error) {
+        errorObj.details = response.error.data
+        errorObj.code = response.error.code
+        errorObj.type = 'api_error'
+        errorObj.originalError = response.error
+      }
+
+      throw errorObj
+    }
+
+    return response
+  }
+
   /**
    * 发送请求
    * @param {string} endpoint - API端点
@@ -119,114 +168,14 @@ class RequestManager {
    * @returns {Promise} 请求响应
    */
   async request(endpoint, options = {}) {
-    const processedOptions = await this.prepareRequestOptions(options)
-    const url = this.buildUrl(endpoint, processedOptions.params)
-    const requestId = this._requestId++
-    // 构建请求参数
-    const requestOptions = {
-      headers: processedOptions.headers,
-      data: processedOptions.body,
-      params: processedOptions.params,
-      type: processedOptions.type,
-    }
-    // TODO: 在这里统一处理错误
-    return new Promise((resolve, reject) => {
-      try {
-        // 设置回调
-        this._callbacks[requestId] = {
-          resolve: async (response) => {
-            // 处理特殊状态码
-            if (response.code === 401) {
-              await this.clearToken()
-              await Browser.runtime.sendMessage({ type: 'NEED_LOGIN' })
-              reject(new Error('需要登录'))
-            } else if (response.code === 403) {
-              reject(new Error('没有权限'))
-            } else if (response.code === 404) {
-              reject(new Error('资源不存在'))
-            } else if (response.code === 429) {
-              reject(new Error('请求过于频繁'))
-            } else if (processedOptions.type === 'odoo') {
-              if (response.error) {
-                // 创建一个自定义错误对象，包含更多详细信息
-                const errorObj = new Error(`Odoo请求失败: ${response.error.message || '未知错误'}`)
-                // 添加额外的错误信息
-                errorObj.details = response.error.data || {}
-                errorObj.code = response.error.code
-                errorObj.type = 'odoo_error'
-                errorObj.originalError = response.error
-                // 记录详细错误到控制台，方便调试
-                console.error('request错误:', {
-                  message: response.error.message,
-                  data: response.error.data,
-                  code: response.error.code,
-                  request: {
-                    url,
-                    method: processedOptions.method,
-                    body: processedOptions.body,
-                  },
-                })
-                reject(errorObj)
-              } else {
-                resolve(response.result)
-              }
-            } else {
-              resolve(response)
-            }
-          },
-          reject: (error) => {
-            // 创建一个包含更多信息的错误对象
-            const errorObj = new Error(error.message || '请求失败')
-            errorObj.originalError = error
-            errorObj.request = {
-              url,
-              method: processedOptions.method,
-              body: processedOptions.body,
-            }
-            // 记录详细错误到控制台
-            console.error('request reject错误:', errorObj)
-            reject(errorObj)
-          },
-        }
+    // 首先准备请求选项
+    const preparedOptions = await this.prepareRequestOptions(options)
+    const { params, ...restOptions } = preparedOptions
+    const url = this.buildUrl(endpoint, params)
 
-        // 发送消息让background去请求
-        Browser.runtime
-          .sendMessage({
-            action: 'apiRequest',
-            request: {
-              id: requestId,
-              method: processedOptions.method,
-              url,
-              ...requestOptions,
-            },
-          })
-          .catch((error) => {
-            // 创建一个包含更多信息的错误对象
-            const errorObj = new Error(error.message || '请求发送失败')
-            errorObj.originalError = error
-            errorObj.request = {
-              url,
-              method: processedOptions.method,
-              body: processedOptions.body,
-            }
-            // 记录详细错误到控制台
-            console.error('请求发送详细错误:', errorObj)
-            reject(errorObj)
-          })
-      } catch (error) {
-        // 创建一个包含更多信息的错误对象
-        const errorObj = new Error(error.message || '请求异常')
-        errorObj.originalError = error
-        errorObj.request = {
-          url,
-          method: processedOptions.method,
-          body: processedOptions.body,
-        }
-        // 记录详细错误到控制台
-        console.error('请求异常详细错误:', errorObj)
-        reject(errorObj)
-      }
-    })
+    // 使用apiClient发送请求
+    const response = await apiClient.request(url, restOptions)
+    return this._handleResponse(response)
   }
 
   /**
@@ -234,9 +183,9 @@ class RequestManager {
    */
   async get(endpoint, params = {}, options = {}) {
     return this.request(endpoint, {
+      ...options,
       method: 'GET',
       params,
-      ...options,
     })
   }
 
@@ -245,9 +194,9 @@ class RequestManager {
    */
   async post(endpoint, body = {}, options = {}) {
     return this.request(endpoint, {
+      ...options,
       method: 'POST',
       body,
-      ...options,
     })
   }
 
@@ -255,20 +204,23 @@ class RequestManager {
    * odoo请求快捷方法
    */
   async odooCall(endpoint, body = {}, options = { type: 'odoo' }) {
-    return this.request(endpoint, {
-      method: 'POST',
+    console.log('odooCall调用:', {
+      endpoint,
       body,
-      ...options,
+      options,
     })
+    const result = await this.post(endpoint, body, options)
+    console.log('odooCall响应:', result)
+    return result
   }
   /**
    * PUT请求快捷方法
    */
   async put(endpoint, body = {}, options = {}) {
     return this.request(endpoint, {
+      ...options,
       method: 'PUT',
       body,
-      ...options,
     })
   }
 
@@ -277,9 +229,9 @@ class RequestManager {
    */
   async delete(endpoint, params = {}, options = {}) {
     return this.request(endpoint, {
+      ...options,
       method: 'DELETE',
       params,
-      ...options,
     })
   }
 
@@ -287,14 +239,35 @@ class RequestManager {
    * 文件上传快捷方法
    */
   async upload(endpoint, files, options = {}) {
-    return this.request(endpoint, {
+    // 准备基本选项，但不处理body (文件会单独处理)
+    const baseOptions = {
+      ...options,
       method: 'POST',
       headers: {
-        'Content-Type': 'multipart/form-data',
+        // 移除Content-Type,让浏览器自动设置multipart/form-data
+        ...(options.headers || {}),
       },
-      body: files,
-      ...options,
+    }
+    const preparedOptions = await this.prepareRequestOptions(baseOptions)
+    const { params, ...restOptions } = preparedOptions
+    const url = this.buildUrl(endpoint, params)
+
+    // 创建FormData
+    const formData = new FormData()
+    files.forEach((file) => {
+      formData.append('files', file)
     })
+
+    // 确保Content-Type未设置，让浏览器自动处理
+    if (restOptions.headers && restOptions.headers['Content-Type']) {
+      delete restOptions.headers['Content-Type']
+    }
+
+    const response = await apiClient.request(url, {
+      ...restOptions,
+      body: formData,
+    })
+    return this._handleResponse(response)
   }
 }
 
