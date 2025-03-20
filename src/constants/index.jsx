@@ -1,7 +1,7 @@
 /**
  * @description: 窗口类型
- * CUSTOMER_DEV 客户开发
+ * LEADS_MINING 线索挖掘
  */
 export const WINDOW_TYPE = {
-  CUSTOMER_DEV: 'customer-dev',
+  LEADS_MINING: 'leads-mining',
 }

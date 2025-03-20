@@ -552,7 +552,7 @@ function ConversationCard(props) {
             <SearchIcon size="small" /> {t('Ask ChatGPT')}
           </span>
         </p>
-      ) : windowType === WINDOW_TYPE.CUSTOMER_DEV ? (
+      ) : windowType === WINDOW_TYPE.LEADS_MINING ? (
         <>
           <LeadsMining />
         </>

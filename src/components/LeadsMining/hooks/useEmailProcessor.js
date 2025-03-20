@@ -17,6 +17,7 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   const [editingEmail, setEditingEmail] = useState(null)
   const [newEmailValue, setNewEmailValue] = useState('')
   const [newNoteValue, setNewNoteValue] = useState('')
+  const [currentPageEmails, setCurrentPageEmails] = useState([])
 
   const { currentSearchTerm, handleCaptchaDetected, taskStatus, emailList, registerEmail } =
     backgroundState
@@ -54,16 +55,76 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
     }
   }, [taskStatus, handleCaptchaDetected, emailList, registerEmail])
 
+  // 从当前页面提取邮箱，不依赖任务状态
+  const extractCurrentPageEmails = useCallback(() => {
+    try {
+      // 清除之前标记的邮箱，防止重复标记
+      clearMarkedEmails()
+      const pageText = getPageText()
+      const emails = matchEmailsInText(pageText)
+      const uniqueEmails = removeDuplicates(emails)
+
+      setCurrentPageEmails(uniqueEmails)
+      return uniqueEmails
+    } catch (error) {
+      console.error('提取当前页面邮箱时出错:', error)
+      return []
+    }
+  }, [])
+
+  // 提交当前页面所有邮箱线索
+  const submitCurrentPageEmails = useCallback(async () => {
+    if (!selectedTask) {
+      message.error('请先选择任务')
+      return
+    }
+
+    const emails = extractCurrentPageEmails()
+    if (emails.length === 0) {
+      message.info('当前页面未发现邮箱')
+      return
+    }
+
+    try {
+      for (const email of emails) {
+        // 使用submitLeadWithTemplate方法，保留示例数据
+        await customerDevService.submitLeadWithTemplate({
+          user_email: email, // 覆盖联系人邮箱
+          company_email: email, // 覆盖公司邮箱
+          task_id: selectedTask.id, // 关联的任务ID
+          leads_source_url: window.location.href,
+          leads_target_url: window.location.href,
+          leads_keywords: currentSearchTerm || window.location.pathname,
+          thread_name: `${currentSearchTerm} - ${email}`,
+        })
+
+        // 注册到本地列表
+        if (!emailList.includes(email)) {
+          registerEmail(email)
+        }
+      }
+
+      message.success(`成功提交 ${emails.length} 个邮箱线索`)
+    } catch (error) {
+      console.error('提交邮箱线索时出错:', error)
+      message.error(`提交邮箱线索失败: ${error.message}`)
+    }
+  }, [selectedTask, currentSearchTerm, emailList, registerEmail])
+
   // 提交邮箱线索到服务器
   const submitEmailLead = useCallback(
     async (email) => {
       if (!selectedTask) return
 
       try {
-        await customerDevService.submitEmailLead({
-          email,
-          searchTerm: currentSearchTerm,
-          taskId: selectedTask.id,
+        // 使用submitLeadWithTemplate方法，保留示例数据
+        await customerDevService.submitLeadWithTemplate({
+          user_email: email, // 覆盖联系人邮箱
+          company_email: email, // 覆盖公司邮箱
+          task_id: selectedTask.id, // 关联的任务ID
+          leads_source_url: window.location.href,
+          leads_target_url: window.location.href,
+          leads_keywords: currentSearchTerm || window.location.pathname,
         })
       } catch (error) {
         console.error('提交邮箱线索时出错:', error)
@@ -73,44 +134,47 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   )
 
   // 打开编辑邮箱模态框
-  const openEditModal = useCallback((email) => {
+  const handleEditEmail = useCallback((email) => {
     setEditingEmail(email)
     setNewEmailValue(email)
     setNewNoteValue('')
   }, [])
 
-  // 关闭编辑邮箱模态框
-  const closeEditModal = useCallback(() => {
+  // 更新邮箱
+  const handleUpdateEmail = useCallback(() => {
+    // 实现邮箱更新逻辑
     setEditingEmail(null)
-    setNewEmailValue('')
-    setNewNoteValue('')
   }, [])
 
-  // 保存编辑后的邮箱
-  const saveEditedEmail = useCallback(async () => {
-    if (!editingEmail || !newEmailValue) return
+  // 删除客户
+  const handleDeleteCustomer = useCallback(
+    (email) => {
+      // 从当前页面邮箱列表中删除
+      setCurrentPageEmails((prev) => prev.filter((e) => e !== email))
 
-    try {
-      // 更新邮箱
-      // TODO: 实现邮箱更新逻辑
-
-      message.success('邮箱更新成功')
-      closeEditModal()
-    } catch (error) {
-      console.error('保存编辑邮箱时出错:', error)
-      message.error('邮箱更新失败')
-    }
-  }, [editingEmail, newEmailValue, newNoteValue, closeEditModal])
+      // 如果在注册的邮箱列表中，也从中删除
+      if (emailList.includes(email)) {
+        // 这里可以调用后端API删除邮箱
+        message.success(`已从列表中删除: ${email}`)
+      }
+    },
+    [emailList],
+  )
 
   return {
     extractAndProcessEmails,
+    extractCurrentPageEmails,
+    submitCurrentPageEmails,
+    currentPageEmails,
     editingEmail,
     newEmailValue,
     newNoteValue,
     setNewEmailValue,
     setNewNoteValue,
-    openEditModal,
-    closeEditModal,
-    saveEditedEmail,
+    handleEditEmail,
+    handleUpdateEmail,
+    handleDeleteCustomer,
+    setEditingEmail,
+    submitEmailLead,
   }
 }

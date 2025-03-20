@@ -45,10 +45,10 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
         <div
           className="tool"
           onClick={() => {
-            openToolBar({ windowType: WINDOW_TYPE.CUSTOMER_DEV })
+            openToolBar({ windowType: WINDOW_TYPE.LEADS_MINING })
           }}
         >
-          客户开发
+          线索挖掘
         </div>
         <div className="tool-wrapper">
           <a>工具箱</a>

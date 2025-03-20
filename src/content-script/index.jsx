@@ -522,7 +522,7 @@ async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
 }
 
 async function renderLeadsMining() {
-  renderFloatingToolbar({ x: 0, y: 0, windowType: WINDOW_TYPE.CUSTOMER_DEV })
+  renderFloatingToolbar({ x: 0, y: 0, windowType: WINDOW_TYPE.LEADS_MINING })
 }
 
 /**

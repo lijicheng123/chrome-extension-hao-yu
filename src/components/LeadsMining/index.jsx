@@ -56,14 +56,26 @@ function LeadsMining() {
     handleDeleteCustomer,
     setEditingEmail,
     extractAndProcessEmails,
+    extractCurrentPageEmails,
+    submitCurrentPageEmails,
+    currentPageEmails,
+    submitEmailLead,
   } = emailProcessor
 
   const searchEngine = useSearchEngine(taskManager, backgroundState, emailProcessor)
   const { executeSearch, isSearchPage } = searchEngine
 
-  // 监听页面内容变化，提取邮箱
+  // 合并后的邮箱采集功能：同时处理定时检查和DOM变化
   useEffect(() => {
+    // 初始采集当前页面邮箱
+    extractCurrentPageEmails()
+
+    // 设置MutationObserver监听页面变化
     const observer = new MutationObserver(() => {
+      // 无论任务状态如何，都提取邮箱
+      extractCurrentPageEmails()
+
+      // 如果任务正在运行，则处理并提交邮箱
       if (taskStatus === 'running') {
         extractAndProcessEmails()
       }
@@ -71,8 +83,23 @@ function LeadsMining() {
 
     observer.observe(document.body, { childList: true, subtree: true })
 
-    return () => observer.disconnect()
-  }, [taskStatus, extractAndProcessEmails])
+    // 设置定时采集邮箱，作为补充机制
+    const intervalId = setInterval(() => {
+      const newEmails = extractCurrentPageEmails()
+
+      // 如果任务正在运行，自动提交邮箱线索
+      if (taskStatus === 'running' && selectedTask && newEmails.length > 0) {
+        newEmails.forEach(email => {
+          submitEmailLead(email)
+        })
+      }
+    }, 5000) // 每5秒检测一次页面变化
+
+    return () => {
+      clearInterval(intervalId)
+      observer.disconnect()
+    }
+  }, [taskStatus, selectedTask, extractAndProcessEmails, extractCurrentPageEmails, submitEmailLead])
 
   // 监听任务状态变化，当状态变为running时执行搜索
   useEffect(() => {
@@ -209,13 +236,43 @@ function LeadsMining() {
           </Form>
         </Card>
 
-        <EmailList
-          emailList={emailList}
-          handleEditEmail={handleEditEmail}
-          handleDeleteCustomer={handleDeleteCustomer}
-          locateEmail={searchEngine.locateEmail}
-          style={style}
-        />
+        {taskStatus === 'idle' && selectedTask ? (
+          <>
+            <Card title="当前页面邮箱" bordered={false} style={{ marginTop: 16 }}>
+              <div style={{ marginBottom: 16 }}>
+                <Button
+                  type="primary"
+                  onClick={extractCurrentPageEmails}
+                  style={{ marginRight: 8 }}
+                >
+                  刷新当前页面邮箱
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={submitCurrentPageEmails}
+                  disabled={!currentPageEmails.length}
+                >
+                  将当前页面邮箱作为线索提交
+                </Button>
+              </div>
+              <EmailList
+                emailList={currentPageEmails}
+                handleEditEmail={handleEditEmail}
+                handleDeleteCustomer={handleDeleteCustomer}
+                locateEmail={searchEngine.locateEmail}
+                style={style}
+              />
+            </Card>
+          </>
+        ) : (
+            <EmailList
+              emailList={emailList}
+              handleEditEmail={handleEditEmail}
+              handleDeleteCustomer={handleDeleteCustomer}
+              locateEmail={searchEngine.locateEmail}
+              style={style}
+            />
+        )}
 
         <EmailEditModal
           editingEmail={editingEmail}
