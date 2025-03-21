@@ -1,6 +1,6 @@
-import { useCallback, useRef, useEffect, useMemo } from 'react'
 import { message } from 'antd'
 import { isSearchUrl } from '../utils/searchEngineUtils'
+import { useCallback, useRef, useEffect, useMemo } from 'react'
 import Browser from 'webextension-polyfill'
 import {
   scrollToBottom,
@@ -9,6 +9,8 @@ import {
   performGoogleSearch,
   getSearchResultLinks,
   markLinkStatus,
+  getTotalPages,
+  getCurrentPage,
 } from '../utils/searchEngine'
 import { scrollToEmail, highlightEmail } from '../utils/emailExtractor'
 import {
@@ -22,7 +24,6 @@ import {
   cleanupLinkMarkers,
   PAGE_DEPTH_KEY,
   MAX_PAGE_DEPTH,
-  SEARCH_PAGE_KEY,
   isStatusChanged,
 } from '../utils/searchEngineUtils'
 import { LeadsMiningContentAPI } from '../../../services/messaging/leadsMining'
@@ -206,6 +207,12 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       // 不需要手动移除事件监听器
     }
   }, [registerEmail, handleDetailPageProcessing])
+
+  const test = useCallback(() => {
+    console.log('test total pages', getTotalPages())
+    console.log('test current page', getCurrentPage())
+    console.log('test is last page', isLastPage())
+  }, [])
 
   // 执行搜索
   const executeSearch = useCallback(async () => {
@@ -766,5 +773,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     locateEmail,
     checkExistingSearchPage,
     isSearchPage,
+    test,
   }
 }

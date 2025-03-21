@@ -27,13 +27,11 @@ export async function scrollToBottom() {
  */
 export function getTotalPages() {
   // 尝试获取Google搜索结果页面的导航元素
-  const navigationTD = document.querySelectorAll(
-    '#botstuff div[role="navigation"] table tbody tr td',
-  )
+  const navigationTD = document.querySelectorAll('div[role="navigation"] table tbody tr td')
 
   if (!navigationTD || navigationTD.length === 0) {
     // 尝试其他可能的选择器
-    const paginationElements = document.querySelectorAll('.AaVjTc td')
+    const paginationElements = document.querySelectorAll('table tbody tr[valign="top"] td')
     if (paginationElements && paginationElements.length > 0) {
       return paginationElements.length - 2 // 减去"上一页"和"下一页"按钮
     }
@@ -49,20 +47,21 @@ export function getTotalPages() {
  * @returns {number} 当前页数
  */
 export function getCurrentPage() {
-  // 尝试获取当前页码元素
-  const currentPageElement = document.querySelector('#navcnt > table tr > td.cur')
+  // 找到分页表格（通过role属性）
+  const paginationTable = document.querySelector(
+    'div[role="navigation"] table[role="presentation"]',
+  )
+  if (!paginationTable) return 1
 
-  if (!currentPageElement) {
-    // 尝试其他可能的选择器
-    const activePage = document.querySelector('.AaVjTc td.YyVfkd')
-    if (activePage) {
-      return parseInt(activePage.textContent, 10)
-    }
+  // 在表格中找到不包含<a>标签的数字单元格
+  const cells = Array.from(paginationTable.getElementsByTagName('td'))
+  const currentPageCell = cells.find((cell) => {
+    const hasNoLink = !cell.querySelector('a')
+    const hasNumber = /^\d+$/.test(cell.textContent.trim())
+    return hasNoLink && hasNumber
+  })
 
-    return 1 // 默认为第一页
-  }
-
-  return parseInt(currentPageElement.textContent, 10)
+  return currentPageCell ? parseInt(currentPageCell.textContent.trim(), 10) : 1
 }
 
 /**

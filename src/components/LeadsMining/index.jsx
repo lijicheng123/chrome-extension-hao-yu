@@ -63,7 +63,7 @@ function LeadsMining() {
   } = emailProcessor
 
   const searchEngine = useSearchEngine(taskManager, backgroundState, emailProcessor)
-  const { executeSearch, isSearchPage, checkExistingSearchPage } = searchEngine
+  const { executeSearch, isSearchPage, checkExistingSearchPage, test } = searchEngine
 
   // 合并后的邮箱采集功能：只保留MutationObserver监听
   useEffect(() => {
@@ -205,7 +205,9 @@ function LeadsMining() {
             >
               测试：当前是否有其他标签页打开了搜索结果页
             </Button>
-
+            <Button type="primary" onClick={test}>
+              测试：获取总页数、当前页数、是否最后一页
+            </Button>
             {!isSearchPage && taskStatus !== 'idle' && (
               <Alert
                 message="提示"
