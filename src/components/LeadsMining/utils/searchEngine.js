@@ -1,3 +1,5 @@
+import { getMatchedSearchEngine } from './searchEngineConfig'
+
 /**
  * 模拟滚动到页面底部
  * @returns {Promise<void>} 滚动完成的Promise
@@ -150,19 +152,35 @@ export function performGoogleSearch(searchTerm) {
   return true
 }
 
+function getSearchLinks() {
+  // 获取主容器
+  const container = document.getElementById('rso')
+  if (!container) {
+    return []
+  }
+
+  // 获取所有a标签
+  const links = container.getElementsByTagName('a')
+
+  // 过滤出包含h3的链接
+  const searchLinks = Array.from(links).filter((link) => {
+    return link.querySelector('h3') !== null
+  })
+
+  // 返回链接信息
+  return searchLinks
+}
+
 /**
  * 获取搜索结果链接
  * @returns {Element[]} 搜索结果链接元素数组
  */
 export function getSearchResultLinks() {
   // 尝试多种可能的选择器来获取搜索结果链接
-  const mainLinks = Array.from(
-    document.querySelectorAll('div.g a[href]:not([href^="#"]):not([href^="javascript"])'),
-  )
-  const organicLinks = Array.from(document.querySelectorAll('.yuRUbf > a, .DhN8Cf > a'))
-
+  const mainLinks = getSearchLinks()
   // 合并结果并去重
-  const allLinks = [...new Set([...mainLinks, ...organicLinks])]
+  const allLinks = [...new Set([...mainLinks])]
+  debugger
 
   // 过滤链接并按URL去重
   const uniqueUrls = new Set()
@@ -195,11 +213,14 @@ export function getSearchResultLinks() {
 }
 
 /**
- * 检查当前页面是否为谷歌搜索结果页
- * @returns {boolean} 是否为谷歌搜索结果页
+ * 检查当前页面是否为Google搜索结果页
+ * @deprecated 请使用utils/searchEngineConfig.js中的isSearchResultPage函数
+ * @returns {boolean} 是否为Google搜索结果页
  */
 export function isGoogleSearchPage() {
-  return window.location.hostname.includes('google') && window.location.pathname.includes('/search')
+  // 使用新的配置方式判断
+  const matchedEngine = getMatchedSearchEngine()
+  return matchedEngine?.name === 'GOOGLE'
 }
 
 /**

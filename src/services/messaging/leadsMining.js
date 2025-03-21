@@ -1,174 +1,238 @@
 import { MessagingService } from './index'
 
 /**
- * LeadsMining消息服务
- * 命名空间: LEADS_MINING
+ * 线索挖掘模块API常量
  */
-const leadsMiningService = new MessagingService('LEADS_MINING')
-
-// 导出服务实例
-export default leadsMiningService
-
-// 定义LeadsMining API常量，用于统一管理消息类型
 export const LEADS_MINING_API = {
-  // 状态管理
-  GET_STATE: 'GET_STATE',
-  SAVE_STATE: 'SAVE_STATE',
+  // 任务状态管理
+  GET_STATE: 'leads-mining:get-state',
+  SAVE_STATE: 'leads-mining:save-state',
 
   // 任务控制
-  START_TASK: 'START_TASK',
-  PAUSE_TASK: 'PAUSE_TASK',
-  RESUME_TASK: 'RESUME_TASK',
-  STOP_TASK: 'STOP_TASK',
-  COMPLETE_TASK: 'COMPLETE_TASK',
+  START_TASK: 'leads-mining:start-task',
+  PAUSE_TASK: 'leads-mining:pause-task',
+  RESUME_TASK: 'leads-mining:resume-task',
+  STOP_TASK: 'leads-mining:stop-task',
+  COMPLETE_TASK: 'leads-mining:complete-task',
 
   // 邮箱管理
-  REGISTER_EMAIL: 'REGISTER_EMAIL',
-  GET_EMAILS: 'GET_EMAILS',
+  REGISTER_EMAIL: 'leads-mining:register-email',
+  GET_EMAILS: 'leads-mining:get-emails',
 
   // URL管理
-  CHECK_URL: 'CHECK_URL',
-  REGISTER_URL: 'REGISTER_URL',
+  CHECK_URL: 'leads-mining:check-url',
+  REGISTER_URL: 'leads-mining:register-url',
 
-  // 事件
-  TASK_TAKEN_OVER: 'TASK_TAKEN_OVER',
-  CAPTCHA_DETECTED: 'CAPTCHA_DETECTED',
+  // 搜索结果页管理
+  HAS_SEARCH_RESULT_PAGE: 'leads-mining:has-search-result-page',
 }
 
 /**
- * Content Script API封装
- * 在content script中使用
+ * 线索挖掘服务实例
+ * 用于content script与background script之间通信
+ */
+const leadsMiningService = new MessagingService('leads-mining')
+
+/**
+ * 线索挖掘Content API
+ * 提供给content script使用的API
  */
 export class LeadsMiningContentAPI {
   /**
    * 获取任务状态
-   * @param {string} taskId - 任务ID
-   * @returns {Promise<Object>} 任务状态
+   * @param {string} taskId 任务ID
+   * @returns {Promise<object>} 任务状态
    */
   static async getState(taskId) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.GET_STATE, { taskId })
+    try {
+      return await leadsMiningService.sendMessageWithResponse(LEADS_MINING_API.GET_STATE, {
+        taskId,
+      })
+    } catch (error) {
+      console.error('获取任务状态失败:', error)
+      return null
+    }
   }
 
   /**
    * 保存任务状态
-   * @param {Object} payload - 任务状态数据
-   * @returns {Promise<Object>}
+   * @param {object} state 状态数据
+   * @returns {Promise<boolean>} 是否成功
    */
-  static async saveState(payload) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.SAVE_STATE, { payload })
+  static async saveState(state) {
+    try {
+      await leadsMiningService.sendMessage(LEADS_MINING_API.SAVE_STATE, { payload: state })
+      return true
+    } catch (error) {
+      console.error('保存任务状态失败:', error)
+      return false
+    }
   }
 
   /**
    * 开始任务
-   * @param {string} taskId - 任务ID
-   * @returns {Promise<Object>}
+   * @param {string} taskId 任务ID
+   * @returns {Promise<boolean>} 是否成功
    */
   static async startTask(taskId) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.START_TASK, { taskId })
+    try {
+      await leadsMiningService.sendMessage(LEADS_MINING_API.START_TASK, { taskId })
+      return true
+    } catch (error) {
+      console.error('开始任务失败:', error)
+      return false
+    }
   }
 
   /**
    * 暂停任务
-   * @param {string} taskId - 任务ID
-   * @returns {Promise<Object>}
+   * @param {string} taskId 任务ID
+   * @returns {Promise<boolean>} 是否成功
    */
   static async pauseTask(taskId) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.PAUSE_TASK, { taskId })
+    try {
+      await leadsMiningService.sendMessage(LEADS_MINING_API.PAUSE_TASK, { taskId })
+      return true
+    } catch (error) {
+      console.error('暂停任务失败:', error)
+      return false
+    }
   }
 
   /**
-   * 继续任务
-   * @param {string} taskId - 任务ID
-   * @returns {Promise<Object>}
+   * 恢复任务
+   * @param {string} taskId 任务ID
+   * @returns {Promise<boolean>} 是否成功
    */
   static async resumeTask(taskId) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.RESUME_TASK, { taskId })
+    try {
+      await leadsMiningService.sendMessage(LEADS_MINING_API.RESUME_TASK, { taskId })
+      return true
+    } catch (error) {
+      console.error('恢复任务失败:', error)
+      return false
+    }
   }
 
   /**
    * 停止任务
-   * @param {string} taskId - 任务ID
-   * @returns {Promise<Object>}
+   * @param {string} taskId 任务ID
+   * @returns {Promise<boolean>} 是否成功
    */
   static async stopTask(taskId) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.STOP_TASK, { taskId })
+    try {
+      await leadsMiningService.sendMessage(LEADS_MINING_API.STOP_TASK, { taskId })
+      return true
+    } catch (error) {
+      console.error('停止任务失败:', error)
+      return false
+    }
   }
 
   /**
    * 完成任务
-   * @param {string} taskId - 任务ID
-   * @returns {Promise<Object>}
+   * @param {string} taskId 任务ID
+   * @returns {Promise<boolean>} 是否成功
    */
   static async completeTask(taskId) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.COMPLETE_TASK, { taskId })
-  }
-
-  /**
-   * 获取邮箱列表
-   * @param {string} taskId - 任务ID
-   * @returns {Promise<Object>} 邮箱列表
-   */
-  static async getEmails(taskId) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.GET_EMAILS, { taskId })
+    try {
+      await leadsMiningService.sendMessage(LEADS_MINING_API.COMPLETE_TASK, { taskId })
+      return true
+    } catch (error) {
+      console.error('完成任务失败:', error)
+      return false
+    }
   }
 
   /**
    * 注册邮箱
-   * @param {string} taskId - 任务ID
-   * @param {string} email - 邮箱地址
-   * @returns {Promise<Object>}
+   * @param {string} taskId 任务ID
+   * @param {string} email 邮箱地址
+   * @returns {Promise<boolean>} 是否成功
    */
   static async registerEmail(taskId, email) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.REGISTER_EMAIL, { taskId, email })
+    try {
+      await leadsMiningService.sendMessage(LEADS_MINING_API.REGISTER_EMAIL, { taskId, email })
+      return true
+    } catch (error) {
+      console.error('注册邮箱失败:', error)
+      return false
+    }
+  }
+
+  /**
+   * 获取已收集的邮箱列表
+   * @param {string} taskId 任务ID
+   * @returns {Promise<string[]>} 邮箱列表
+   */
+  static async getEmails(taskId) {
+    try {
+      const response = await leadsMiningService.sendMessage(LEADS_MINING_API.GET_EMAILS, { taskId })
+      return response?.emails || []
+    } catch (error) {
+      console.error('获取邮箱列表失败:', error)
+      return []
+    }
   }
 
   /**
    * 检查URL是否已处理
-   * @param {string} taskId - 任务ID
-   * @param {string} url - URL地址
+   * @param {string} taskId 任务ID
+   * @param {string} url URL
    * @returns {Promise<boolean>} 是否已处理
    */
   static async checkUrl(taskId, url) {
-    const response = await leadsMiningService.sendMessage(LEADS_MINING_API.CHECK_URL, {
-      taskId,
-      url,
-    })
-    return response?.isProcessed || false
+    try {
+      const response = await leadsMiningService.sendMessageWithResponse(
+        LEADS_MINING_API.CHECK_URL,
+        {
+          taskId,
+          url,
+        },
+      )
+      return response?.isProcessed || false
+    } catch (error) {
+      console.error('检查URL失败:', error)
+      return false
+    }
   }
 
   /**
-   * 注册已处理的URL
-   * @param {string} taskId - 任务ID
-   * @param {string} url - URL地址
-   * @returns {Promise<Object>}
+   * 注册URL为已处理
+   * @param {string} taskId 任务ID
+   * @param {string} url URL
+   * @returns {Promise<boolean>} 是否成功
    */
   static async registerUrl(taskId, url) {
-    return leadsMiningService.sendMessage(LEADS_MINING_API.REGISTER_URL, { taskId, url })
-  }
-}
-
-/**
- * Background API封装
- * 在background中使用
- */
-export class LeadsMiningBackgroundAPI {
-  /**
-   * 通知任务被接管
-   * @param {number} tabId - 标签页ID
-   * @param {string} taskId - 任务ID
-   * @returns {Promise<void>}
-   */
-  static async notifyTaskTakenOver(tabId, taskId) {
-    return leadsMiningService.sendMessageToTab(tabId, LEADS_MINING_API.TASK_TAKEN_OVER, { taskId })
+    try {
+      await leadsMiningService.sendMessage(LEADS_MINING_API.REGISTER_URL, { taskId, url })
+      return true
+    } catch (error) {
+      console.error('注册URL失败:', error)
+      return false
+    }
   }
 
   /**
-   * 广播任务状态更新
-   * @param {string} taskId - 任务ID
-   * @param {Object} state - 任务状态
-   * @returns {Promise<void>}
+   * 检查是否有其他标签页打开了搜索结果页
+   * @returns {Promise<boolean>} 是否存在其他搜索结果页
    */
-  static async broadcastTaskUpdate(taskId, state) {
-    return leadsMiningService.broadcastMessage(LEADS_MINING_API.TASK_UPDATE, { taskId, state })
+  static async hasSearchResultPage() {
+    try {
+      // 使用带响应的消息发送方法
+      const result = await leadsMiningService.sendMessageWithResponse(
+        LEADS_MINING_API.HAS_SEARCH_RESULT_PAGE,
+        {
+          currentUrl: window.location.href,
+        },
+      )
+      console.log('获取搜索结果页状态结果:', result)
+      return result
+    } catch (error) {
+      console.error('检查搜索结果页失败:', error)
+      return false
+    }
   }
 }
+
+export default leadsMiningService

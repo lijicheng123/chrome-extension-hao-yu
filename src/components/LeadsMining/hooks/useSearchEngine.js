@@ -1,5 +1,6 @@
-import { useCallback, useRef, useEffect } from 'react'
+import { useCallback, useRef, useEffect, useMemo } from 'react'
 import { message } from 'antd'
+import { isSearchUrl } from '../utils/searchEngineUtils'
 import Browser from 'webextension-polyfill'
 import {
   scrollToBottom,
@@ -7,7 +8,6 @@ import {
   isLastPage,
   performGoogleSearch,
   getSearchResultLinks,
-  isGoogleSearchPage,
   markLinkStatus,
 } from '../utils/searchEngine'
 import { scrollToEmail, highlightEmail } from '../utils/emailExtractor'
@@ -15,30 +15,18 @@ import {
   leadsMiningWindowMessenger,
   LEADS_MINING_WINDOW_ACTIONS,
 } from '../../../services/messaging/contentWindow'
-
-/**
- * 创建延时函数
- * @param {number} ms - 延时毫秒数
- * @returns {Promise} 延时Promise
- */
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-/**
- * 获取随机延时时间
- * @param {number} min - 最小秒数
- * @param {number} max - 最大秒数
- * @returns {number} 随机毫秒数
- */
-const getRandomDelay = (min, max) => {
-  return (Math.random() * (max - min) + min) * 1000
-}
-
-// 页面深度标记，用于限制打开页面的层级
-const PAGE_DEPTH_KEY = 'leadsMining_pageDepth'
-// 最大允许的页面深度
-const MAX_PAGE_DEPTH = 1
-// 搜索结果页标记，用于标识当前标签页是否为搜索结果页
-const SEARCH_PAGE_KEY = 'leadsMining_isSearchPage'
+import {
+  delay,
+  getRandomDelay,
+  getDelayParams,
+  cleanupLinkMarkers,
+  PAGE_DEPTH_KEY,
+  MAX_PAGE_DEPTH,
+  SEARCH_PAGE_KEY,
+  isStatusChanged,
+} from '../utils/searchEngineUtils'
+import { LeadsMiningContentAPI } from '../../../services/messaging/leadsMining'
+import { isSearchResultPage } from '../utils/searchEngineConfig'
 
 /**
  * 搜索引擎Hook
@@ -63,8 +51,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
   const prevTaskStatusRef = useRef('idle')
   // 当前页面深度
   const pageDepthRef = useRef(0)
-  // 标记当前页面是否为搜索结果页
-  const isSearchPageRef = useRef(false)
 
   const {
     currentCombinationIndex,
@@ -80,56 +66,23 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   const { extractAndProcessEmails } = emailProcessor
 
-  // 获取任务中的延时参数，如果没有则使用默认值
-  const getDelayParams = () => {
-    const defaultClickDelay = 2 // 默认点击前等待时间（秒）
-    const defaultBrowseDelay = 2.5 // 默认浏览时间（秒）
+  // 检查当前页面是否为搜索结果页
+  const checkIsSearchResultPage = useCallback(() => {
+    // 使用新的配置方式检查是否为搜索结果页
+    const isSearchResult = isSearchResultPage()
 
-    const clickDelay = selectedTask?.clickDelay || defaultClickDelay
-    const browseDelay = selectedTask?.browseDelay || defaultBrowseDelay
-
-    return {
-      clickDelay,
-      browseDelay,
-    }
-  }
-
-  // 检查当前页面是否为谷歌搜索结果页
-  const checkIsGoogleSearchPage = useCallback(() => {
-    const currentIsGoogleSearchPage = isGoogleSearchPage()
-    isSearchPageRef.current = currentIsGoogleSearchPage && pageDepthRef.current === 0
-    return isSearchPageRef.current
+    // 只有当深度为0(不是详情页)且是搜索结果页时，才认为是搜索结果页
+    return isSearchResult && pageDepthRef.current === 0
   }, [])
 
-  // 检查是否已存在搜索结果页
+  // 简化后的检查是否已存在搜索结果页逻辑
   const checkExistingSearchPage = useCallback(async () => {
     try {
-      // 获取当前标签页ID
-      const currentTab = await Browser.tabs.getCurrent()
-      const currentTabId = currentTab?.id
-
-      // 获取所有标签页
-      const allTabs = await Browser.tabs.query({})
-
-      // 检查是否有其他标签页已经标记为搜索结果页
-      for (const tab of allTabs) {
-        if (tab.id !== currentTabId) {
-          try {
-            // 尝试向其他标签页发送消息，检查是否为搜索结果页
-            const response = await Browser.tabs
-              .sendMessage(tab.id, {
-                action: 'LEADS_MINING_CHECK_IS_SEARCH_PAGE',
-              })
-              .catch(() => ({ isSearchPage: false }))
-
-            if (response && response.isSearchPage) {
-              console.log('已存在搜索结果页，标签页ID:', tab.id)
-              return true
-            }
-          } catch (error) {
-            // 忽略消息发送错误
-          }
-        }
+      // 使用LeadsMiningContentAPI检查是否有其他标签页打开了搜索结果页
+      const exists = await LeadsMiningContentAPI.hasSearchResultPage()
+      if (exists) {
+        console.log('已存在搜索结果页')
+        return true
       }
 
       return false
@@ -139,24 +92,11 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     }
   }, [])
 
-  // 标记当前标签页为搜索结果页
-  const markAsSearchPage = useCallback(() => {
-    if (checkIsGoogleSearchPage()) {
-      // 在 sessionStorage 中标记当前页面为搜索结果页
-      sessionStorage.setItem(SEARCH_PAGE_KEY, 'true')
-      isSearchPageRef.current = true
-      console.log('当前页面已标记为搜索结果页')
-    }
-  }, [checkIsGoogleSearchPage])
+  const isSearchPage = useMemo(() => {
+    return isSearchUrl(window.location.href)
+  }, [window.location.href])
 
-  // 取消标记当前标签页为搜索结果页
-  const unmarkAsSearchPage = useCallback(() => {
-    sessionStorage.removeItem(SEARCH_PAGE_KEY)
-    isSearchPageRef.current = false
-    console.log('当前页面已取消标记为搜索结果页')
-  }, [])
-
-  // 初始化页面深度和搜索页标记
+  // 初始化页面深度
   useEffect(() => {
     // 检查URL参数中是否有深度标记
     const urlParams = new URLSearchParams(window.location.search)
@@ -173,23 +113,14 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     console.log(`当前页面深度: ${pageDepthRef.current}`)
 
     // 检查当前页面是否为搜索结果页
-    const isCurrentSearchPage = checkIsGoogleSearchPage()
-
-    // 检查 sessionStorage 中是否已标记为搜索结果页
-    const storedIsSearchPage = sessionStorage.getItem(SEARCH_PAGE_KEY) === 'true'
-    isSearchPageRef.current =
-      isCurrentSearchPage || (storedIsSearchPage && pageDepthRef.current === 0)
+    const isCurrentSearchPage = checkIsSearchResultPage()
 
     // 如果是搜索结果页，检查是否已存在其他搜索结果页
-    if (isSearchPageRef.current) {
+    if (isCurrentSearchPage) {
       checkExistingSearchPage().then((exists) => {
         if (exists) {
-          // 如果已存在其他搜索结果页，取消当前页面的搜索结果页标记
-          unmarkAsSearchPage()
+          // 如果已存在其他搜索结果页，显示提示
           message.warning('已存在一个搜索结果页，此页面无法启动任务')
-        } else {
-          // 如果不存在其他搜索结果页，标记当前页面为搜索结果页
-          markAsSearchPage()
         }
       })
     }
@@ -202,25 +133,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         handleDetailPageProcessing()
       }, 1000)
     }
-
-    // 监听消息，用于检查当前页面是否为搜索结果页
-    const messageListener = (message) => {
-      if (message.action === 'LEADS_MINING_CHECK_IS_SEARCH_PAGE') {
-        return Promise.resolve({ isSearchPage: isSearchPageRef.current })
-      }
-      return true
-    }
-
-    Browser.runtime.onMessage.addListener(messageListener)
-
-    return () => {
-      Browser.runtime.onMessage.removeListener(messageListener)
-      // 页面卸载时，取消搜索结果页标记
-      if (isSearchPageRef.current) {
-        unmarkAsSearchPage()
-      }
-    }
-  }, [checkIsGoogleSearchPage, markAsSearchPage, unmarkAsSearchPage, checkExistingSearchPage])
+  }, [checkIsSearchResultPage, checkExistingSearchPage])
 
   // 处理详情页的滚动和提取邮箱
   const handleDetailPageProcessing = useCallback(async () => {
@@ -297,10 +210,9 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
   // 执行搜索
   const executeSearch = useCallback(async () => {
     // 检查当前页面是否为搜索结果页
-    if (!isSearchPageRef.current) {
-      console.log('当前页面不是搜索结果页，无法执行搜索')
-      message.warning('只能在谷歌搜索结果页执行任务')
-      updateState({ taskStatus: 'paused', statusMessage: '只能在谷歌搜索结果页执行任务' })
+    if (!checkIsSearchResultPage()) {
+      message.warning('只能在搜索结果页执行任务')
+      updateState({ taskStatus: 'paused', statusMessage: '只能在搜索结果页执行任务' })
       return
     }
 
@@ -478,14 +390,14 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     saveStateToBackground,
     selectedTask,
     processCurrentPage,
-    isSearchPageRef,
+    checkIsSearchResultPage,
     isUrlProcessed,
   ])
 
   // 处理当前页面
   const processCurrentPage = useCallback(async () => {
     // 检查当前页面是否为搜索结果页
-    if (!isSearchPageRef.current) {
+    if (!checkIsSearchResultPage()) {
       console.log('当前页面不是搜索结果页，无法处理页面')
       return
     }
@@ -581,7 +493,13 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       console.error('处理当前页面时出错:', error)
       updateState({ statusMessage: `处理当前页面时出错: ${error.message}` })
     }
-  }, [extractAndProcessEmails, updateState, processNextLink, isSearchPageRef, isUrlProcessed])
+  }, [
+    extractAndProcessEmails,
+    updateState,
+    processNextLink,
+    checkIsSearchResultPage,
+    isUrlProcessed,
+  ])
 
   // 尝试在详情页中滚动到底部并提取邮箱
   const processDetailPage = useCallback(async (detailWindow) => {
@@ -599,7 +517,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
   // 处理下一个链接
   const processNextLink = useCallback(async () => {
     // 检查当前页面是否为搜索结果页
-    if (!isSearchPageRef.current) {
+    if (!checkIsSearchResultPage()) {
       console.log('当前页面不是搜索结果页，无法处理链接')
       isProcessingLinkRef.current = false
       return
@@ -739,10 +657,10 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     updateState,
     getDelayParams,
     processDetailPage,
-    isSearchPageRef,
+    checkIsSearchResultPage,
   ])
 
-  // 修改清理函数，确保清理所有链接标记和图标
+  // 修改清理函数，使用提取出来的清理工具
   useEffect(() => {
     return () => {
       // 清除定时器
@@ -755,97 +673,80 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         detailWindowRef.current.close()
       }
 
-      // 清理链接标记样式
-      const styleElement = document.getElementById('leadsMining-link-styles')
-      if (styleElement) {
-        styleElement.remove()
-      }
-
-      // 移除所有链接标记和图标
-      document
-        .querySelectorAll(
-          '.leadsMining-link-to-visit, .leadsMining-link-visited, .leadsMining-link-current',
-        )
-        .forEach((el) => {
-          el.classList.remove(
-            'leadsMining-link-to-visit',
-            'leadsMining-link-visited',
-            'leadsMining-link-current',
-          )
-
-          // 移除所有图标和loading动画
-          const icons = el.querySelectorAll('.leadsMining-link-icon, .leadsMining-link-loading')
-          icons.forEach((icon) => icon.remove())
-        })
+      // 使用提取出来的清理工具
+      cleanupLinkMarkers()
     }
   }, [])
 
   // 监听任务状态变化
   useEffect(() => {
-    console.log(`任务状态变化: ${prevTaskStatusRef.current} -> ${taskStatus}`)
+    // 只有当任务状态与上一个状态不同时才执行
+    if (isStatusChanged(prevTaskStatusRef.current, taskStatus)) {
+      console.log(`任务状态变化: ${prevTaskStatusRef.current} -> ${taskStatus}`)
 
-    // 保存上一次的任务状态
-    const prevStatus = prevTaskStatusRef.current
-    prevTaskStatusRef.current = taskStatus
+      // 保存上一次的任务状态
+      const prevStatus = prevTaskStatusRef.current
+      prevTaskStatusRef.current = taskStatus
 
-    // 如果任务从运行变为暂停或停止
-    if (prevStatus === 'running' && taskStatus !== 'running') {
-      console.log(`任务从运行变为${taskStatus === 'paused' ? '暂停' : '停止'}`)
+      // 如果任务从运行变为暂停或停止
+      if (prevStatus === 'running' && taskStatus !== 'running') {
+        console.log(`任务从运行变为${taskStatus === 'paused' ? '暂停' : '停止'}`)
 
-      // 清除定时器，但不关闭窗口，以便用户可以继续浏览
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-        timerRef.current = null
+        // 清除定时器，但不关闭窗口，以便用户可以继续浏览
+        if (timerRef.current) {
+          clearTimeout(timerRef.current)
+          timerRef.current = null
+        }
+
+        // 更新状态
+        isProcessingLinkRef.current = false
+        updateState({ statusMessage: `任务已${taskStatus === 'paused' ? '暂停' : '停止'}` })
       }
+      // 如果任务从暂停变为运行（继续任务）
+      else if (prevStatus === 'paused' && taskStatus === 'running') {
+        console.log('任务从暂停变为运行（继续任务）')
 
-      // 更新状态
-      isProcessingLinkRef.current = false
-      updateState({ statusMessage: `任务已${taskStatus === 'paused' ? '暂停' : '停止'}` })
+        // 检查当前页面是否为搜索结果页
+        if (!checkIsSearchResultPage()) {
+          console.log('当前页面不是搜索结果页，无法继续任务')
+          message.warning('只能在搜索结果页继续任务')
+          updateState({ taskStatus: 'paused', statusMessage: '只能在搜索结果页继续任务' })
+          return
+        }
+
+        updateState({ statusMessage: '任务继续执行' })
+
+        // 如果有打开的详情页，关闭它并继续处理下一个链接
+        if (detailWindowRef.current && !detailWindowRef.current.closed) {
+          detailWindowRef.current.close()
+          detailWindowRef.current = null
+        }
+
+        // 继续处理链接
+        setTimeout(() => {
+          processNextLink()
+        }, 500)
+      }
+      // 如果任务停止
+      else if (taskStatus === 'idle' || taskStatus === 'completed') {
+        console.log(`任务${taskStatus === 'idle' ? '停止' : '完成'}`)
+
+        // 清除定时器
+        if (timerRef.current) {
+          clearTimeout(timerRef.current)
+          timerRef.current = null
+        }
+
+        // 关闭详情页窗口
+        if (detailWindowRef.current && !detailWindowRef.current.closed) {
+          detailWindowRef.current.close()
+          detailWindowRef.current = null
+        }
+
+        isProcessingLinkRef.current = false
+      }
     }
-    // 如果任务从暂停变为运行（继续任务）
-    else if (prevStatus === 'paused' && taskStatus === 'running') {
-      console.log('任务从暂停变为运行（继续任务）')
-
-      // 检查当前页面是否为搜索结果页
-      if (!isSearchPageRef.current) {
-        console.log('当前页面不是搜索结果页，无法继续任务')
-        message.warning('只能在谷歌搜索结果页继续任务')
-        updateState({ taskStatus: 'paused', statusMessage: '只能在谷歌搜索结果页继续任务' })
-        return
-      }
-
-      updateState({ statusMessage: '任务继续执行' })
-
-      // 如果有打开的详情页，关闭它并继续处理下一个链接
-      if (detailWindowRef.current && !detailWindowRef.current.closed) {
-        detailWindowRef.current.close()
-        detailWindowRef.current = null
-      }
-
-      // 继续处理链接
-      setTimeout(() => {
-        processNextLink()
-      }, 500)
-    }
-    // 如果任务停止
-    else if (taskStatus === 'idle' || taskStatus === 'completed') {
-      console.log(`任务${taskStatus === 'idle' ? '停止' : '完成'}`)
-
-      // 清除定时器
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-        timerRef.current = null
-      }
-
-      // 关闭详情页窗口
-      if (detailWindowRef.current && !detailWindowRef.current.closed) {
-        detailWindowRef.current.close()
-        detailWindowRef.current = null
-      }
-
-      isProcessingLinkRef.current = false
-    }
-  }, [taskStatus, updateState, processNextLink, isSearchPageRef])
+  }, [taskStatus, updateState, processNextLink, checkIsSearchResultPage])
 
   // 定位到邮箱
   const locateEmail = useCallback((email) => {
@@ -863,6 +764,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     processCurrentPage,
     processNextLink,
     locateEmail,
-    isSearchPage: isSearchPageRef.current,
+    checkExistingSearchPage,
+    isSearchPage,
   }
 }

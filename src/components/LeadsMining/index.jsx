@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useCallback } from 'react'
 import { Form, Card, ConfigProvider, message, Select, Button, Alert } from 'antd'
 
 // 自定义Hooks
@@ -6,6 +6,7 @@ import { useTaskManager } from './hooks/useTaskManager'
 import { useBackgroundState } from './hooks/useBackgroundState'
 import { useEmailProcessor } from './hooks/useEmailProcessor'
 import { useSearchEngine } from './hooks/useSearchEngine'
+import { debounce } from './utils/searchEngineUtils'
 
 // UI组件
 import TaskStatus from './components/TaskStatus'
@@ -59,47 +60,52 @@ function LeadsMining() {
     extractCurrentPageEmails,
     submitCurrentPageEmails,
     currentPageEmails,
-    submitEmailLead,
   } = emailProcessor
 
   const searchEngine = useSearchEngine(taskManager, backgroundState, emailProcessor)
-  const { executeSearch, isSearchPage } = searchEngine
+  const { executeSearch, isSearchPage, checkExistingSearchPage } = searchEngine
 
-  // 合并后的邮箱采集功能：同时处理定时检查和DOM变化
+  // 合并后的邮箱采集功能：只保留MutationObserver监听
   useEffect(() => {
+    // 仅在有选中任务时执行采集
+    if (!selectedTask) return;
+
     // 初始采集当前页面邮箱
     extractCurrentPageEmails()
 
-    // 设置MutationObserver监听页面变化
-    const observer = new MutationObserver(() => {
+    // 防止重复处理的标记
+    let isProcessing = false;
+
+    // 使用debounce处理提取操作，减少频繁调用
+    const debouncedExtract = debounce(() => {
       // 无论任务状态如何，都提取邮箱
-      extractCurrentPageEmails()
-
-      // 如果任务正在运行，则处理并提交邮箱
-      if (taskStatus === 'running') {
-        extractAndProcessEmails()
-      }
-    })
-
-    observer.observe(document.body, { childList: true, subtree: true })
-
-    // 设置定时采集邮箱，作为补充机制
-    const intervalId = setInterval(() => {
       const newEmails = extractCurrentPageEmails()
 
-      // 如果任务正在运行，自动提交邮箱线索
-      if (taskStatus === 'running' && selectedTask && newEmails.length > 0) {
-        newEmails.forEach(email => {
-          submitEmailLead(email)
-        })
+      // 如果任务正在运行，则处理并提交邮箱
+      if (taskStatus === 'running' && newEmails && newEmails.length > 0) {
+        extractAndProcessEmails()
       }
-    }, 5000) // 每5秒检测一次页面变化
+      isProcessing = false;
+    }, 300);
+
+    // 设置MutationObserver监听页面变化
+    const observer = new MutationObserver(() => {
+      // 避免重复处理
+      if (isProcessing) return;
+      isProcessing = true;
+
+      // 使用requestAnimationFrame确保DOM操作在同一帧中完成
+      requestAnimationFrame(() => {
+        debouncedExtract();
+      });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
-      clearInterval(intervalId)
-      observer.disconnect()
+      observer.disconnect();
     }
-  }, [taskStatus, selectedTask, extractAndProcessEmails, extractCurrentPageEmails, submitEmailLead])
+  }, [selectedTask, taskStatus]);
 
   // 监听任务状态变化，当状态变为running时执行搜索
   useEffect(() => {
@@ -108,8 +114,21 @@ function LeadsMining() {
     }
   }, [taskStatus, executeSearch])
 
+  // 检查是否在搜索结果页可操作任务
+  const canIOperateTask = useCallback(() => {
+    // 只有在搜索结果页才能开始任务
+    if (isSearchPage) {
+      return true
+    }
+    message.error('任务只能在搜索结果页操作')
+    return false
+  }, [taskStatus])
   // 开始任务
   const startTask = () => {
+    if (!canIOperateTask()) {
+      return
+    }
+
     if (!selectedTask || searchCombinations.length === 0) {
       message.error('请先选择任务并确保已生成搜索组合')
       return
@@ -166,6 +185,25 @@ function LeadsMining() {
               }}
             >
               刷新任务
+            </Button>
+
+            <Button
+              type="primary"
+              onClick={() => {
+                console.log('当前是否是搜索结果页：', isSearchPage)
+              }}
+            >
+              测试：当前是否是搜索结果页
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => {
+                checkExistingSearchPage().then((res) => {
+                  console.log('当前是否有其他标签页打开了搜索结果页：', res)
+                })
+              }}
+            >
+              测试：当前是否有其他标签页打开了搜索结果页
             </Button>
 
             {!isSearchPage && taskStatus !== 'idle' && (

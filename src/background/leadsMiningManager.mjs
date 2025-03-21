@@ -1,5 +1,6 @@
 import Browser from 'webextension-polyfill'
 import leadsMiningService, { LEADS_MINING_API } from '../services/messaging/leadsMining'
+import { isSearchUrl } from '../components/LeadsMining/utils/searchEngineUtils.js'
 
 /**
  * 线索挖掘任务管理器
@@ -63,7 +64,46 @@ function registerMessageHandlers() {
       return { isProcessed }
     },
     [LEADS_MINING_API.REGISTER_URL]: (data) => handleRegisterUrl(data.taskId, data.url),
+
+    // 搜索结果页检查
+    [LEADS_MINING_API.HAS_SEARCH_RESULT_PAGE]: async (data, sender) => {
+      const currentTabId = sender.tab?.id
+      if (!currentTabId) return false
+
+      const exists = await checkIfOtherTabHasSearchResultPage(currentTabId)
+      console.log(`检查是否有其他搜索结果页: ${exists ? '有' : '无'}, 当前标签: ${currentTabId}`)
+
+      // 确保直接返回结果，以便MessagingService能正确处理响应
+      return exists
+    },
   })
+}
+
+/**
+ * 检查是否有其他标签页已经打开了搜索结果页
+ * @param {number} currentTabId - 当前标签页ID
+ * @returns {Promise<boolean>} 是否存在搜索结果页
+ */
+async function checkIfOtherTabHasSearchResultPage(currentTabId) {
+  try {
+    // 获取所有标签页
+    const tabs = await Browser.tabs.query({})
+    for (const tab of tabs) {
+      // 跳过当前标签页
+      if (tab.id === currentTabId) continue
+
+      // 检查标签页URL是否为搜索结果页
+      if (isSearchUrl(tab.url)) {
+        console.log(`发现已存在的搜索结果页: ${tab.url}, 标签页ID: ${tab.id}`)
+        return true
+      }
+    }
+
+    return false
+  } catch (error) {
+    console.error('检查搜索结果页时出错:', error)
+    return false
+  }
 }
 
 /**
@@ -73,12 +113,16 @@ function registerMessageHandlers() {
  */
 function handleSaveState(state, tabId) {
   if (!state || !state.taskId) return { success: false, error: '缺少必要参数' }
-
   const taskId = state.taskId
 
-  // 更新任务状态
+  // 保存现有的processedUrls数组
+  const existingProcessedUrls = taskStates[taskId]?.processedUrls || []
+
+  // 更新任务状态，但保留processedUrls数组
   taskStates[taskId] = {
     ...state,
+    // 如果状态中包含processedUrls则使用它，否则保留现有的
+    processedUrls: state.processedUrls || existingProcessedUrls,
     lastUpdated: Date.now(),
     tabId,
   }
@@ -127,6 +171,10 @@ function handleStartTask(taskId, tabId) {
     activeTaskTabs[taskId] = tabId
   }
 
+  // 保存现有的processedUrls和emails数组
+  const existingProcessedUrls = taskStates[taskId]?.processedUrls || []
+  const existingEmails = taskStates[taskId]?.emails || []
+
   // 初始化或更新任务状态
   if (!taskStates[taskId]) {
     taskStates[taskId] = {
@@ -136,8 +184,8 @@ function handleStartTask(taskId, tabId) {
       currentCombinationIndex: 0,
       progress: 0,
       discoveredEmails: 0,
-      processedUrls: [],
-      emails: [],
+      processedUrls: existingProcessedUrls,
+      emails: existingEmails,
       lastUpdated: Date.now(),
       tabId,
     }
@@ -147,6 +195,12 @@ function handleStartTask(taskId, tabId) {
       taskStatus: 'running',
       lastUpdated: Date.now(),
       tabId,
+      // 确保保留现有的processedUrls和emails
+      processedUrls:
+        existingProcessedUrls.length > 0
+          ? existingProcessedUrls
+          : taskStates[taskId].processedUrls || [],
+      emails: existingEmails.length > 0 ? existingEmails : taskStates[taskId].emails || [],
     }
   }
 
@@ -374,6 +428,7 @@ function handleRegisterUrl(taskId, url) {
 
 /**
  * 处理标签页关闭事件
+ * 此函数通过Browser.tabs.onRemoved.addListener注册为事件处理器
  * @param {number} tabId - 标签页ID
  */
 function handleTabRemoved(tabId) {

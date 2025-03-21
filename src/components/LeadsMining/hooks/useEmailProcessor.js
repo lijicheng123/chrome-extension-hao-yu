@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { message } from 'antd'
 import { customerDevService } from '../../../services/api/leadsMining'
 import { detectCaptcha } from '../utils/captchaDetector'
@@ -8,6 +8,7 @@ import {
   removeDuplicates,
   clearMarkedEmails,
 } from '../utils/emailExtractor'
+import { debounce } from '../utils/searchEngineUtils'
 
 /**
  * 邮箱处理Hook
@@ -18,6 +19,10 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   const [newEmailValue, setNewEmailValue] = useState('')
   const [newNoteValue, setNewNoteValue] = useState('')
   const [currentPageEmails, setCurrentPageEmails] = useState([])
+
+  // 上次处理的页面文本和邮箱缓存
+  const lastProcessedText = useRef('')
+  const lastExtractedEmails = useRef([])
 
   const { currentSearchTerm, handleCaptchaDetected, taskStatus, emailList, registerEmail } =
     backgroundState
@@ -37,8 +42,20 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
       clearMarkedEmails()
 
       const pageText = getPageText()
+
+      // 如果页面文本没有变化，直接返回上次的结果
+      if (pageText === lastProcessedText.current) {
+        return lastExtractedEmails.current
+      }
+
+      // 更新上次处理的页面文本
+      lastProcessedText.current = pageText
+
       const emails = matchEmailsInText(pageText)
       const uniqueEmails = removeDuplicates(emails)
+
+      // 更新上次提取的邮箱
+      lastExtractedEmails.current = uniqueEmails
 
       // 处理新发现的邮箱
       uniqueEmails.forEach((email) => {
@@ -56,13 +73,26 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   }, [taskStatus, handleCaptchaDetected, emailList, registerEmail])
 
   // 从当前页面提取邮箱，不依赖任务状态
-  const extractCurrentPageEmails = useCallback(() => {
+  const extractCurrentPageEmailsImpl = useCallback(() => {
     try {
+      const pageText = getPageText()
+
+      // 如果页面文本没有变化，直接返回上次的结果
+      if (pageText === lastProcessedText.current) {
+        return lastExtractedEmails.current
+      }
+
+      // 更新上次处理的页面文本
+      lastProcessedText.current = pageText
+
       // 清除之前标记的邮箱，防止重复标记
       clearMarkedEmails()
-      const pageText = getPageText()
+
       const emails = matchEmailsInText(pageText)
       const uniqueEmails = removeDuplicates(emails)
+
+      // 更新上次提取的邮箱
+      lastExtractedEmails.current = uniqueEmails
 
       setCurrentPageEmails(uniqueEmails)
       return uniqueEmails
@@ -72,6 +102,11 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
     }
   }, [])
 
+  // 添加防抖，减少频繁调用
+  const extractCurrentPageEmails = useCallback(debounce(extractCurrentPageEmailsImpl, 300), [
+    extractCurrentPageEmailsImpl,
+  ])
+
   // 提交当前页面所有邮箱线索
   const submitCurrentPageEmails = useCallback(async () => {
     if (!selectedTask) {
@@ -79,7 +114,7 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
       return
     }
 
-    const emails = extractCurrentPageEmails()
+    const emails = extractCurrentPageEmailsImpl()
     if (emails.length === 0) {
       message.info('当前页面未发现邮箱')
       return
@@ -109,7 +144,7 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
       console.error('提交邮箱线索时出错:', error)
       message.error(`提交邮箱线索失败: ${error.message}`)
     }
-  }, [selectedTask, currentSearchTerm, emailList, registerEmail])
+  }, [selectedTask, currentSearchTerm, emailList, registerEmail, extractCurrentPageEmailsImpl])
 
   // 提交邮箱线索到服务器
   const submitEmailLead = useCallback(

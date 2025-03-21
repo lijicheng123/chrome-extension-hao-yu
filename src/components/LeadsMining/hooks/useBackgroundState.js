@@ -81,8 +81,8 @@ export const useBackgroundState = (selectedTask) => {
   const saveStateToBackground = useCallback(
     async (state) => {
       if (!selectedTask?.id) return
-
       try {
+        // 不要发送processedUrls字段，这样可以避免覆盖后台已有的processedUrls
         await LeadsMiningContentAPI.saveState({
           taskId: selectedTask.id,
           taskStatus,
@@ -93,6 +93,8 @@ export const useBackgroundState = (selectedTask) => {
           discoveredEmails,
           captchaDetected,
           statusMessage,
+          // 明确设置processedUrls为undefined，这样后台会保留现有的processedUrls
+          processedUrls: undefined,
           ...state,
         })
       } catch (error) {
@@ -213,7 +215,6 @@ export const useBackgroundState = (selectedTask) => {
   const isUrlProcessed = useCallback(
     async (url) => {
       if (!selectedTask?.id || !url) return false
-
       try {
         console.log(`正在检查URL是否已处理: ${url}`, `任务ID: ${selectedTask.id}`)
 
