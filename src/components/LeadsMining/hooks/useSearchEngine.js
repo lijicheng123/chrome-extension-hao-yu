@@ -13,10 +13,6 @@ import {
 } from '../utils/searchEngine'
 import { scrollToEmail, highlightEmail } from '../utils/emailExtractor'
 import {
-  leadsMiningWindowMessenger,
-  LEADS_MINING_WINDOW_ACTIONS,
-} from '../../../services/messaging/contentWindow'
-import {
   delay,
   getRandomDelay,
   getDelayParams,
@@ -115,21 +111,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   // 初始化页面深度，基本是详情页执行
   useEffect(() => {
-    console.log(`当前页面深度: ${pageDepthRef.current}`)
-
-    // 检查当前页面是否为搜索结果页
-    // const isCurrentSearchPage = checkIsSearchResultPage()
-
-    // 如果是搜索结果页，检查是否已存在其他搜索结果页
-    // if (isCurrentSearchPage) {
-    //   checkExistingSearchPage().then((exists) => {
-    //     if (exists) {
-    //       // 如果已存在其他搜索结果页，显示提示
-    //       message.warning('已存在一个搜索结果页，此页面无法启动任务')
-    //     }
-    //   })
-    // }
-
     // 如果是详情页，自动执行滚动和提取邮箱
     if (isDetailPageDetected) {
       // 延迟执行，确保页面已加载
@@ -173,8 +154,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     // 我希望在这里发送一条消息，消息内容为提取到的邮箱以及完成的状态
     console.log('详情页处理完成，提取到的邮箱:', emails)
 
-    console.log('selectedTaskselectedTaskselectedTask===>handleDetailPageProcessing:', taskManager)
-
     // 通过window.postMessage发送消息到opener
     // window.opener &&
     //   leadsMiningWindowMessenger.sendFinishedToSearchResultPage(window.opener, { emails })
@@ -198,39 +177,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         })
     }
   }, [extractCurrentPageEmails, selectedTask])
-
-  /**
-   *  监听消息，用于从详情页接收提取的邮箱
-   *  在列表页执行任务时，会监听消息，展示从详情页提取的邮箱
-   */
-  // useEffect(() => {
-  //   // 注册窗口消息处理器
-  //   leadsMiningWindowMessenger.registerHandlers({
-  //     [LEADS_MINING_WINDOW_ACTIONS.EXTRACTED_EMAILS]: (data) => {
-  //       const { emails } = data
-  //       if (emails && emails.length > 0) {
-  //         console.log('收到详情页提取的邮箱:', emails)
-
-  //         // 处理提取到的邮箱
-  //         emails.forEach(async (email) => {
-  //           if (email && typeof email === 'string') {
-  //             try {
-  //               // 使用registerEmail而不是registerProcessedUrl
-  //               await registerEmail(email)
-  //             } catch (error) {
-  //               console.error('注册邮箱时出错:', error)
-  //             }
-  //           }
-  //         })
-  //       }
-  //     },
-  //   })
-
-  //   // 清理函数由ContentWindowMessenger内部处理
-  //   return () => {
-  //     // 不需要手动移除事件监听器
-  //   }
-  // }, [registerEmail, handleDetailPageProcessing])
 
   const test = useCallback(() => {
     console.log('test total pages', getTotalPages())
@@ -508,13 +454,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   // 处理下一个链接(这个方法只在搜索结果列表页执行)
   const processNextLink = useCallback(async () => {
-    // 如果任务不在运行状态，不处理
-    // if (taskStatus !== 'running') {
-    //   isProcessingLinkRef.current = false
-    //   return
-    // }
-    console.log('调试链接跳转：进入processNextLink:')
-
     // 清除之前的定时器
     if (timerRef.current) {
       clearTimeout(timerRef.current)
@@ -647,15 +586,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     if (isSearchResultPageDetected) {
       // 我希望在这里实现一个消息监听，监听详情页发过来的消息
 
-      // 1. 通过window.postMessage监听详情页消息
-      // leadsMiningWindowMessenger.registerHandlers({
-      //   [LEADS_MINING_WINDOW_ACTIONS.FINISHED_TO_SEARCH_RESULT_PAGE]: (data) => {
-      //     console.log('收到详情页处理完成的消息(postMessage):', data)
-      //     handleDeleteTimerAndCloseDetailPage()
-      //     processNextLink()
-      //   },
-      // })
-
       // 2. 通过background监听跨域详情页发来的消息
       if (selectedTask?.id) {
         LeadsMiningContentAPI.registerExtractedEmailsHandler((data) => {
@@ -700,15 +630,15 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
    */
   const handleDeleteTimerAndCloseDetailPage = useCallback(() => {
     // 清除定时器
-    // if (timerRef.current) {
-    //   clearTimeout(timerRef.current)
-    // }
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+    }
 
     // 关闭详情页窗口
     if (detailWindowRef.current && !detailWindowRef.current.closed) {
       detailWindowRef.current.close()
     }
-  }, [detailWindowRef])
+  }, [timerRef, detailWindowRef])
 
   // 监听任务状态变化
   useEffect(() => {
