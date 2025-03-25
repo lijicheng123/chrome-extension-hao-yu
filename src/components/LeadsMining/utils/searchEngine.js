@@ -92,14 +92,6 @@ export function isLastPage() {
  * @returns {boolean} 是否成功点击
  */
 export function clickNextPage() {
-  // 首先尝试新的选择器
-  const nextPageButton = document.querySelector('td[aria-level="3"] a')
-  if (nextPageButton) {
-    console.log('找到下一页按钮(新选择器):', nextPageButton)
-    nextPageButton.click()
-    return true
-  }
-
   // 尝试传统的选择器
   const traditionalNextButton = document.querySelector('#pnnext, a.pn[id="pnnext"]')
   if (traditionalNextButton) {
@@ -108,14 +100,14 @@ export function clickNextPage() {
     return true
   }
 
-  // 尝试其他可能的下一页按钮
-  const altNextButton = document.querySelector(
-    '.AaVjTc a[aria-label="下一页"], .AaVjTc a[aria-label="Next"]',
-  )
-  if (altNextButton) {
-    console.log('找到下一页按钮(备选选择器):', altNextButton)
-    altNextButton.click()
-    return true
+  // 尝试新的选择器
+  const nextPageButton = document.querySelectorAll('td[aria-level="3"] a')
+  if (nextPageButton) {
+    if (nextPageButton.length > 1) {
+      console.log('找到下一页按钮(新选择器):', nextPageButton)
+      nextPageButton[1].click()
+      return true
+    }
   }
 
   console.log('未找到下一页按钮')
