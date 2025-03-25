@@ -76,6 +76,64 @@ function registerMessageHandlers() {
       // 确保直接返回结果，以便MessagingService能正确处理响应
       return exists
     },
+
+    // 跨Tab通信 - 转发提取到的邮箱
+    [LEADS_MINING_API.SEND_EXTRACTED_EMAILS]: async (data, sender) => {
+      const { taskId, emails, timestamp, sender: senderUrl } = data
+      const sourceTabId = sender.tab?.id
+      debugger
+
+      if (!taskId || !emails || !sourceTabId) {
+        console.warn('发送提取的邮箱缺少必要参数')
+        return { success: false }
+      }
+
+      console.log(`收到来自标签页 ${sourceTabId} 的提取邮箱:`, emails)
+
+      try {
+        // 获取活动任务的标签页ID
+        const activeTabId = activeTaskTabs[taskId]
+
+        // 如果存在活动任务的标签页，并且与源标签页不同，则转发消息
+        if (activeTabId && activeTabId !== sourceTabId) {
+          console.log(`转发提取的邮箱到标签页 ${activeTabId}`)
+
+          // 转发消息到活动任务的标签页
+          await leadsMiningService.sendMessageToTab(
+            activeTabId,
+            LEADS_MINING_API.RECEIVE_EXTRACTED_EMAILS,
+            {
+              taskId,
+              emails,
+              timestamp,
+              source: senderUrl,
+              sourceTabId,
+            },
+          )
+
+          // 同时注册提取到的邮箱
+          emails.forEach((email) => {
+            if (email && typeof email === 'string') {
+              handleRegisterEmail(taskId, email)
+            }
+          })
+
+          return { success: true, forwarded: true }
+        } else {
+          // 没有活动标签页或源标签页就是活动标签页，只注册邮箱不转发
+          emails.forEach((email) => {
+            if (email && typeof email === 'string') {
+              handleRegisterEmail(taskId, email)
+            }
+          })
+
+          return { success: true, forwarded: false }
+        }
+      } catch (error) {
+        console.error('转发提取的邮箱失败:', error)
+        return { success: false, error: error.message }
+      }
+    },
   })
 }
 

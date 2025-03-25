@@ -22,10 +22,12 @@ export const useTaskManager = () => {
         setTaskList(storedTaskList)
         const storedSelectedTask = await Browser.storage.local.get('selectedTask')
 
-        if (storedSelectedTask.selectedTask) {
-          setSelectedTask(storedSelectedTask.selectedTask)
+        if (storedSelectedTask.selectedTask || storedTaskList[0]?.selectedTask) {
+          setSelectedTask(storedSelectedTask.selectedTask || storedTaskList[0]?.selectedTask)
           // 生成搜索组合
-          generateSearchCombinations(storedSelectedTask.selectedTask)
+          generateSearchCombinations(
+            storedSelectedTask.selectedTask || storedTaskList[0]?.selectedTask,
+          )
         }
       }
     }

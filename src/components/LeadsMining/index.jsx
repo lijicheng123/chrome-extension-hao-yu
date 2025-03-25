@@ -108,11 +108,18 @@ function LeadsMining() {
   }, [selectedTask, taskStatus]);
 
   // 监听任务状态变化，当状态变为running时执行搜索
+  const debouncedExecuteSearch = useCallback(
+    debounce(() => {
+      if (taskStatus === 'running' && isSearchPage) {
+        executeSearch();
+      }
+    }, 100),
+    [taskStatus, isSearchPage, executeSearch]
+  );
+
   useEffect(() => {
-    if (taskStatus === 'running') {
-      executeSearch()
-    }
-  }, [taskStatus, executeSearch])
+    debouncedExecuteSearch();
+  }, [debouncedExecuteSearch]);
 
   // 检查是否在搜索结果页可操作任务
   const canIOperateTask = useCallback(() => {

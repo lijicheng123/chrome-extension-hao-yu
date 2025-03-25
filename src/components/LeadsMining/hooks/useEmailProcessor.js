@@ -27,10 +27,8 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   const { currentSearchTerm, handleCaptchaDetected, taskStatus, emailList, registerEmail } =
     backgroundState
 
-  // 提取并处理邮箱
-  const extractAndProcessEmails = useCallback(() => {
-    if (taskStatus !== 'running') return
-
+  // 从当前页面提取邮箱
+  const extractCurrentPageEmailsImpl = useCallback(() => {
     try {
       // 检测是否有验证码
       if (detectCaptcha()) {
@@ -38,43 +36,6 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
         return
       }
 
-      // 清除之前标记的邮箱，防止重复标记
-      clearMarkedEmails()
-
-      const pageText = getPageText()
-
-      // 如果页面文本没有变化，直接返回上次的结果
-      if (pageText === lastProcessedText.current) {
-        return lastExtractedEmails.current
-      }
-
-      // 更新上次处理的页面文本
-      lastProcessedText.current = pageText
-
-      const emails = matchEmailsInText(pageText)
-      const uniqueEmails = removeDuplicates(emails)
-
-      // 更新上次提取的邮箱
-      lastExtractedEmails.current = uniqueEmails
-
-      // 处理新发现的邮箱
-      uniqueEmails.forEach((email) => {
-        if (!emailList.includes(email)) {
-          registerEmail(email)
-          submitEmailLead(email)
-        }
-      })
-
-      return uniqueEmails
-    } catch (error) {
-      console.error('提取邮箱时出错:', error)
-      return []
-    }
-  }, [taskStatus, handleCaptchaDetected, emailList, registerEmail])
-
-  // 从当前页面提取邮箱，不依赖任务状态
-  const extractCurrentPageEmailsImpl = useCallback(() => {
-    try {
       const pageText = getPageText()
 
       // 如果页面文本没有变化，直接返回上次的结果
@@ -122,17 +83,8 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
 
     try {
       for (const email of emails) {
-        // 使用submitLeadWithTemplate方法，保留示例数据
-        await customerDevService.submitLeadWithTemplate({
-          user_email: email, // 覆盖联系人邮箱
-          company_email: email, // 覆盖公司邮箱
-          task_id: selectedTask.id, // 关联的任务ID
-          leads_source_url: window.location.href,
-          leads_target_url: window.location.href,
-          leads_keywords: currentSearchTerm || window.location.pathname,
-          thread_name: `${currentSearchTerm} - ${email}`,
-        })
-
+        // 统一使用submitEmailLead方法提交邮箱线索
+        await submitEmailLead(email)
         // 注册到本地列表
         if (!emailList.includes(email)) {
           registerEmail(email)
@@ -197,7 +149,6 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   )
 
   return {
-    extractAndProcessEmails,
     extractCurrentPageEmails,
     submitCurrentPageEmails,
     currentPageEmails,

@@ -179,10 +179,9 @@ export function getSearchResultLinks() {
   const mainLinks = getSearchLinks()
   // 合并结果并去重
   const allLinks = [...new Set([...mainLinks])]
-  debugger
-
   // 过滤链接并按URL去重
   const uniqueUrls = new Set()
+
   return allLinks.filter((link) => {
     const href = link.href
 

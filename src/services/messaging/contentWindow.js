@@ -85,8 +85,8 @@ export class ContentWindowMessenger {
  * LeadsMining窗口通信常量
  */
 export const LEADS_MINING_WINDOW_ACTIONS = {
-  SCROLL_AND_EXTRACT: 'SCROLL_AND_EXTRACT',
   EXTRACTED_EMAILS: 'EXTRACTED_EMAILS',
+  FINISHED_TO_SEARCH_RESULT_PAGE: 'FINISHED_TO_SEARCH_RESULT_PAGE',
 }
 
 /**
@@ -98,21 +98,20 @@ export class LeadsMiningWindowMessenger extends ContentWindowMessenger {
   }
 
   /**
-   * 发送滚动和提取邮箱的请求
-   * @param {Window} targetWindow - 目标窗口
-   * @param {number} depth - 页面深度
-   */
-  sendScrollAndExtract(targetWindow, depth) {
-    this.sendMessage(targetWindow, LEADS_MINING_WINDOW_ACTIONS.SCROLL_AND_EXTRACT, { depth })
-  }
-
-  /**
    * 发送提取到的邮箱
    * @param {Window} targetWindow - 目标窗口
    * @param {string[]} emails - 邮箱列表
    */
   sendExtractedEmails(targetWindow, emails) {
     this.sendMessage(targetWindow, LEADS_MINING_WINDOW_ACTIONS.EXTRACTED_EMAILS, { emails })
+  }
+
+  /**
+   * 发送完成结果到结果页处理完成的消息
+   * @param {Window} targetWindow - 目标窗口
+   */
+  sendFinishedToSearchResultPage(targetWindow) {
+    this.sendMessage(targetWindow, LEADS_MINING_WINDOW_ACTIONS.FINISHED_TO_SEARCH_RESULT_PAGE)
   }
 }
 

@@ -25,6 +25,10 @@ export const LEADS_MINING_API = {
 
   // 搜索结果页管理
   HAS_SEARCH_RESULT_PAGE: 'leads-mining:has-search-result-page',
+
+  // 跨Tab通信
+  SEND_EXTRACTED_EMAILS: 'leads-mining:send-extracted-emails',
+  RECEIVE_EXTRACTED_EMAILS: 'leads-mining:receive-extracted-emails',
 }
 
 /**
@@ -232,6 +236,35 @@ export class LeadsMiningContentAPI {
       console.error('检查搜索结果页失败:', error)
       return false
     }
+  }
+
+  /**
+   * 发送提取到的邮箱到后台，用于跨tab通信
+   * @param {string} taskId 任务ID
+   * @param {string[]} emails 提取到的邮箱列表
+   * @returns {Promise<boolean>} 是否成功
+   */
+  static async sendExtractedEmails(taskId, emails) {
+    try {
+      await leadsMiningService.sendMessage(LEADS_MINING_API.SEND_EXTRACTED_EMAILS, {
+        taskId,
+        emails,
+        timestamp: Date.now(),
+        sender: window.location.href,
+      })
+      return true
+    } catch (error) {
+      console.error('发送提取到的邮箱失败:', error)
+      return false
+    }
+  }
+
+  /**
+   * 注册接收提取邮箱的处理函数
+   * @param {function} callback 回调函数，参数为提取到的邮箱信息
+   */
+  static registerExtractedEmailsHandler(callback) {
+    leadsMiningService.registerHandler(LEADS_MINING_API.RECEIVE_EXTRACTED_EMAILS, callback)
   }
 }
 

@@ -14,6 +14,7 @@ export const SEARCH_ENGINES = {
       'google.fr',
       'google.cn',
       'google.com.hk',
+      'www.google.com.hk',
     ],
     searchPath: '/search',
     searchParam: 'q',
@@ -50,7 +51,6 @@ export function getMatchedSearchEngine() {
 
     // 检查路径是否匹配
     const isPathMatch = currentPath.startsWith(engineConfig.searchPath)
-
     // 如果域名和路径都匹配，返回搜索引擎配置
     if (isDomainMatch && isPathMatch) {
       return {

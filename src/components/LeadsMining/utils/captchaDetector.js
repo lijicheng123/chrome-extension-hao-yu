@@ -8,7 +8,11 @@ export const detectCaptcha = () => {
   const recaptchaElements = document.querySelectorAll('div.g-recaptcha, iframe[src*="recaptcha"]')
   const captchaImages = document.querySelectorAll('img[src*="captcha"]')
 
-  return captchaElements.length > 0 || recaptchaElements.length > 0 || captchaImages.length > 0
+  return (
+    captchaElements.length > 0 ||
+    (recaptchaElements.length > 0 && recaptchaElements[0].innerHTML?.length > 200) ||
+    captchaImages.length > 0
+  )
 }
 
 /**

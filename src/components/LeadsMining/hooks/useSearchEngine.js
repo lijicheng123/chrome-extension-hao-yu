@@ -1,7 +1,6 @@
 import { message } from 'antd'
-import { isSearchUrl } from '../utils/searchEngineUtils'
+// import { isSearchUrl } from '../utils/searchEngineUtils'
 import { useCallback, useRef, useEffect, useMemo } from 'react'
-import Browser from 'webextension-polyfill'
 import {
   scrollToBottom,
   clickNextPage,
@@ -53,6 +52,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
   // 当前页面深度
   const pageDepthRef = useRef(0)
 
+  // 从backgroundState中解构出需要的属性
   const {
     currentCombinationIndex,
     currentPage,
@@ -65,16 +65,36 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     registerEmail,
   } = backgroundState
 
-  const { extractAndProcessEmails } = emailProcessor
+  // 提取邮箱的函数
+  const { extractCurrentPageEmails } = emailProcessor || {}
+
+  const isSearchResultPageDetected = useMemo(() => {
+    return isSearchResultPage()
+  }, [isSearchResultPage])
+
+  const isDetailPageDetected = useMemo(() => {
+    // 检查URL参数中是否有深度标记
+    const urlParams = new URLSearchParams(window.location.search)
+    const depthParam = urlParams.get(PAGE_DEPTH_KEY)
+
+    if (depthParam !== null) {
+      // 如果有深度参数，设置当前深度
+      pageDepthRef.current = parseInt(depthParam, 10)
+    } else {
+      // 如果没有深度参数，默认为0（搜索结果页）
+      pageDepthRef.current = 0
+    }
+    return pageDepthRef.current > 0 && pageDepthRef.current <= MAX_PAGE_DEPTH
+  }, [pageDepthRef.current])
 
   // 检查当前页面是否为搜索结果页
   const checkIsSearchResultPage = useCallback(() => {
-    // 使用新的配置方式检查是否为搜索结果页
-    const isSearchResult = isSearchResultPage()
+    // 使用新的变量名
+    const isSearchResult = isSearchResultPageDetected
 
     // 只有当深度为0(不是详情页)且是搜索结果页时，才认为是搜索结果页
     return isSearchResult && pageDepthRef.current === 0
-  }, [])
+  }, [isSearchResultPageDetected])
 
   // 简化后的检查是否已存在搜索结果页逻辑
   const checkExistingSearchPage = useCallback(async () => {
@@ -91,50 +111,34 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       console.error('检查已存在搜索结果页时出错:', error)
       return false
     }
-  }, [])
+  }, [isSearchResultPageDetected])
 
-  const isSearchPage = useMemo(() => {
-    return isSearchUrl(window.location.href)
-  }, [window.location.href])
-
-  // 初始化页面深度
+  // 初始化页面深度，基本是详情页执行
   useEffect(() => {
-    // 检查URL参数中是否有深度标记
-    const urlParams = new URLSearchParams(window.location.search)
-    const depthParam = urlParams.get(PAGE_DEPTH_KEY)
-
-    if (depthParam !== null) {
-      // 如果有深度参数，设置当前深度
-      pageDepthRef.current = parseInt(depthParam, 10)
-    } else {
-      // 如果没有深度参数，默认为0（搜索结果页）
-      pageDepthRef.current = 0
-    }
-
     console.log(`当前页面深度: ${pageDepthRef.current}`)
 
     // 检查当前页面是否为搜索结果页
-    const isCurrentSearchPage = checkIsSearchResultPage()
+    // const isCurrentSearchPage = checkIsSearchResultPage()
 
     // 如果是搜索结果页，检查是否已存在其他搜索结果页
-    if (isCurrentSearchPage) {
-      checkExistingSearchPage().then((exists) => {
-        if (exists) {
-          // 如果已存在其他搜索结果页，显示提示
-          message.warning('已存在一个搜索结果页，此页面无法启动任务')
-        }
-      })
-    }
+    // if (isCurrentSearchPage) {
+    //   checkExistingSearchPage().then((exists) => {
+    //     if (exists) {
+    //       // 如果已存在其他搜索结果页，显示提示
+    //       message.warning('已存在一个搜索结果页，此页面无法启动任务')
+    //     }
+    //   })
+    // }
 
     // 如果是详情页，自动执行滚动和提取邮箱
-    if (pageDepthRef.current > 0 && pageDepthRef.current <= MAX_PAGE_DEPTH) {
+    if (isDetailPageDetected) {
       // 延迟执行，确保页面已加载
       setTimeout(() => {
         console.log('详情页自动滚动并提取邮箱')
         handleDetailPageProcessing()
       }, 1000)
     }
-  }, [checkIsSearchResultPage, checkExistingSearchPage])
+  }, [checkIsSearchResultPage, checkExistingSearchPage, selectedTask])
 
   // 处理详情页的滚动和提取邮箱
   const handleDetailPageProcessing = useCallback(async () => {
@@ -155,8 +159,8 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
     console.log('页面已加载完成，开始浏览')
 
-    // 等待一段时间，模拟阅读页面顶部内容
-    await delay(2000)
+    // 等待2-3秒，模拟阅读页面顶部内容
+    await delay(getRandomDelay(2, 3))
 
     // 滚动到底部
     console.log('开始滚动到底部')
@@ -164,49 +168,69 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
     // 提取邮箱
     console.log('提取邮箱')
-    const emails = extractAndProcessEmails()
+    const emails = extractCurrentPageEmails() || []
 
-    console.log('详情页处理完成，提取到邮箱:', emails)
+    // 我希望在这里发送一条消息，消息内容为提取到的邮箱以及完成的状态
+    console.log('详情页处理完成，提取到的邮箱:', emails)
 
-    // 如果有opener，发送邮箱回主页面
-    if (window.opener && emails && emails.length > 0) {
-      leadsMiningWindowMessenger.sendExtractedEmails(window.opener, emails)
+    console.log('selectedTaskselectedTaskselectedTask===>handleDetailPageProcessing:', taskManager)
+
+    // 通过window.postMessage发送消息到opener
+    // window.opener &&
+    //   leadsMiningWindowMessenger.sendFinishedToSearchResultPage(window.opener, { emails })
+
+    // 如果有提取到的邮箱，通过background发送，支持跨域通信
+    if (emails && selectedTask?.id) {
+      const taskId = selectedTask.id
+
+      console.log('通过background发送提取到的邮箱:', emails, '任务ID:', taskId)
+      debugger
+      // 使用LeadsMiningContentAPI发送邮箱到background
+      LeadsMiningContentAPI.sendExtractedEmails(taskId, emails)
+        .then((result) => {
+          debugger
+          console.log('发送提取的邮箱结果:', result)
+        })
+        .catch((error) => {
+          debugger
+
+          console.error('发送提取的邮箱出错:', error)
+        })
     }
-  }, [extractAndProcessEmails])
+  }, [extractCurrentPageEmails, selectedTask])
 
-  // 监听消息，用于从详情页接收提取的邮箱
-  useEffect(() => {
-    // 注册窗口消息处理器
-    leadsMiningWindowMessenger.registerHandlers({
-      [LEADS_MINING_WINDOW_ACTIONS.EXTRACTED_EMAILS]: (data) => {
-        const { emails } = data
-        if (emails && emails.length > 0) {
-          console.log('收到详情页提取的邮箱:', emails)
+  /**
+   *  监听消息，用于从详情页接收提取的邮箱
+   *  在列表页执行任务时，会监听消息，展示从详情页提取的邮箱
+   */
+  // useEffect(() => {
+  //   // 注册窗口消息处理器
+  //   leadsMiningWindowMessenger.registerHandlers({
+  //     [LEADS_MINING_WINDOW_ACTIONS.EXTRACTED_EMAILS]: (data) => {
+  //       const { emails } = data
+  //       if (emails && emails.length > 0) {
+  //         console.log('收到详情页提取的邮箱:', emails)
 
-          // 处理提取到的邮箱
-          emails.forEach(async (email) => {
-            if (email && typeof email === 'string') {
-              try {
-                // 使用registerEmail而不是registerProcessedUrl
-                await registerEmail(email)
-              } catch (error) {
-                console.error('注册邮箱时出错:', error)
-              }
-            }
-          })
-        }
-      },
-      [LEADS_MINING_WINDOW_ACTIONS.SCROLL_AND_EXTRACT]: () => {
-        console.log('收到滚动和提取邮箱的请求')
-        handleDetailPageProcessing()
-      },
-    })
+  //         // 处理提取到的邮箱
+  //         emails.forEach(async (email) => {
+  //           if (email && typeof email === 'string') {
+  //             try {
+  //               // 使用registerEmail而不是registerProcessedUrl
+  //               await registerEmail(email)
+  //             } catch (error) {
+  //               console.error('注册邮箱时出错:', error)
+  //             }
+  //           }
+  //         })
+  //       }
+  //     },
+  //   })
 
-    // 清理函数由ContentWindowMessenger内部处理
-    return () => {
-      // 不需要手动移除事件监听器
-    }
-  }, [registerEmail, handleDetailPageProcessing])
+  //   // 清理函数由ContentWindowMessenger内部处理
+  //   return () => {
+  //     // 不需要手动移除事件监听器
+  //   }
+  // }, [registerEmail, handleDetailPageProcessing])
 
   const test = useCallback(() => {
     console.log('test total pages', getTotalPages())
@@ -219,21 +243,15 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     // 检查当前页面是否为搜索结果页
     if (!checkIsSearchResultPage()) {
       message.warning('只能在搜索结果页执行任务')
-      updateState({ taskStatus: 'paused', statusMessage: '只能在搜索结果页执行任务' })
       return
     }
 
     if (taskStatus !== 'running') return
 
     try {
-      // 如果当前页面深度大于0，说明是详情页，不执行搜索
-      if (pageDepthRef.current > 0) {
-        console.log('当前是详情页，不执行搜索')
-        return
-      }
-
       // 如果当前组合索引超出范围，任务完成
       if (currentCombinationIndex >= searchCombinations.length) {
+        debugger
         completeTask()
         return
       }
@@ -242,14 +260,8 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       const searchTerm = searchCombinations[currentCombinationIndex]
       updateState({ currentSearchTerm: searchTerm })
 
-      // 检查当前URL是否为Google搜索结果页面
-      const isGoogleSearchPage =
-        window.location.hostname.includes('google') && window.location.pathname.includes('/search')
-
       // 检查当前搜索页面的搜索词是否与目标搜索词匹配
-      const currentUrlSearchTerm = isGoogleSearchPage
-        ? new URLSearchParams(window.location.search).get('q')
-        : null
+      const currentUrlSearchTerm = new URLSearchParams(window.location.search).get('q')
       const isCorrectSearchTerm = currentUrlSearchTerm === searchTerm
 
       // 判断是否为全新组合（第一页）
@@ -257,8 +269,8 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
       // 只有在以下情况才执行Google搜索：
       // 1. 全新组合（第一页）且不在正确的搜索结果页
-      // 2. 不在Google搜索页面
-      if ((isNewCombination && !isCorrectSearchTerm) || !isGoogleSearchPage) {
+      // 2. 不在Google搜索页面 上面已经判断了
+      if (isNewCombination && !isCorrectSearchTerm) {
         performGoogleSearch(searchTerm)
         return
       }
@@ -358,7 +370,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         const currentStep = currentCombinationIndex * maxPages + currentPage
         const progressPercent = Math.floor((currentStep / totalSteps) * 100)
         updateState({ progress: progressPercent })
-
+        debugger
         // 检查是否需要翻页或切换搜索词
         if (currentPage < maxPages && !isLastPage()) {
           // 滚动到底部并点击下一页
@@ -377,6 +389,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
             const nextSearchTerm = searchCombinations[currentCombinationIndex + 1]
             performGoogleSearch(nextSearchTerm)
           } else {
+            debugger
             completeTask()
           }
         }
@@ -403,25 +416,10 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   // 处理当前页面
   const processCurrentPage = useCallback(async () => {
-    // 检查当前页面是否为搜索结果页
-    if (!checkIsSearchResultPage()) {
-      console.log('当前页面不是搜索结果页，无法处理页面')
-      return
-    }
-
     try {
       // 提取当前页面的邮箱
-      extractAndProcessEmails()
+      extractCurrentPageEmails()
 
-      // 如果当前页面深度已达到最大值，不处理链接
-      if (pageDepthRef.current >= MAX_PAGE_DEPTH) {
-        console.log(
-          `当前页面深度(${pageDepthRef.current})已达到最大值(${MAX_PAGE_DEPTH})，不处理链接`,
-        )
-        return
-      }
-
-      // 处理搜索结果链接
       const searchResults = getSearchResultLinks()
       // 重置链接索引
       currentLinkIndexRef.current = 0
@@ -501,49 +499,21 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       updateState({ statusMessage: `处理当前页面时出错: ${error.message}` })
     }
   }, [
-    extractAndProcessEmails,
+    extractCurrentPageEmails,
     updateState,
     processNextLink,
     checkIsSearchResultPage,
     isUrlProcessed,
   ])
 
-  // 尝试在详情页中滚动到底部并提取邮箱
-  const processDetailPage = useCallback(async (detailWindow) => {
-    if (!detailWindow || detailWindow.closed) return
-
-    try {
-      // 使用ContentWindowMessenger发送消息
-      console.log('向详情页发送滚动和提取邮箱的消息')
-      leadsMiningWindowMessenger.sendScrollAndExtract(detailWindow, pageDepthRef.current + 1)
-    } catch (error) {
-      console.error('处理详情页时出错:', error)
-    }
-  }, [])
-
-  // 处理下一个链接
+  // 处理下一个链接(这个方法只在搜索结果列表页执行)
   const processNextLink = useCallback(async () => {
-    // 检查当前页面是否为搜索结果页
-    if (!checkIsSearchResultPage()) {
-      console.log('当前页面不是搜索结果页，无法处理链接')
-      isProcessingLinkRef.current = false
-      return
-    }
-
     // 如果任务不在运行状态，不处理
-    if (taskStatus !== 'running') {
-      isProcessingLinkRef.current = false
-      return
-    }
-
-    // 如果当前页面深度已达到最大值，不处理链接
-    if (pageDepthRef.current >= MAX_PAGE_DEPTH) {
-      console.log(
-        `当前页面深度(${pageDepthRef.current})已达到最大值(${MAX_PAGE_DEPTH})，不处理链接`,
-      )
-      isProcessingLinkRef.current = false
-      return
-    }
+    // if (taskStatus !== 'running') {
+    //   isProcessingLinkRef.current = false
+    //   return
+    // }
+    console.log('调试链接跳转：进入processNextLink:')
 
     // 清除之前的定时器
     if (timerRef.current) {
@@ -561,6 +531,11 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       // 如果没有更多链接或任务不在运行状态，则结束处理
       if (currentIndex >= searchResults.length || taskStatus !== 'running') {
         isProcessingLinkRef.current = false
+        console.log(
+          '调试链接跳转：currentIndex & taskStatus:',
+          currentIndex >= searchResults.length,
+          taskStatus,
+        )
         return
       }
 
@@ -585,6 +560,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         currentLinkIndexRef.current++
         isProcessingLinkRef.current = false
         setTimeout(() => {
+          debugger
           processNextLink()
         }, 100)
         return
@@ -613,41 +589,25 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       const urlObj = new URL(url)
       urlObj.searchParams.set(PAGE_DEPTH_KEY, (pageDepthRef.current + 1).toString())
       const urlWithDepth = urlObj.toString()
-
+      console.log('check next link 在新标签页中打开链接===>: ', urlWithDepth)
       // 在新标签页中打开链接
       detailWindowRef.current = window.open(urlWithDepth, '_blank')
 
-      // 处理详情页（滚动到底部并提取邮箱）
-      // 发送消息到详情页，请求滚动和提取邮箱
-      await processDetailPage(detailWindowRef.current)
-
+      // 至此打开了新的标签，剩下的工作就是等待详情页处理完成后，关闭详情页，并标记链接为已访问
+      // 等待详情页发通知回来，处理
       // 详情页处理完成后，设置一个定时器来关闭详情页
-      // 使用较长的浏览时间，模拟真实用户行为
-      const browseTime = getRandomDelay(browseDelay * 1.5, browseDelay * 2.5)
+      // 最长等待50-65秒内的随机时间，如果期间没有收到详情页处理完成的消息，则强行处理下一个链接
+      const waitRandomTime = getRandomDelay(browseDelay * 25, browseDelay * 30)
+      console.log('check next link 等待详情页处理完成的时间===>: ', waitRandomTime)
       timerRef.current = setTimeout(() => {
-        // 如果任务已暂停或停止，不继续处理
-        if (taskStatus !== 'running') {
-          return
-        }
-
+        console.log('调试链接跳转：进入timeout:')
+        // 处理状态
+        handleNextStatus()
         // 关闭详情页
-        if (detailWindowRef.current && !detailWindowRef.current.closed) {
-          detailWindowRef.current.close()
-        }
-
-        // 标记链接为已访问
-        markLinkStatus(link, 'visited')
-        // 更新链接状态
-        linkData.status = 'visited'
-        console.log(`链接已访问完成，标记为已访问: ${url}`)
-
-        // 移动到下一个链接
-        currentLinkIndexRef.current++
-        isProcessingLinkRef.current = false
-
+        handleDeleteTimerAndCloseDetailPage()
         // 处理下一个链接
         processNextLink()
-      }, browseTime)
+      }, 20000) // 最长等待50-65秒内的随机时间，如果期间没有收到详情页处理完成的消息，则强行处理下一个链接
     } catch (error) {
       console.error('处理链接时出错:', error)
       updateState({ statusMessage: `处理链接时出错: ${error.message}` })
@@ -663,32 +623,97 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     saveStateToBackground,
     updateState,
     getDelayParams,
-    processDetailPage,
     checkIsSearchResultPage,
+    handleDeleteTimerAndCloseDetailPage,
   ])
 
-  // 修改清理函数，使用提取出来的清理工具
+  const handleNextStatus = useCallback(() => {
+    const searchResults = searchResultsRef.current
+    const currentIndex = currentLinkIndexRef.current
+    const linkData = searchResults[currentIndex]
+    const { link, url } = linkData
+    // 标记链接为已访问
+    markLinkStatus(link, 'visited')
+    // 更新链接状态
+    linkData.status = 'visited'
+    console.log(`调试链接跳转：链接已访问完成，标记为已访问: ${url}`)
+    // 移动到下一个链接
+    currentLinkIndexRef.current++
+    isProcessingLinkRef.current = false
+  }, [currentLinkIndexRef, isProcessingLinkRef, markLinkStatus])
+
+  // 只有搜索结果列表页才需要关闭详情页&清理工具
   useEffect(() => {
-    return () => {
-      // 清除定时器
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-      }
+    if (isSearchResultPageDetected) {
+      // 我希望在这里实现一个消息监听，监听详情页发过来的消息
 
-      // 关闭详情页窗口
-      if (detailWindowRef.current && !detailWindowRef.current.closed) {
-        detailWindowRef.current.close()
-      }
+      // 1. 通过window.postMessage监听详情页消息
+      // leadsMiningWindowMessenger.registerHandlers({
+      //   [LEADS_MINING_WINDOW_ACTIONS.FINISHED_TO_SEARCH_RESULT_PAGE]: (data) => {
+      //     console.log('收到详情页处理完成的消息(postMessage):', data)
+      //     handleDeleteTimerAndCloseDetailPage()
+      //     processNextLink()
+      //   },
+      // })
 
-      // 使用提取出来的清理工具
-      cleanupLinkMarkers()
+      // 2. 通过background监听跨域详情页发来的消息
+      if (selectedTask?.id) {
+        LeadsMiningContentAPI.registerExtractedEmailsHandler((data) => {
+          console.log('收到详情页提取的邮箱(background中转):', data)
+          debugger
+          const { emails, taskId: emailTaskId } = data
+          const currentTaskId = selectedTask?.id
+          handleNextStatus()
+          handleDeleteTimerAndCloseDetailPage()
+          processNextLink()
+
+          // 验证是否是当前任务的邮箱
+          if (emailTaskId === currentTaskId && emails && emails.length > 0) {
+            // 处理提取到的邮箱
+            emails.forEach(async (email) => {
+              if (email && typeof email === 'string') {
+                try {
+                  await registerEmail(email)
+                } catch (error) {
+                  console.error('注册邮箱失败:', error)
+                }
+              }
+            })
+
+            // 处理完成后关闭详情页并继续处理下一个链接
+            handleDeleteTimerAndCloseDetailPage()
+            processNextLink()
+          }
+        })
+      }
     }
-  }, [])
+  }, [
+    isSearchResultPageDetected,
+    handleDeleteTimerAndCloseDetailPage,
+    processNextLink,
+    selectedTask,
+    registerEmail,
+  ])
+
+  /**
+   * 删除定时器&关闭详情页
+   */
+  const handleDeleteTimerAndCloseDetailPage = useCallback(() => {
+    // 清除定时器
+    // if (timerRef.current) {
+    //   clearTimeout(timerRef.current)
+    // }
+
+    // 关闭详情页窗口
+    if (detailWindowRef.current && !detailWindowRef.current.closed) {
+      detailWindowRef.current.close()
+    }
+  }, [detailWindowRef])
 
   // 监听任务状态变化
   useEffect(() => {
     // 只有当任务状态与上一个状态不同时才执行
-    if (isStatusChanged(prevTaskStatusRef.current, taskStatus)) {
+    if (isStatusChanged(prevTaskStatusRef.current, taskStatus) && isSearchResultPageDetected) {
       console.log(`任务状态变化: ${prevTaskStatusRef.current} -> ${taskStatus}`)
 
       // 保存上一次的任务状态
@@ -712,17 +737,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       // 如果任务从暂停变为运行（继续任务）
       else if (prevStatus === 'paused' && taskStatus === 'running') {
         console.log('任务从暂停变为运行（继续任务）')
-
-        // 检查当前页面是否为搜索结果页
-        if (!checkIsSearchResultPage()) {
-          console.log('当前页面不是搜索结果页，无法继续任务')
-          message.warning('只能在搜索结果页继续任务')
-          updateState({ taskStatus: 'paused', statusMessage: '只能在搜索结果页继续任务' })
-          return
-        }
-
         updateState({ statusMessage: '任务继续执行' })
-
         // 如果有打开的详情页，关闭它并继续处理下一个链接
         if (detailWindowRef.current && !detailWindowRef.current.closed) {
           detailWindowRef.current.close()
@@ -753,7 +768,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         isProcessingLinkRef.current = false
       }
     }
-  }, [taskStatus, updateState, processNextLink, checkIsSearchResultPage])
+  }, [taskStatus, updateState, processNextLink, isSearchResultPageDetected])
 
   // 定位到邮箱
   const locateEmail = useCallback((email) => {
@@ -768,11 +783,10 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   return {
     executeSearch,
-    processCurrentPage,
     processNextLink,
     locateEmail,
     checkExistingSearchPage,
-    isSearchPage,
+    isSearchPage: isSearchResultPageDetected,
     test,
   }
 }
