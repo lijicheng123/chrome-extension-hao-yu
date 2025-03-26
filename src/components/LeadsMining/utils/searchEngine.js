@@ -471,7 +471,7 @@ function addLinkStyles() {
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      z-index: 1000 !important;
+      z-index: 99 !important;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
     }
     

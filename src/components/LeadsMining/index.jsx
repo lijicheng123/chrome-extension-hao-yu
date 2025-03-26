@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react'
-import { Form, Card, ConfigProvider, message, Select, Button, Alert } from 'antd'
+import { Form, Card, ConfigProvider, message, Select, Button, Alert, Space } from 'antd'
 
 // 自定义Hooks
 import { useTaskManager } from './hooks/useTaskManager'
@@ -15,6 +15,8 @@ import EmailEditModal from './components/EmailEditModal'
 
 // 样式
 import style from './index.modules.scss'
+
+const showDebugger = false
 
 /**
  * 线索挖掘组件
@@ -111,15 +113,15 @@ function LeadsMining() {
   const debouncedExecuteSearch = useCallback(
     debounce(() => {
       if (taskStatus === 'running' && isSearchPage) {
-        executeSearch();
+        executeSearch()
       }
     }, 100),
-    [taskStatus, isSearchPage, executeSearch]
-  );
+    [taskStatus, isSearchPage, executeSearch],
+  )
 
   useEffect(() => {
-    debouncedExecuteSearch();
-  }, [debouncedExecuteSearch]);
+    debouncedExecuteSearch()
+  }, [debouncedExecuteSearch])
 
   // 检查是否在搜索结果页可操作任务
   const canIOperateTask = useCallback(() => {
@@ -163,28 +165,63 @@ function LeadsMining() {
   return (
     <ConfigProvider>
       <div className={style['email-list']}>
-        <Card title="线索挖掘任务" bordered={false}>
-          <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 14 }}>
-            <Form.Item
-              label="挖掘任务"
-              name="currentTask"
-              tooltip="选择要执行的挖掘任务"
-              rules={[{ required: true, message: '请选择挖掘任务' }]}
-              style={{ marginBottom: 16 }}
+        <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 14 }}>
+          <Form.Item
+            label="挖掘任务"
+            name="currentTask"
+            tooltip="选择要执行的挖掘任务"
+            rules={[{ required: true, message: '请选择挖掘任务' }]}
+            style={{ marginBottom: 16 }}
+          >
+            <Select
+              placeholder="请选择挖掘任务"
+              onChange={handleTaskSelect}
+              style={{ width: '100%' }}
             >
-              <Select
-                placeholder="请选择挖掘任务"
-                onChange={handleTaskSelect}
-                style={{ width: '100%' }}
+              {taskList?.map((task) => (
+                <Select.Option key={task.id} value={task.id}>
+                  {task.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Space>
+            {taskStatus === 'idle' && (
+              <Button
+                type="primary"
+                onClick={startTask}
+                disabled={!isSearchPage || !selectedTask}
+                title={
+                  !isSearchPage
+                    ? '只能在谷歌搜索结果页启动任务'
+                    : !selectedTask
+                      ? '请先选择任务'
+                      : ''
+                }
               >
-                {taskList?.map((task) => (
-                  <Select.Option key={task.id} value={task.id}>
-                    {task.name}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-
+                启动任务
+              </Button>
+            )}
+            {taskStatus === 'running' && (
+              <Button type="primary" danger onClick={pauseTask}>
+                暂停任务
+              </Button>
+            )}
+            {taskStatus === 'paused' && (
+              <Button
+                type="primary"
+                onClick={resumeTask}
+                disabled={!isSearchPage}
+                title={!isSearchPage ? '只能在谷歌搜索结果页继续任务' : ''}
+              >
+                继续任务
+              </Button>
+            )}
+            {(taskStatus === 'running' || taskStatus === 'paused') && (
+              <Button type="default" danger onClick={stopTask} style={{ marginLeft: 8 }}>
+                停止任务
+              </Button>
+            )}
             <Button
               type="primary"
               onClick={() => {
@@ -193,95 +230,51 @@ function LeadsMining() {
             >
               刷新任务
             </Button>
+          </Space>
 
-            <Button
-              type="primary"
-              onClick={() => {
-                console.log('当前是否是搜索结果页：', isSearchPage)
-              }}
-            >
-              测试：当前是否是搜索结果页
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => {
-                checkExistingSearchPage().then((res) => {
-                  console.log('当前是否有其他标签页打开了搜索结果页：', res)
-                })
-              }}
-            >
-              测试：当前是否有其他标签页打开了搜索结果页
-            </Button>
-            <Button type="primary" onClick={test}>
-              测试：获取总页数、当前页数、是否最后一页
-            </Button>
-            {!isSearchPage && taskStatus !== 'idle' && (
-              <Alert
-                message="提示"
-                description="当前页面不是谷歌搜索结果页，无法执行任务。请返回谷歌搜索结果页继续任务。"
-                type="warning"
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-            )}
+          {showDebugger && (
+            <Space>
+              <Button
+                type="primary"
+                onClick={() => {
+                  console.log('当前是否是搜索结果页：', isSearchPage)
+                }}
+              >
+                测试：当前是否是搜索结果页
+              </Button>
+              <Button
+                type="primary"
+                onClick={() => {
+                  checkExistingSearchPage().then((res) => {
+                    console.log('当前是否有其他标签页打开了搜索结果页：', res)
+                  })
+                }}
+              >
+                测试：当前是否有其他标签页打开了搜索结果页
+              </Button>
+              <Button type="primary" onClick={test}>
+                测试：获取总页数、当前页数、是否最后一页
+              </Button>
+            </Space>
+          )}
 
-            {selectedTask && (
-              <TaskStatus
-                taskStatus={taskStatus}
-                progress={progress}
-                currentSearchTerm={currentSearchTerm}
-                discoveredEmails={discoveredEmails}
-                currentPage={currentPage}
-                captchaDetected={captchaDetected}
-                statusMessage={statusMessage}
-                startTask={startTask}
-                pauseTask={pauseTask}
-                resumeTask={resumeTask}
-                stopTask={stopTask}
-                fetchTaskList={fetchTaskList}
-              />
-            )}
-
-            <Form.Item label="任务控制">
-              {taskStatus === 'idle' && (
-                <Button
-                  type="primary"
-                  onClick={startTask}
-                  disabled={!isSearchPage || !selectedTask}
-                  title={
-                    !isSearchPage
-                      ? '只能在谷歌搜索结果页启动任务'
-                      : !selectedTask
-                      ? '请先选择任务'
-                      : ''
-                  }
-                >
-                  启动任务
-                </Button>
-              )}
-              {taskStatus === 'running' && (
-                <Button type="primary" danger onClick={pauseTask}>
-                  暂停任务
-                </Button>
-              )}
-              {taskStatus === 'paused' && (
-                <Button
-                  type="primary"
-                  onClick={resumeTask}
-                  disabled={!isSearchPage}
-                  title={!isSearchPage ? '只能在谷歌搜索结果页继续任务' : ''}
-                >
-                  继续任务
-                </Button>
-              )}
-              {(taskStatus === 'running' || taskStatus === 'paused') && (
-                <Button type="default" danger onClick={stopTask} style={{ marginLeft: 8 }}>
-                  停止任务
-                </Button>
-              )}
-            </Form.Item>
-          </Form>
-        </Card>
+          {selectedTask && (
+            <TaskStatus
+              taskStatus={taskStatus}
+              progress={progress}
+              currentSearchTerm={currentSearchTerm}
+              discoveredEmails={discoveredEmails}
+              currentPage={currentPage}
+              captchaDetected={captchaDetected}
+              statusMessage={statusMessage}
+              startTask={startTask}
+              pauseTask={pauseTask}
+              resumeTask={resumeTask}
+              stopTask={stopTask}
+              fetchTaskList={fetchTaskList}
+            />
+          )}
+        </Form>
 
         {taskStatus === 'idle' && selectedTask ? (
           <>
