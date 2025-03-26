@@ -1,5 +1,6 @@
 import { message } from 'antd'
 // import { isSearchUrl } from '../utils/searchEngineUtils'
+import { debounce } from '../utils/searchEngineUtils'
 import { useCallback, useRef, useEffect, useMemo } from 'react'
 import {
   scrollToBottom,
@@ -112,14 +113,11 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
   // 初始化页面深度，基本是详情页执行
   useEffect(() => {
     // 如果是详情页，自动执行滚动和提取邮箱
-    if (isDetailPageDetected) {
-      // 延迟执行，确保页面已加载
-      setTimeout(() => {
-        console.log('详情页自动滚动并提取邮箱')
-        handleDetailPageProcessing()
-      }, 1000)
+    if (isDetailPageDetected && selectedTask?.id) {
+      console.log('详情页自动滚动并提取邮箱')
+      handleDetailPageProcessing()
     }
-  }, [checkIsSearchResultPage, checkExistingSearchPage, selectedTask])
+  }, [handleDetailPageProcessing, isDetailPageDetected, selectedTask?.id])
 
   // 处理详情页的滚动和提取邮箱
   const handleDetailPageProcessing = useCallback(async () => {
@@ -150,7 +148,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     // 提取邮箱
     console.log('提取邮箱')
     const emails = extractCurrentPageEmails() || []
-
+    debugger
     // 我希望在这里发送一条消息，消息内容为提取到的邮箱以及完成的状态
     console.log('详情页处理完成，提取到的邮箱:', emails)
 
@@ -603,9 +601,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
           const { emails, taskId: emailTaskId } = data
           const currentTaskId = selectedTask?.id
           handleNextStatus()
-          handleDeleteTimerAndCloseDetailPage()
-          processNextLink()
-
+          debugger
           // 验证是否是当前任务的邮箱
           if (emailTaskId === currentTaskId && emails && emails.length > 0) {
             // 处理提取到的邮箱

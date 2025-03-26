@@ -28,8 +28,9 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
     backgroundState
 
   // 从当前页面提取邮箱
-  const extractCurrentPageEmailsImpl = useCallback(() => {
+  const extractCurrentPageEmails = useCallback(() => {
     try {
+      debugger
       // 检测是否有验证码
       if (detectCaptcha()) {
         handleCaptchaDetected()
@@ -63,11 +64,6 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
     }
   }, [])
 
-  // 添加防抖，减少频繁调用
-  const extractCurrentPageEmails = useCallback(debounce(extractCurrentPageEmailsImpl, 300), [
-    extractCurrentPageEmailsImpl,
-  ])
-
   // 提交当前页面所有邮箱线索
   const submitCurrentPageEmails = useCallback(async () => {
     if (!selectedTask) {
@@ -75,7 +71,7 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
       return
     }
 
-    const emails = extractCurrentPageEmailsImpl()
+    const emails = extractCurrentPageEmails()
     if (emails.length === 0) {
       message.info('当前页面未发现邮箱')
       return
@@ -96,7 +92,7 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
       console.error('提交邮箱线索时出错:', error)
       message.error(`提交邮箱线索失败: ${error.message}`)
     }
-  }, [selectedTask, currentSearchTerm, emailList, registerEmail, extractCurrentPageEmailsImpl])
+  }, [selectedTask, currentSearchTerm, emailList, registerEmail, extractCurrentPageEmails])
 
   // 提交邮箱线索到服务器
   const submitEmailLead = useCallback(
