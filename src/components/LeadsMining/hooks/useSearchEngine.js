@@ -163,16 +163,13 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       const taskId = selectedTask.id
 
       console.log('通过background发送提取到的邮箱:', emails, '任务ID:', taskId)
-      debugger
+
       // 使用LeadsMiningContentAPI发送邮箱到background
       LeadsMiningContentAPI.sendExtractedEmails(taskId, emails)
         .then((result) => {
-          debugger
           console.log('发送提取的邮箱结果:', result)
         })
         .catch((error) => {
-          debugger
-
           console.error('发送提取的邮箱出错:', error)
         })
     }
@@ -197,7 +194,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     try {
       // 如果当前组合索引超出范围，任务完成
       if (currentCombinationIndex >= searchCombinations.length) {
-        debugger
         completeTask()
         return
       }
@@ -316,7 +312,14 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         const currentStep = currentCombinationIndex * maxPages + currentPage
         const progressPercent = Math.floor((currentStep / totalSteps) * 100)
         updateState({ progress: progressPercent })
-        debugger
+
+        console.log(
+          '当前情况currentPage，maxPages，isLastPage:',
+          currentPage,
+          maxPages,
+          isLastPage(),
+        )
+
         // 检查是否需要翻页或切换搜索词
         if (currentPage < maxPages && !isLastPage()) {
           // 滚动到底部并点击下一页
@@ -335,7 +338,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
             const nextSearchTerm = searchCombinations[currentCombinationIndex + 1]
             performGoogleSearch(nextSearchTerm)
           } else {
-            debugger
             completeTask()
           }
         }
@@ -467,6 +469,13 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       const searchResults = searchResultsRef.current
       const currentIndex = currentLinkIndexRef.current
 
+      // 如果没有更多链接则点击下一页处理
+      if (currentIndex >= searchResults.length && !isLastPage() && taskStatus === 'running') {
+        isProcessingLinkRef.current = false
+        clickNextPage()
+        return
+      }
+
       // 如果没有更多链接或任务不在运行状态，则结束处理
       if (currentIndex >= searchResults.length || taskStatus !== 'running') {
         isProcessingLinkRef.current = false
@@ -499,7 +508,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         currentLinkIndexRef.current++
         isProcessingLinkRef.current = false
         setTimeout(() => {
-          debugger
           processNextLink()
         }, 100)
         return
@@ -570,6 +578,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     const searchResults = searchResultsRef.current
     const currentIndex = currentLinkIndexRef.current
     const linkData = searchResults[currentIndex]
+    console.log(`下一个链接信息====>:`, searchResults, currentIndex, linkData)
     const { link, url } = linkData
     // 标记链接为已访问
     markLinkStatus(link, 'visited')
@@ -590,7 +599,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       if (selectedTask?.id) {
         LeadsMiningContentAPI.registerExtractedEmailsHandler((data) => {
           console.log('收到详情页提取的邮箱(background中转):', data)
-          debugger
+
           const { emails, taskId: emailTaskId } = data
           const currentTaskId = selectedTask?.id
           handleNextStatus()

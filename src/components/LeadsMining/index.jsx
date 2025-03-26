@@ -66,46 +66,46 @@ function LeadsMining() {
   const { executeSearch, isSearchPage, checkExistingSearchPage, test } = searchEngine
 
   // 合并后的邮箱采集功能：只保留MutationObserver监听
-  useEffect(() => {
-    // 仅在有选中任务时执行采集
-    if (!selectedTask) return;
+  // useEffect(() => {
+  //   // 仅在有选中任务时执行采集
+  //   if (!selectedTask) return;
 
-    // 初始采集当前页面邮箱
-    extractCurrentPageEmails()
+  //   // 初始采集当前页面邮箱
+  //   extractCurrentPageEmails()
 
-    // 防止重复处理的标记
-    let isProcessing = false;
+  //   // 防止重复处理的标记
+  //   let isProcessing = false;
 
-    // 使用debounce处理提取操作，减少频繁调用
-    const debouncedExtract = debounce(() => {
-      // 无论任务状态如何，都提取邮箱
-      const newEmails = extractCurrentPageEmails()
+  //   // 使用debounce处理提取操作，减少频繁调用
+  //   const debouncedExtract = debounce(() => {
+  //     // 无论任务状态如何，都提取邮箱
+  //     const newEmails = extractCurrentPageEmails()
 
-      // 如果任务正在运行，则处理并提交邮箱
-      if (taskStatus === 'running' && newEmails && newEmails.length > 0) {
-        extractAndProcessEmails()
-      }
-      isProcessing = false;
-    }, 300);
+  //     // 如果任务正在运行，则处理并提交邮箱
+  //     if (taskStatus === 'running' && newEmails && newEmails.length > 0) {
+  //       extractAndProcessEmails()
+  //     }
+  //     isProcessing = false;
+  //   }, 300);
 
-    // 设置MutationObserver监听页面变化
-    const observer = new MutationObserver(() => {
-      // 避免重复处理
-      if (isProcessing) return;
-      isProcessing = true;
+  //   // 设置MutationObserver监听页面变化
+  //   const observer = new MutationObserver(() => {
+  //     // 避免重复处理
+  //     if (isProcessing) return;
+  //     isProcessing = true;
 
-      // 使用requestAnimationFrame确保DOM操作在同一帧中完成
-      requestAnimationFrame(() => {
-        debouncedExtract();
-      });
-    });
+  //     // 使用requestAnimationFrame确保DOM操作在同一帧中完成
+  //     requestAnimationFrame(() => {
+  //       debouncedExtract();
+  //     });
+  //   });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+  //   observer.observe(document.body, { childList: true, subtree: true });
 
-    return () => {
-      observer.disconnect();
-    }
-  }, [selectedTask, taskStatus]);
+  //   return () => {
+  //     observer.disconnect();
+  //   }
+  // }, [selectedTask, taskStatus]);
 
   // 监听任务状态变化，当状态变为running时执行搜索
   const debouncedExecuteSearch = useCallback(
