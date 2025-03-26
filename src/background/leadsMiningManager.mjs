@@ -175,12 +175,14 @@ function handleSaveState(state, tabId) {
 
   // 保存现有的processedUrls数组
   const existingProcessedUrls = taskStates[taskId]?.processedUrls || []
+  const existingEmails = taskStates[taskId]?.emails || []
 
   // 更新任务状态，但保留processedUrls数组
   taskStates[taskId] = {
     ...state,
     // 如果状态中包含processedUrls则使用它，否则保留现有的
     processedUrls: state.processedUrls || existingProcessedUrls,
+    emails: state.emails || existingEmails,
     lastUpdated: Date.now(),
     tabId,
   }

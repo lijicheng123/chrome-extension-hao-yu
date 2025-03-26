@@ -35,14 +35,14 @@ export const useBackgroundState = (selectedTask) => {
       // 清理处理器
       leadsMiningService._handlers[LEADS_MINING_API.TASK_TAKEN_OVER] = undefined
     }
-  }, [selectedTask])
+  }, [selectedTask?.id])
 
   // 初始化：从background获取任务状态
   useEffect(() => {
     if (selectedTask?.id) {
       getStateFromBackground()
     }
-  }, [selectedTask])
+  }, [selectedTask?.id])
 
   // 从background获取任务状态
   const getStateFromBackground = useCallback(async () => {
@@ -68,8 +68,14 @@ export const useBackgroundState = (selectedTask) => {
 
         console.log('getEmailListFromBackground response =========>', response)
 
-        if (response && response.emails) {
-          setEmailList(response.emails)
+        if (response) {
+          if (Array.isArray(response)) {
+            // 如果response本身就是数组
+            setEmailList(response)
+          } else if (response.emails) {
+            // 如果response是带emails属性的对象
+            setEmailList(response.emails)
+          }
         }
       }
     } catch (error) {

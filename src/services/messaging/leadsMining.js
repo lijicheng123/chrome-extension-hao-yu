@@ -171,7 +171,10 @@ export class LeadsMiningContentAPI {
    */
   static async getEmails(taskId) {
     try {
-      const response = await leadsMiningService.sendMessage(LEADS_MINING_API.GET_EMAILS, { taskId })
+      const response = await leadsMiningService.sendMessageWithResponse(
+        LEADS_MINING_API.GET_EMAILS,
+        { taskId },
+      )
       return response?.emails || []
     } catch (error) {
       console.error('获取邮箱列表失败:', error)
