@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import Browser from 'webextension-polyfill'
-import { message } from 'antd'
 import { customerDevService } from '../../../services/api/leadsMining'
 
 /**
@@ -16,72 +15,117 @@ export const useTaskManager = () => {
 
   // 初始化：从存储中获取任务列表和选中的任务
   useEffect(() => {
-    const fetchTaskListFromStorage = async () => {
-      const storedTaskList = await getTaskList()
-      if (storedTaskList?.length > 0) {
-        setTaskList(storedTaskList)
-        const storedSelectedTask = await Browser.storage.local.get('selectedTask')
+    getTaskList()
+  }, [getTaskList])
 
-        if (storedSelectedTask.selectedTask || storedTaskList[0]?.selectedTask) {
-          setSelectedTask(storedSelectedTask.selectedTask || storedTaskList[0]?.selectedTask)
-          // 生成搜索组合
-          generateSearchCombinations(
-            storedSelectedTask.selectedTask || storedTaskList[0]?.selectedTask,
-          )
-        }
-      }
+  useEffect(() => {
+    generateSearchCombinations(selectedTask)
+  }, [selectedTask])
+
+  /**
+   * 获取任务列表
+   * 如果是详情页则从缓存取
+   * 如果是结果列表页则先从缓存取，如果缓存过期或者为空则从服务器取
+   * @param {Boolean} forceRefresh 是否强制刷新
+   * @returns 任务列表
+   */
+  const getTaskList = async (forceRefresh = false) => {
+    let [taskList, selectedTask] = await getTaskListAndSelectedTaskFromStorage()
+    if (!taskList || forceRefresh) {
+      taskList = await getTaskListFromServer()
     }
-
-    fetchTaskListFromStorage()
-  }, [])
-
-  // 获取任务列表
-  const getTaskList = async () => {
-    let taskList = (await Browser.storage.local.get('taskList')?.taskList) || []
-
-    taskList = await fetchTaskList()
-    return taskList || []
+    handleTaskListChange(taskList)
+    handleSelectedTaskChange(selectedTask || taskList[0])
+    return [taskList, selectedTask]
   }
 
-  // 从API获取任务列表
-  const fetchTaskList = async () => {
-    console.log('fetchTaskList===> start')
+  /**
+   * 从存储中获取任务列表和选中的任务
+   */
+  const getTaskListAndSelectedTaskFromStorage = async () => {
+    const now = Date.now()
+    const maxAge = 0.5 * 24 * 60 * 60 * 1000 // 0.5天
+    const storedTaskList = await Browser.storage.local.get(['taskList', 'taskListLastUpdated'])
+    if (!storedTaskList?.taskList || now - storedTaskList?.taskListLastUpdated > maxAge) {
+      return [null, null]
+    }
+
+    const storedSelectedTask = await Browser.storage.local.get([
+      'selectedTask',
+      'selectedTaskLastUpdated',
+    ])
+    if (
+      !storedSelectedTask?.selectedTask ||
+      now - storedSelectedTask?.selectedTaskLastUpdated > maxAge
+    ) {
+      return [storedTaskList.taskList, null]
+    }
+
+    return [storedTaskList.taskList, storedSelectedTask.selectedTask]
+  }
+
+  /**
+   * 从服务器获取任务列表
+   * @returns 任务列表
+   */
+  const getTaskListFromServer = async () => {
     try {
+      console.log('fetchTaskList===> start')
       const taskList = await customerDevService.getTaskList()
       console.log('fetchTaskList===> taskList', taskList)
-      await Browser.storage.local.set({ taskList: taskList })
-      setTaskList(taskList)
-
-      if (taskList.length > 0 && !selectedTask) {
-        setSelectedTask(taskList[0])
-        await Browser.storage.local.set({ selectedTask: taskList[0] })
-        generateSearchCombinations(taskList[0])
-      }
-
       return taskList
     } catch (error) {
       console.error('fetchTaskList:', error)
-      message.error({
-        content: `获取任务列表失败: ${error.message}`,
-        duration: 5,
-      })
       return []
     }
   }
 
-  // 任务选择处理
+  /**
+   * 处理任务列表变化
+   * @param {Array} taskList 任务列表
+   */
+  const handleTaskListChange = async (taskList) => {
+    setTaskList(taskList)
+    await Browser.storage.local.set({
+      taskList: taskList,
+      taskListLastUpdated: Date.now(),
+    })
+  }
+
+  /**
+   * 处理选中的任务变化
+   * @param {Object} selectedTask 选中的任务
+   */
+  const handleSelectedTaskChange = async (selectedTask) => {
+    setSelectedTask(selectedTask)
+    await Browser.storage.local.set({
+      selectedTask: selectedTask,
+      selectedTaskLastUpdated: Date.now(),
+    })
+  }
+
+  /**
+   * 任务选择处理
+   * @param {String} taskId 任务ID
+   */
   const handleTaskSelect = async (taskId) => {
     const task = taskList.find((t) => t.id === taskId)
     if (!task) return
 
     setSelectedTask(task)
-    await Browser.storage.local.set({ selectedTask: task })
+    await Browser.storage.local.set({
+      selectedTask: task,
+      selectedTaskLastUpdated: Date.now(),
+    })
 
     // 生成搜索组合
     generateSearchCombinations(task)
   }
 
-  // 生成搜索组合
+  /**
+   * 生成搜索组合
+   * @param {Object} task 任务
+   */
   const generateSearchCombinations = (task) => {
     if (!task) return
 
@@ -111,7 +155,7 @@ export const useTaskManager = () => {
     searchCombinations,
     maxPages,
     handleTaskSelect,
-    fetchTaskList,
+    fetchTaskList: getTaskList,
     generateSearchCombinations,
   }
 }

@@ -81,8 +81,6 @@ function registerMessageHandlers() {
     [LEADS_MINING_API.SEND_EXTRACTED_EMAILS]: async (data, sender) => {
       const { taskId, emails, timestamp, sender: senderUrl } = data
       const sourceTabId = sender.tab?.id
-      debugger
-
       if (!taskId || !emails || !sourceTabId) {
         console.warn('发送提取的邮箱缺少必要参数')
         return { success: false }
