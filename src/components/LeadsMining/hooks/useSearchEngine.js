@@ -148,7 +148,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     // 提取邮箱
     console.log('提取邮箱')
     const emails = extractCurrentPageEmails() || []
-    debugger
+
     // 我希望在这里发送一条消息，消息内容为提取到的邮箱以及完成的状态
     console.log('详情页处理完成，提取到的邮箱:', emails)
 

@@ -1,6 +1,6 @@
-import React, { useEffect, useCallback } from 'react'
-import { Form, Card, ConfigProvider, message, Select, Button, Alert, Space } from 'antd'
-
+import React, { useEffect, useCallback, useMemo, useState } from 'react'
+import { Form, Card, ConfigProvider, message, Select, Button, Space, Tooltip, Col, Row } from 'antd'
+import { ReloadOutlined } from '@ant-design/icons'
 // 自定义Hooks
 import { useTaskManager } from './hooks/useTaskManager'
 import { useBackgroundState } from './hooks/useBackgroundState'
@@ -58,7 +58,6 @@ function LeadsMining() {
     handleUpdateEmail,
     handleDeleteCustomer,
     setEditingEmail,
-    extractAndProcessEmails,
     extractCurrentPageEmails,
     submitCurrentPageEmails,
     currentPageEmails,
@@ -67,61 +66,21 @@ function LeadsMining() {
   const searchEngine = useSearchEngine(taskManager, backgroundState, emailProcessor)
   const { executeSearch, isSearchPage, checkExistingSearchPage, test } = searchEngine
 
-  // 合并后的邮箱采集功能：只保留MutationObserver监听
-  // useEffect(() => {
-  //   // 仅在有选中任务时执行采集
-  //   if (!selectedTask) return;
-
-  //   // 初始采集当前页面邮箱
-  //   extractCurrentPageEmails()
-
-  //   // 防止重复处理的标记
-  //   let isProcessing = false;
-
-  //   // 使用debounce处理提取操作，减少频繁调用
-  //   const debouncedExtract = debounce(() => {
-  //     // 无论任务状态如何，都提取邮箱
-  //     const newEmails = extractCurrentPageEmails()
-
-  //     // 如果任务正在运行，则处理并提交邮箱
-  //     if (taskStatus === 'running' && newEmails && newEmails.length > 0) {
-  //       extractAndProcessEmails()
-  //     }
-  //     isProcessing = false;
-  //   }, 300);
-
-  //   // 设置MutationObserver监听页面变化
-  //   const observer = new MutationObserver(() => {
-  //     // 避免重复处理
-  //     if (isProcessing) return;
-  //     isProcessing = true;
-
-  //     // 使用requestAnimationFrame确保DOM操作在同一帧中完成
-  //     requestAnimationFrame(() => {
-  //       debouncedExtract();
-  //     });
-  //   });
-
-  //   observer.observe(document.body, { childList: true, subtree: true });
-
-  //   return () => {
-  //     observer.disconnect();
-  //   }
-  // }, [selectedTask, taskStatus]);
+  const isSearchPageAndTaskRunning = useMemo(() => {
+    return isSearchPage && taskStatus === 'running'
+  }, [isSearchPage, taskStatus])
 
   // 监听任务状态变化，当状态变为running时执行搜索
   const debouncedExecuteSearch = useCallback(
     debounce(() => {
-      if (taskStatus === 'running' && isSearchPage) {
+      if (isSearchPageAndTaskRunning) {
         executeSearch()
       }
     }, 100),
-    [taskStatus, isSearchPage, executeSearch],
+    [isSearchPageAndTaskRunning, executeSearch],
   )
 
-  useEffect(() => {
-    debouncedExecuteSearch()
-  }, [debouncedExecuteSearch])
+  useEffect(debouncedExecuteSearch, [debouncedExecuteSearch])
 
   // 检查是否在搜索结果页可操作任务
   const canIOperateTask = useCallback(() => {
@@ -132,6 +91,105 @@ function LeadsMining() {
     message.error('任务只能在搜索结果页操作')
     return false
   }, [taskStatus])
+
+  // 自动挖掘按钮是否禁用
+  const autoMiningDisabled = useMemo(() => {
+    return !selectedTask?.id || false
+  }, [isSearchPage, selectedTask?.id])
+
+  // 自动挖掘是否正在进行中
+  const isAutoMining = useMemo(() => {
+    return taskStatus === 'running' && selectedTask?.miningType === 'auto'
+  }, [taskStatus, selectedTask?.miningType])
+
+  const autoMining = useCallback(() => {
+    console.log('自动挖掘')
+  }, [])
+
+  // 随缘挖掘按钮是否禁用
+  const casualMiningDisabled = useMemo(() => {
+    return !selectedTask?.id || false
+  }, [isSearchPage, selectedTask?.id])
+
+  // 随缘挖掘是否正在进行中
+  const isCasualMining = useCallback(() => {
+    return taskStatus === 'running' && selectedTask?.miningType === 'casual'
+  }, [taskStatus, selectedTask?.miningType])
+
+  const casualMining = useCallback(() => {
+    console.log('随缘挖掘')
+  }, [])
+
+  // 按钮悬浮状态
+  const [casualHovered, setCasualHovered] = useState(false)
+  const [autoHovered, setAutoHovered] = useState(false)
+
+  // 随缘挖掘按钮处理函数
+  const handleCasualMouseEnter = useCallback(() => {
+    if (!casualMiningDisabled) {
+      setCasualHovered(true)
+    }
+  }, [casualMiningDisabled])
+
+  const handleCasualMouseLeave = useCallback(() => {
+    if (!casualMiningDisabled) {
+      setCasualHovered(false)
+    }
+  }, [casualMiningDisabled])
+
+  // 自动挖掘按钮处理函数
+  const handleAutoMouseEnter = useCallback(() => {
+    setAutoHovered(true)
+  }, [])
+
+  const handleAutoMouseLeave = useCallback(() => {
+    setAutoHovered(false)
+  }, [])
+
+  // 随缘挖掘按钮文案
+  const casualButtonText = useMemo(() => {
+    if (casualMiningDisabled) {
+      return '随缘挖掘已停止'
+    }
+    if (isCasualMining) {
+      return casualHovered ? '停止随缘挖掘' : '随缘挖掘中'
+    }
+    return casualHovered ? '开启随缘挖掘' : '随缘挖掘已停止'
+  }, [casualMiningDisabled, isCasualMining, casualHovered])
+
+  // 随缘挖掘tooltip文案
+  const casualTooltipText = useMemo(() => {
+    if (casualMiningDisabled) {
+      return '请先选择任务，并在搜索结果页操作'
+    } else if (isCasualMining()) {
+      return casualHovered ? '点击停止随缘挖掘' : '随缘挖掘进行中'
+    } else {
+      return casualHovered ? '点击开启随缘挖掘' : '随缘挖掘已停止'
+    }
+  }, [casualMiningDisabled, isCasualMining, casualHovered])
+
+  // 自动挖掘按钮文案
+  const autoButtonText = useMemo(() => {
+    if (autoMiningDisabled) {
+      return '自动挖掘已停止'
+    }
+    if (isAutoMining) {
+      return autoHovered ? '停止自动挖掘' : '自动挖掘中'
+    }
+    return autoHovered ? '开启自动挖掘' : '自动挖掘已停止'
+  }, [autoMiningDisabled, isAutoMining, autoHovered])
+
+  // 自动挖掘tooltip文案
+  const autoTooltipText = useMemo(() => {
+    if (autoMiningDisabled) {
+      return '请先选择任务，并在搜索结果页操作'
+    } else if (isAutoMining) {
+      return autoHovered ? '点击停止自动挖掘' : '自动挖掘进行中'
+    } else {
+      return autoHovered ? '点击开启自动挖掘' : '自动挖掘已停止'
+    }
+  }, [autoMiningDisabled, isAutoMining, autoHovered])
+
   // 开始任务
   const startTask = () => {
     if (!canIOperateTask()) {
@@ -165,28 +223,67 @@ function LeadsMining() {
   return (
     <ConfigProvider>
       <div className={style['email-list']}>
-        <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 14 }}>
-          <Form.Item
-            label="挖掘任务"
-            name="currentTask"
-            tooltip="选择要执行的挖掘任务"
-            rules={[{ required: true, message: '请选择挖掘任务' }]}
-            style={{ marginBottom: 16 }}
-          >
-            <Select
-              placeholder="请选择挖掘任务"
-              onChange={handleTaskSelect}
-              style={{ width: '100%' }}
-            >
-              {taskList?.map((task) => (
-                <Select.Option key={task.id} value={task.id}>
-                  {task.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
+        <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+          <Row align="top">
+            <Col span={22}>
+              <Form.Item
+                label="挖掘任务"
+                name="currentTask"
+                tooltip="选择要执行的挖掘任务"
+                rules={[{ required: true, message: '请选择挖掘任务' }]}
+                style={{ marginBottom: 16 }}
+                disabled={taskStatus !== 'idle'}
+              >
+                <Select
+                  placeholder="请选择挖掘任务"
+                  onChange={handleTaskSelect}
+                  style={{ width: '100%' }}
+                >
+                  {taskList?.map((task) => (
+                    <Select.Option key={task.id} value={task.id}>
+                      {task.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={2}>
+              <Button
+                style={{ marginTop: 4 }}
+                size="small"
+                type="link"
+                onClick={fetchTaskList}
+                icon={<ReloadOutlined />}
+              />
+            </Col>
+          </Row>
+
           <Space>
-            {taskStatus === 'idle' && (
+            <Tooltip title={casualTooltipText}>
+              <Button
+                type="primary"
+                danger={isCasualMining && !casualHovered}
+                onClick={casualMining}
+                disabled={casualMiningDisabled}
+                onMouseEnter={handleCasualMouseEnter}
+                onMouseLeave={handleCasualMouseLeave}
+              >
+                {casualButtonText}
+              </Button>
+            </Tooltip>
+            <Tooltip title={autoTooltipText}>
+              <Button
+                type={isAutoMining ? 'primary' : 'default'}
+                danger={isAutoMining && autoHovered}
+                onClick={autoMining}
+                disabled={autoMiningDisabled}
+                onMouseEnter={handleAutoMouseEnter}
+                onMouseLeave={handleAutoMouseLeave}
+              >
+                {autoButtonText}
+              </Button>
+            </Tooltip>
+            {/* {taskStatus === 'idle' && (
               <Button
                 type="primary"
                 onClick={startTask}
@@ -195,11 +292,11 @@ function LeadsMining() {
                   !isSearchPage
                     ? '只能在谷歌搜索结果页启动任务'
                     : !selectedTask
-                      ? '请先选择任务'
-                      : ''
+                    ? '请先选择任务'
+                    : ''
                 }
               >
-                启动任务
+                自动挖掘
               </Button>
             )}
             {taskStatus === 'running' && (
@@ -219,17 +316,9 @@ function LeadsMining() {
             )}
             {(taskStatus === 'running' || taskStatus === 'paused') && (
               <Button type="default" danger onClick={stopTask} style={{ marginLeft: 8 }}>
-                停止任务
+                停止挖掘
               </Button>
-            )}
-            <Button
-              type="primary"
-              onClick={() => {
-                fetchTaskList()
-              }}
-            >
-              刷新任务
-            </Button>
+            )} */}
           </Space>
 
           {showDebugger && (
@@ -305,13 +394,13 @@ function LeadsMining() {
             </Card>
           </>
         ) : (
-            <EmailList
-              emailList={emailList}
-              handleEditEmail={handleEditEmail}
-              handleDeleteCustomer={handleDeleteCustomer}
-              locateEmail={searchEngine.locateEmail}
-              style={style}
-            />
+          <EmailList
+            emailList={emailList}
+            handleEditEmail={handleEditEmail}
+            handleDeleteCustomer={handleDeleteCustomer}
+            locateEmail={searchEngine.locateEmail}
+            style={style}
+          />
         )}
 
         <EmailEditModal

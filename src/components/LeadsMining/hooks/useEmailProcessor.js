@@ -30,7 +30,6 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   // 从当前页面提取邮箱
   const extractCurrentPageEmails = useCallback(() => {
     try {
-      debugger
       // 检测是否有验证码
       if (detectCaptcha()) {
         handleCaptchaDetected()
