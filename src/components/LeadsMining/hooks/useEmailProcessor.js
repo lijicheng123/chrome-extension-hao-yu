@@ -8,7 +8,6 @@ import {
   removeDuplicates,
   clearMarkedEmails,
 } from '../utils/emailExtractor'
-import { debounce } from '../utils/searchEngineUtils'
 
 /**
  * 邮箱处理Hook
@@ -27,7 +26,10 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   const { currentSearchTerm, handleCaptchaDetected, taskStatus, emailList, registerEmail } =
     backgroundState
 
-  // 从当前页面提取邮箱
+  /**
+   * 从当前页面提取邮箱
+   * @returns {Array} 邮箱列表
+   */
   const extractCurrentPageEmails = useCallback(() => {
     try {
       // 检测是否有验证码
@@ -56,6 +58,10 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
       lastExtractedEmails.current = uniqueEmails
 
       setCurrentPageEmails(uniqueEmails)
+      // 用下面的方法提交邮箱
+      uniqueEmails.forEach((email) => {
+        submitEmailLead(email)
+      })
       return uniqueEmails
     } catch (error) {
       console.error('提取当前页面邮箱时出错:', error)
@@ -63,37 +69,10 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
     }
   }, [])
 
-  // 提交当前页面所有邮箱线索
-  const submitCurrentPageEmails = useCallback(async () => {
-    if (!selectedTask) {
-      message.error('请先选择任务')
-      return
-    }
-
-    const emails = extractCurrentPageEmails()
-    if (emails.length === 0) {
-      message.info('当前页面未发现邮箱')
-      return
-    }
-
-    try {
-      for (const email of emails) {
-        // 统一使用submitEmailLead方法提交邮箱线索
-        await submitEmailLead(email)
-        // 注册到本地列表
-        if (!emailList.includes(email)) {
-          registerEmail(email)
-        }
-      }
-
-      message.success(`成功提交 ${emails.length} 个邮箱线索`)
-    } catch (error) {
-      console.error('提交邮箱线索时出错:', error)
-      message.error(`提交邮箱线索失败: ${error.message}`)
-    }
-  }, [selectedTask, currentSearchTerm, emailList, registerEmail, extractCurrentPageEmails])
-
-  // 提交邮箱线索到服务器
+  /**
+   * 提交邮箱线索到服务器
+   * @param {string} email - 邮箱
+   */
   const submitEmailLead = useCallback(
     async (email) => {
       if (!selectedTask) return
@@ -107,12 +86,13 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
           leads_source_url: window.location.href,
           leads_target_url: window.location.href,
           leads_keywords: currentSearchTerm || window.location.pathname,
+          thread_name: `${window.location.hostname}-${email}`,
         })
       } catch (error) {
         console.error('提交邮箱线索时出错:', error)
       }
     },
-    [selectedTask, currentSearchTerm],
+    [selectedTask?.id, currentSearchTerm],
   )
 
   // 打开编辑邮箱模态框
@@ -145,7 +125,6 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
 
   return {
     extractCurrentPageEmails,
-    submitCurrentPageEmails,
     currentPageEmails,
     editingEmail,
     newEmailValue,

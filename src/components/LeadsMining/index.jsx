@@ -59,7 +59,6 @@ function LeadsMining() {
     handleDeleteCustomer,
     setEditingEmail,
     extractCurrentPageEmails,
-    submitCurrentPageEmails,
     currentPageEmails,
   } = emailProcessor
 
@@ -375,13 +374,6 @@ function LeadsMining() {
                   style={{ marginRight: 8 }}
                 >
                   刷新当前页面邮箱
-                </Button>
-                <Button
-                  type="primary"
-                  onClick={submitCurrentPageEmails}
-                  disabled={!currentPageEmails.length}
-                >
-                  将当前页面邮箱作为线索提交
                 </Button>
               </div>
               <EmailList
