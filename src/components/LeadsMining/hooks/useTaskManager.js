@@ -11,7 +11,7 @@ export const useTaskManager = () => {
   const [selectedTask, setSelectedTask] = useState(null)
   const [searchCombinations, setSearchCombinations] = useState([])
   // 最大页数写死为10
-  const maxPages = 10
+  const maxPages = 20
 
   // 初始化：从存储中获取任务列表和选中的任务
   useEffect(() => {

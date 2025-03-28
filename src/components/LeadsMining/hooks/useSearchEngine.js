@@ -60,10 +60,11 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     isUrlProcessed,
     registerProcessedUrl,
     registerEmail,
+    casualMiningStatus,
   } = backgroundState
 
   // 提取邮箱的函数
-  const { extractCurrentPageEmails } = emailProcessor || {}
+  const { extractCurrentPageEmails, submitEmailLead } = emailProcessor || {}
 
   const isSearchResultPageDetected = useMemo(() => {
     return isSearchResultPage()
@@ -118,6 +119,21 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       handleDetailPageProcessing()
     }
   }, [handleDetailPageProcessing, isDetailPageDetected, selectedTask?.id])
+
+  console.log('casualMiningStatus====>', casualMiningStatus, taskStatus)
+
+  useEffect(() => {
+    if (casualMiningStatus === 'cRunning') {
+      console.log('闲时挖掘状态: 运行中')
+      // 执行收集邮箱
+      const emails = extractCurrentPageEmails()
+      if (emails?.length > 0) {
+        submitEmailLead(emails, { forceSubmit: true })
+      }
+    } else {
+      console.log('闲时挖掘状态: 停止')
+    }
+  }, [casualMiningStatus])
 
   // 处理详情页的滚动和提取邮箱
   const handleDetailPageProcessing = useCallback(async () => {
@@ -722,6 +738,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     locateEmail,
     checkExistingSearchPage,
     isSearchPage: isSearchResultPageDetected,
+    isDetailPage: isDetailPageDetected,
     test,
   }
 }

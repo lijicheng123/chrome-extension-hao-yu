@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { LeadsMiningContentAPI, LEADS_MINING_API } from '../../../services/messaging/leadsMining'
 import leadsMiningService from '../../../services/messaging/leadsMining'
-
+import Browser from 'webextension-polyfill'
 /**
  * 与background脚本通信的Hook
  * 用于管理任务状态
  */
 export const useBackgroundState = (selectedTask) => {
   const [taskStatus, setTaskStatus] = useState('idle')
+  const [casualMiningStatus, setCasualMiningStatus] = useState('cRunning') // 闲时挖掘状态: cRunning 运行中, cStopped 停止
+
   const [currentSearchTerm, setCurrentSearchTerm] = useState('')
   const [currentCombinationIndex, setCurrentCombinationIndex] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
@@ -17,25 +19,15 @@ export const useBackgroundState = (selectedTask) => {
   const [statusMessage, setStatusMessage] = useState('')
   const [emailList, setEmailList] = useState([])
 
-  // 初始化消息监听器
   useEffect(() => {
-    // 使用消息服务监听任务被接管事件
-    const handleTaskTakenOver = (data) => {
-      console.log('收到任务被接管事件', data)
-      if (data.taskId === selectedTask?.id) {
-        setTaskStatus('paused')
-        setStatusMessage('任务已在其他标签页中启动')
-      }
-    }
+    Browser.storage.local.get('casualMiningStatus').then((res) => {
+      setCasualMiningStatus(res.casualMiningStatus)
+    })
+  }, [])
 
-    // 注册消息处理器
-    leadsMiningService.registerHandler(LEADS_MINING_API.TASK_TAKEN_OVER, handleTaskTakenOver)
-
-    return () => {
-      // 清理处理器
-      leadsMiningService._handlers[LEADS_MINING_API.TASK_TAKEN_OVER] = undefined
-    }
-  }, [selectedTask?.id])
+  useEffect(() => {
+    Browser.storage.local.set({ casualMiningStatus })
+  }, [casualMiningStatus])
 
   // 初始化：从background获取任务状态
   useEffect(() => {
@@ -120,6 +112,19 @@ export const useBackgroundState = (selectedTask) => {
     ],
   )
 
+  /**
+   * 监听随缘挖掘点击
+   * 如果要开启则需要关闭自动挖掘
+   */
+  const onCasualMiningClick = useCallback(() => {
+    if (casualMiningStatus === 'cRunning') {
+      setCasualMiningStatus('cStopped')
+    } else {
+      setCasualMiningStatus('cRunning')
+      stopTask()
+    }
+  }, [casualMiningStatus])
+
   // 开始任务
   const startTask = useCallback(async () => {
     if (!selectedTask?.id) return
@@ -130,7 +135,8 @@ export const useBackgroundState = (selectedTask) => {
       setTaskStatus('running')
       setCaptchaDetected(false)
       setStatusMessage('任务开始执行')
-
+      // 关掉随缘挖掘
+      setCasualMiningStatus('cStopped')
       // 如果是从头开始，重置状态
       if (currentCombinationIndex === 0 && currentPage === 1) {
         setProgress(0)
@@ -329,5 +335,8 @@ export const useBackgroundState = (selectedTask) => {
     isUrlProcessed,
     registerProcessedUrl,
     registerEmail,
+
+    casualMiningStatus,
+    onCasualMiningClick,
   }
 }
