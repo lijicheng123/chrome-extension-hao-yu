@@ -114,7 +114,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
   // 初始化页面深度，基本是详情页执行
   useEffect(() => {
     // 如果是详情页，自动执行滚动和提取邮箱
-    if (isDetailPageDetected && selectedTask?.id) {
+    if (isDetailPageDetected && selectedTask?.id && taskStatus === 'running') {
       console.log('详情页自动滚动并提取邮箱')
       handleDetailPageProcessing()
     }
@@ -187,6 +187,10 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
           console.error('发送提取的邮箱出错:', error)
         })
     }
+    // 延迟1秒自动关闭此页面
+    setTimeout(() => {
+      window.close()
+    }, 1000)
   }, [extractCurrentPageEmails, selectedTask])
 
   const test = useCallback(() => {
