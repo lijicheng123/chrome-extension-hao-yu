@@ -130,3 +130,48 @@ export const debounce = (fn, delay) => {
 export const isStatusChanged = (prevStatus, currentStatus) => {
   return prevStatus !== currentStatus
 }
+
+/**
+ * 优化URL
+ * @param {string} url - 要优化的URL
+ * @returns {string} 优化后的URL
+ */
+export const optimizeUrl = (url) => {
+  // 检查URL是否为有效的URL
+  try {
+    new URL(url)
+  } catch (e) {
+    console.error('Invalid URL:', url)
+    return url.slice(0, 255) // 如果无效，只返回前255个字符
+  }
+
+  // 检查是否是谷歌搜索URL
+  if (url.includes('google.') && url.includes('/search?')) {
+    const urlObj = new URL(url)
+    const searchParams = urlObj.searchParams
+
+    // 保留必要的参数
+    const newParams = new URLSearchParams()
+    if (searchParams.has('q')) newParams.set('q', searchParams.get('q'))
+    if (searchParams.has('start')) newParams.set('start', searchParams.get('start'))
+
+    // 构建新的URL
+    let newUrl = `${urlObj.origin}${urlObj.pathname}?${newParams.toString()}`
+
+    // 如果新URL超过255个字符，进行截断
+    if (newUrl.length > 255) {
+      // 尝试缩短查询参数
+      let q = newParams.get('q')
+      while (newUrl.length > 255 && q.length > 0) {
+        q = q.slice(0, -1)
+        newParams.set('q', q)
+        newUrl = `${urlObj.origin}${urlObj.pathname}?${newParams.toString()}`
+      }
+    }
+
+    return newUrl
+  } else {
+    // 非谷歌URL，直接截取前255个字符
+    return url.slice(0, 255)
+  }
+}

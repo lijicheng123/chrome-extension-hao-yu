@@ -27,7 +27,7 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
     backgroundState
 
   /**
-   * 从当前页面提取邮箱
+   * 仅从当前页面提取邮箱
    * @returns {Array} 邮箱列表
    */
   const extractCurrentPageEmails = useCallback(() => {
@@ -58,36 +58,40 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
       lastExtractedEmails.current = uniqueEmails
 
       setCurrentPageEmails(uniqueEmails)
-      // 用下面的方法提交邮箱
-      uniqueEmails.forEach((email) => {
-        submitEmailLead(email)
-      })
+
       return uniqueEmails
     } catch (error) {
       console.error('提取当前页面邮箱时出错:', error)
       return []
     }
-  }, [])
+  }, [handleCaptchaDetected, submitEmailLead])
 
   /**
    * 提交邮箱线索到服务器
-   * @param {string} email - 邮箱
+   * @param {string|string[]} email - 单个邮箱或邮箱数组
+   * @param {Object} options - 选项
+   * @param {boolean} options.forceSubmit - 是否强制提交
    */
   const submitEmailLead = useCallback(
-    async (email) => {
-      if (!selectedTask) return
+    async (email, { forceSubmit = false } = {}) => {
+      if (!selectedTask && !forceSubmit) return
 
       try {
-        // 使用submitLeadWithTemplate方法，保留示例数据
-        await customerDevService.submitLeadWithTemplate({
-          user_email: email, // 覆盖联系人邮箱
-          company_email: email, // 覆盖公司邮箱
-          task_id: selectedTask.id, // 关联的任务ID
-          leads_source_url: window.location.href,
-          leads_target_url: window.location.href,
-          leads_keywords: currentSearchTerm || window.location.pathname,
-          thread_name: `${window.location.hostname}-${email}`,
-        })
+        // 处理email参数，如果是数组则遍历提交，否则作为单个邮箱处理
+        const emails = Array.isArray(email) ? email : [email]
+
+        for (const singleEmail of emails) {
+          // 使用submitLeadWithTemplate方法，保留示例数据
+          await customerDevService.submitLeadWithTemplate({
+            user_email: singleEmail, // 覆盖联系人邮箱
+            company_email: singleEmail, // 覆盖公司邮箱
+            task_id: selectedTask?.id || 2, // 关联的任务ID
+            leads_source_url: window.location.href,
+            leads_target_url: window.location.href,
+            leads_keywords: forceSubmit ? '' : currentSearchTerm || window.location.pathname,
+            thread_name: `${window.location.hostname}-${singleEmail}`,
+          })
+        }
       } catch (error) {
         console.error('提交邮箱线索时出错:', error)
       }

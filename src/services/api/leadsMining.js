@@ -1,5 +1,5 @@
 import { requestManager } from './request'
-
+import { optimizeUrl } from '../../components/LeadsMining/utils/searchEngineUtils'
 /**
  * 客户开发 API 服务
  */
@@ -233,9 +233,9 @@ class LeadsMiningService {
     // 构建线索数据
     const leadData = {
       // 联系人信息
-      user_name: '张三11', // 联系人姓名（必填）
+      user_name: data.user_email, // 联系人姓名（必填）
       user_function: '销售总监', // 联系人职位
-      user_email: 'zhangsan@example.com', // 联系人邮箱
+      user_email: data.user_email, // 联系人邮箱
       user_phone: '13800138000', // 联系人电话
       user_mobile: '13900139000', // 联系人手机
       user_website: 'https://personal.example.com', // 联系人网站
@@ -268,11 +268,11 @@ class LeadsMiningService {
       street2: '2号楼', // 线索地址2
       tag_names: ['潜在客户', '高价值', '科技行业'], // 标签名称列表
       priority: '2', // 优先级：0(低)、1(中)、2(高)、3(很高)
-      // 来源信息
-      leads_source_url: window.location.href,
-      leads_target_url: window.location.href,
-      leads_keywords: 'bottle \n water bottle',
+      leads_keywords: '',
       ...data,
+      // 来源信息
+      leads_source_url: optimizeUrl(data.leads_source_url),
+      leads_target_url: optimizeUrl(data.leads_target_url),
     }
 
     return this.submitLead(leadData)

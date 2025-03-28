@@ -35,7 +35,7 @@ import { WINDOW_TYPE } from '../constants'
 import { UI_API } from '../services/messaging/ui'
 import uiService from '../services/messaging/ui'
 import i18nService, { I18N_API } from '../services/messaging/i18n'
-
+import { isShowMiningPanel } from '../config/index.mjs'
 const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
 const sideBarContainer = document.createElement('div')
 sideBarContainer.id = 'chatgptbox-sidebar-container'
@@ -332,7 +332,7 @@ async function prepareForRightClickMenu() {
     [UI_API.CLOSE_TOOLBAR]: () => {
       deleteToolbar()
       return { success: true }
-    }
+    },
   })
 }
 
@@ -585,10 +585,12 @@ async function run() {
   // 顶部通知返回条
   prepareForJumpBackNotification()
 
-  setTimeout(() => {
-    // 渲染 leadsMining
-    renderLeadsMining()
-  }, 1000)
+  if (isShowMiningPanel()) {
+    setTimeout(() => {
+      // 渲染 leadsMining
+      renderLeadsMining()
+    }, 1000)
+  }
 }
 
 run()

@@ -576,3 +576,20 @@ export async function clearOldAccessToken() {
     await setAccessToken('')
   }
 }
+
+/**
+ * 挖掘黑名单
+ * 指定规则的域名地址不挖掘邮箱
+ * http://localhost:8069/
+ */
+const miningBlacklist = [
+  'localhost:8069',
+]
+/**
+ * 是否显示邮箱挖掘面板
+ * 通过当前页面地址判断是否显示邮箱挖掘面板
+ */
+export const isShowMiningPanel = () => {
+  const currentUrl = window.location.href
+  return !miningBlacklist.some((blacklist) => currentUrl.includes(blacklist))
+}
