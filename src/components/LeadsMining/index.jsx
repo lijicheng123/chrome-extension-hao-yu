@@ -234,7 +234,7 @@ function LeadsMining() {
                 tooltip="选择要执行的挖掘任务"
                 rules={[{ required: true, message: '请选择挖掘任务' }]}
                 style={{ marginBottom: 16 }}
-                disabled={taskStatus !== 'idle'}
+                disabled={taskStatus === 'running'}
               >
                 <Select
                   placeholder="请选择挖掘任务"
