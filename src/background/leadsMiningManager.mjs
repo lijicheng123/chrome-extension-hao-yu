@@ -75,6 +75,7 @@ function registerMessageHandlers() {
       return exists
     },
 
+    // TODO:应该是发送到结果列表页，所以可以写死tabid
     // 跨Tab通信 - 转发提取到的邮箱
     [LEADS_MINING_API.SEND_EXTRACTED_EMAILS]: async (data, sender) => {
       const { taskId, emails, timestamp, sender: senderUrl } = data

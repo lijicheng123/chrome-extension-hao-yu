@@ -62,7 +62,7 @@ function LeadsMining() {
   } = emailProcessor
 
   const searchEngine = useSearchEngine(taskManager, backgroundState, emailProcessor)
-  const { executeSearch, isSearchPage, checkExistingSearchPage, test } = searchEngine
+  const { executeSearch, isSearchPage, isDetailPage, checkExistingSearchPage, test } = searchEngine
 
   const [isSearchPageAndTaskRunning] = useMemo(() => {
     const isRunning = taskStatus === 'running'
@@ -321,7 +321,7 @@ function LeadsMining() {
           )}
         </Form>
 
-        {taskStatus != 'running' && casualMiningStatus === 'cRunning' ? (
+        {(taskStatus != 'running' && casualMiningStatus === 'cRunning') || isDetailPage ? (
           <EmailList
             emailList={currentPageEmails}
             handleEditEmail={handleEditEmail}
