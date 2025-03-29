@@ -129,8 +129,9 @@ export const useTaskManager = () => {
   const generateSearchCombinations = (task) => {
     if (!task) return
 
-    const { keywords = '', exclusion_keywords = '' } = task
+    const { keywords = '', exclusion_keywords = '', email_suffixes = '' } = task
     const keywordList = keywords.split('\n').filter((k) => k.trim())
+    const emailSuffixList = email_suffixes.split('\n').filter((k) => k.trim())
     const exclusionList = exclusion_keywords.split('\n').filter((k) => k.trim())
 
     const combinations = []
@@ -141,6 +142,11 @@ export const useTaskManager = () => {
       // 添加排除词
       if (exclusionList.length > 0) {
         searchTerm += ' ' + exclusionList.map((ex) => `-${ex.trim()}`).join(' ')
+      }
+
+      // 添加邮箱后缀
+      if (emailSuffixList.length > 0) {
+        searchTerm += ' ' + emailSuffixList.map((suffix) => `${suffix.trim()}`).join(' ')
       }
 
       combinations.push(searchTerm)

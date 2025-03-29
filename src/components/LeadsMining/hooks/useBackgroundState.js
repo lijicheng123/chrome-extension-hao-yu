@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { LeadsMiningContentAPI, LEADS_MINING_API } from '../../../services/messaging/leadsMining'
-import leadsMiningService from '../../../services/messaging/leadsMining'
+import { LeadsMiningContentAPI } from '../../../services/messaging/leadsMining'
 import Browser from 'webextension-polyfill'
 /**
  * 与background脚本通信的Hook
@@ -43,7 +42,7 @@ export const useBackgroundState = (selectedTask) => {
       // 使用新的API获取任务状态
       const state = await LeadsMiningContentAPI.getState(selectedTask.id)
 
-      console.log('getStateFromBackground state =========>', state)
+      console.log('getStateFromBackground state =========>', selectedTask.id, state)
 
       if (state) {
         setTaskStatus(state.taskStatus || 'idle')
@@ -73,7 +72,7 @@ export const useBackgroundState = (selectedTask) => {
     } catch (error) {
       console.error('获取任务状态失败:', error)
     }
-  }, [selectedTask])
+  }, [selectedTask?.id])
 
   // 保存状态到background
   const saveStateToBackground = useCallback(

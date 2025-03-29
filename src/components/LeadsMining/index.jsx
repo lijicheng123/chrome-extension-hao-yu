@@ -202,25 +202,21 @@ function LeadsMining() {
       message.error('请先选择任务并确保已生成搜索组合')
       return
     }
-
-    // 只调用startTaskBackground，不直接调用executeSearch
-    // 状态变化后会通过上面的useEffect触发executeSearch
     startTaskBackground()
   }
 
   // 继续任务
   const resumeTask = () => {
-    // 只调用resumeTaskBackground，不直接调用executeSearch
-    // 状态变化后会通过上面的useEffect触发executeSearch
     resumeTaskBackground()
   }
 
   // 初始化表单
   useEffect(() => {
-    if (selectedTask) {
+    console.log('selectedTask=====>', selectedTask)
+    if (selectedTask?.id) {
       form.setFieldsValue({ currentTask: selectedTask.id })
     }
-  }, [selectedTask, form])
+  }, [selectedTask?.id, form])
 
   return (
     <ConfigProvider>
