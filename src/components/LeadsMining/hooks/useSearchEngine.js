@@ -559,19 +559,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
       // 至此打开了新的标签，剩下的工作就是等待详情页处理完成后，关闭详情页，并标记链接为已访问
       // 等待详情页发通知回来，处理
-      // 详情页处理完成后，设置一个定时器来关闭详情页
-      // 最长等待50-65秒内的随机时间，如果期间没有收到详情页处理完成的消息，则强行处理下一个链接
-      const waitRandomTime = getRandomDelay(browseDelay * 25, browseDelay * 30)
-      console.log('check next link 等待详情页处理完成的时间===>: ', waitRandomTime)
-      timerRef.current = setTimeout(() => {
-        console.log('调试链接跳转：进入timeout:')
-        // 处理状态
-        handleNextStatus()
-        // 关闭详情页
-        handleDeleteTimerAndCloseDetailPage()
-        // 处理下一个链接
-        processNextLink()
-      }, 20000) // 最长等待50-65秒内的随机时间，如果期间没有收到详情页处理完成的消息，则强行处理下一个链接
     } catch (error) {
       console.error('处理链接时出错:', error)
       updateState({ statusMessage: `处理链接时出错: ${error.message}` })
@@ -645,7 +632,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     isSearchResultPageDetected,
     handleDeleteTimerAndCloseDetailPage,
     processNextLink,
-    selectedTask,
+    selectedTask?.id,
     registerEmail,
   ])
 
