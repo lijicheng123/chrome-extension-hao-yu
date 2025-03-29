@@ -22,7 +22,7 @@ export async function initLeadsMiningManager() {
   }
 
   // 监听标签页关闭事件
-  Browser.tabs.onRemoved.addListener(handleTabRemoved)
+  // Browser.tabs.onRemoved.addListener(handleTabRemoved)
 
   // 注册消息处理器
   registerMessageHandlers()
@@ -42,8 +42,6 @@ function registerMessageHandlers() {
 
     // 任务控制
     [LEADS_MINING_API.START_TASK]: (data, sender) => handleStartTask(data.taskId, sender.tab?.id),
-    [LEADS_MINING_API.PAUSE_TASK]: (data) => handlePauseTask(data.taskId),
-    [LEADS_MINING_API.RESUME_TASK]: (data, sender) => handleResumeTask(data.taskId, sender.tab?.id),
     [LEADS_MINING_API.STOP_TASK]: (data) => handleStopTask(data.taskId),
     [LEADS_MINING_API.COMPLETE_TASK]: (data) => handleCompleteTask(data.taskId),
 
@@ -268,46 +266,6 @@ function handleStartTask(taskId, tabId) {
 }
 
 /**
- * 处理暂停任务请求
- * @param {string} taskId - 任务ID
- */
-function handlePauseTask(taskId) {
-  if (!taskId || !taskStates[taskId]) return { success: false, error: '任务不存在' }
-
-  taskStates[taskId].taskStatus = 'paused'
-  taskStates[taskId].statusMessage = '任务已暂停'
-  taskStates[taskId].lastUpdated = Date.now()
-
-  if (activeTaskTabs[taskId]) {
-    delete activeTaskTabs[taskId]
-  }
-
-  persistTaskStates()
-
-  return { success: true }
-}
-
-/**
- * 处理继续任务请求
- * @param {string} taskId - 任务ID
- * @param {number} tabId - 标签页ID
- */
-function handleResumeTask(taskId, tabId) {
-  if (!taskId || !tabId || !taskStates[taskId]) return { success: false, error: '任务不存在' }
-
-  taskStates[taskId].taskStatus = 'running'
-  taskStates[taskId].statusMessage = '任务继续执行'
-  taskStates[taskId].lastUpdated = Date.now()
-  taskStates[taskId].tabId = tabId
-
-  activeTaskTabs[taskId] = tabId
-
-  persistTaskStates()
-
-  return { success: true }
-}
-
-/**
  * 处理完成任务请求
  * @param {string} taskId - 任务ID
  */
@@ -493,10 +451,10 @@ function handleTabRemoved(tabId) {
   // 检查是否有任务在此标签页中运行
   for (const [taskId, activeTabId] of Object.entries(activeTaskTabs)) {
     if (activeTabId === tabId) {
-      // 更新任务状态为暂停
+      // 更新任务状态为停止
       if (taskStates[taskId]) {
-        taskStates[taskId].taskStatus = 'paused'
-        taskStates[taskId].statusMessage = '标签页已关闭，任务已暂停'
+        taskStates[taskId].taskStatus = 'idle'
+        taskStates[taskId].statusMessage = '标签页已关闭，任务已停止'
       }
 
       delete activeTaskTabs[taskId]

@@ -1,6 +1,5 @@
 import { message } from 'antd'
 // import { isSearchUrl } from '../utils/searchEngineUtils'
-import { debounce } from '../utils/searchEngineUtils'
 import { useCallback, useRef, useEffect, useMemo } from 'react'
 import {
   scrollToBottom,
@@ -17,7 +16,6 @@ import {
   delay,
   getRandomDelay,
   getDelayParams,
-  cleanupLinkMarkers,
   PAGE_DEPTH_KEY,
   MAX_PAGE_DEPTH,
   isStatusChanged,
@@ -118,9 +116,9 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       console.log('详情页自动滚动并提取邮箱')
       handleDetailPageProcessing()
     }
-  }, [handleDetailPageProcessing, isDetailPageDetected, selectedTask?.id])
+  }, [handleDetailPageProcessing, isDetailPageDetected, selectedTask?.id, taskStatus])
 
-  console.log('casualMiningStatus====>', casualMiningStatus, taskStatus)
+  console.log('casualMiningStatus====>', casualMiningStatus, taskStatus, selectedTask)
 
   useEffect(() => {
     if (casualMiningStatus === 'cRunning') {
@@ -137,6 +135,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   // 处理详情页的滚动和提取邮箱
   const handleDetailPageProcessing = useCallback(async () => {
+    debugger
     // 等待页面加载完成
     if (document.readyState !== 'complete') {
       console.log('等待页面加载完成...')
@@ -187,10 +186,10 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
           console.error('发送提取的邮箱出错:', error)
         })
     }
-    // 延迟1秒自动关闭此页面
+    // 延迟3秒自动关闭此页面
     setTimeout(() => {
       window.close()
-    }, 1000)
+    }, 3000)
   }, [extractCurrentPageEmails, selectedTask])
 
   const test = useCallback(() => {
@@ -621,7 +620,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
           const { emails, taskId: emailTaskId } = data
           const currentTaskId = selectedTask?.id
           handleNextStatus()
-          debugger
+
           // 验证是否是当前任务的邮箱
           if (emailTaskId === currentTaskId && emails && emails.length > 0) {
             // 处理提取到的邮箱
@@ -675,9 +674,9 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       const prevStatus = prevTaskStatusRef.current
       prevTaskStatusRef.current = taskStatus
 
-      // 如果任务从运行变为暂停或停止
+      // 如果任务从运行变为停止
       if (prevStatus === 'running' && taskStatus !== 'running') {
-        console.log(`任务从运行变为${taskStatus === 'paused' ? '暂停' : '停止'}`)
+        console.log('任务从运行变为停止')
 
         // 清除定时器，但不关闭窗口，以便用户可以继续浏览
         if (timerRef.current) {
@@ -687,22 +686,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
         // 更新状态
         isProcessingLinkRef.current = false
-        updateState({ statusMessage: `任务已${taskStatus === 'paused' ? '暂停' : '停止'}` })
-      }
-      // 如果任务从暂停变为运行（继续任务）
-      else if (prevStatus === 'paused' && taskStatus === 'running') {
-        console.log('任务从暂停变为运行（继续任务）')
-        updateState({ statusMessage: '任务继续执行' })
-        // 如果有打开的详情页，关闭它并继续处理下一个链接
-        if (detailWindowRef.current && !detailWindowRef.current.closed) {
-          detailWindowRef.current.close()
-          detailWindowRef.current = null
-        }
-
-        // 继续处理链接
-        setTimeout(() => {
-          processNextLink()
-        }, 500)
+        updateState({ statusMessage: '任务已停止' })
       }
       // 如果任务停止
       else if (taskStatus === 'idle' || taskStatus === 'completed') {

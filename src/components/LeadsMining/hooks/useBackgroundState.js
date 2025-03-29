@@ -148,36 +148,6 @@ export const useBackgroundState = (selectedTask) => {
     }
   }, [selectedTask, currentCombinationIndex, currentPage, saveStateToBackground])
 
-  // 暂停任务
-  const pauseTask = useCallback(async () => {
-    if (!selectedTask?.id) return
-
-    try {
-      await LeadsMiningContentAPI.pauseTask(selectedTask.id)
-
-      setTaskStatus('paused')
-      setStatusMessage('任务已暂停')
-      await saveStateToBackground()
-    } catch (error) {
-      console.error('暂停任务失败:', error)
-    }
-  }, [selectedTask, saveStateToBackground])
-
-  // 继续任务
-  const resumeTask = useCallback(async () => {
-    if (!selectedTask?.id) return
-
-    try {
-      await LeadsMiningContentAPI.resumeTask(selectedTask.id)
-
-      setTaskStatus('running')
-      setStatusMessage('任务继续执行')
-      await saveStateToBackground()
-    } catch (error) {
-      console.error('继续任务失败:', error)
-    }
-  }, [selectedTask, saveStateToBackground])
-
   // 停止任务
   const stopTask = useCallback(async () => {
     if (!selectedTask?.id) return
@@ -212,8 +182,8 @@ export const useBackgroundState = (selectedTask) => {
   // 处理验证码检测
   const handleCaptchaDetected = useCallback(async () => {
     setCaptchaDetected(true)
-    setTaskStatus('paused')
-    setStatusMessage('检测到验证码，任务已暂停。请手动完成验证后继续。')
+    setTaskStatus('idle')
+    setStatusMessage('检测到验证码，任务已停止。请手动完成验证后继续。')
     await saveStateToBackground()
   }, [saveStateToBackground])
 
@@ -318,8 +288,6 @@ export const useBackgroundState = (selectedTask) => {
 
     // 任务控制方法
     startTask,
-    pauseTask,
-    resumeTask,
     stopTask,
     completeTask,
 

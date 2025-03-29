@@ -10,8 +10,6 @@ export const LEADS_MINING_API = {
 
   // 任务控制
   START_TASK: 'leads-mining:start-task',
-  PAUSE_TASK: 'leads-mining:pause-task',
-  RESUME_TASK: 'leads-mining:resume-task',
   STOP_TASK: 'leads-mining:stop-task',
   COMPLETE_TASK: 'leads-mining:complete-task',
 
@@ -84,36 +82,6 @@ export class LeadsMiningContentAPI {
       return true
     } catch (error) {
       console.error('开始任务失败:', error)
-      return false
-    }
-  }
-
-  /**
-   * 暂停任务
-   * @param {string} taskId 任务ID
-   * @returns {Promise<boolean>} 是否成功
-   */
-  static async pauseTask(taskId) {
-    try {
-      await leadsMiningService.sendMessage(LEADS_MINING_API.PAUSE_TASK, { taskId })
-      return true
-    } catch (error) {
-      console.error('暂停任务失败:', error)
-      return false
-    }
-  }
-
-  /**
-   * 恢复任务
-   * @param {string} taskId 任务ID
-   * @returns {Promise<boolean>} 是否成功
-   */
-  static async resumeTask(taskId) {
-    try {
-      await leadsMiningService.sendMessage(LEADS_MINING_API.RESUME_TASK, { taskId })
-      return true
-    } catch (error) {
-      console.error('恢复任务失败:', error)
       return false
     }
   }

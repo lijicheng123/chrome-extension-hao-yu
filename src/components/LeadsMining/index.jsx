@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useMemo, useState } from 'react'
-import { Form, Card, ConfigProvider, message, Select, Button, Space, Tooltip, Col, Row } from 'antd'
+import { Form, ConfigProvider, message, Select, Button, Space, Tooltip, Col, Row } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 // 自定义Hooks
 import { useTaskManager } from './hooks/useTaskManager'
@@ -42,8 +42,6 @@ function LeadsMining() {
     statusMessage,
     emailList,
     startTask: startTaskBackground,
-    pauseTask,
-    resumeTask: resumeTaskBackground,
     stopTask,
     casualMiningStatus,
     onCasualMiningClick,
@@ -64,12 +62,12 @@ function LeadsMining() {
   } = emailProcessor
 
   const searchEngine = useSearchEngine(taskManager, backgroundState, emailProcessor)
-  const { executeSearch, isSearchPage, isDetailPage, checkExistingSearchPage, test } = searchEngine
+  const { executeSearch, isSearchPage, checkExistingSearchPage, test } = searchEngine
 
-  const [isSearchPageAndTaskRunning, isDetailPageAndTaskRunning] = useMemo(() => {
+  const [isSearchPageAndTaskRunning] = useMemo(() => {
     const isRunning = taskStatus === 'running'
-    return [isSearchPage && isRunning, isDetailPage && isRunning]
-  }, [isSearchPage, isDetailPage, taskStatus])
+    return [isSearchPage && isRunning]
+  }, [isSearchPage, taskStatus])
 
   // 监听任务状态变化，当状态变为running时执行搜索
   const debouncedExecuteSearch = useCallback(
@@ -205,11 +203,6 @@ function LeadsMining() {
     startTaskBackground()
   }
 
-  // 继续任务
-  const resumeTask = () => {
-    resumeTaskBackground()
-  }
-
   // 初始化表单
   useEffect(() => {
     console.log('selectedTask=====>', selectedTask)
@@ -322,8 +315,6 @@ function LeadsMining() {
               captchaDetected={captchaDetected}
               statusMessage={statusMessage}
               startTask={startTask}
-              pauseTask={pauseTask}
-              resumeTask={resumeTask}
               stopTask={stopTask}
               fetchTaskList={fetchTaskList}
             />
