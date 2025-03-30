@@ -230,7 +230,6 @@ function handleStartTask(taskId, tabId) {
   // 保存现有的processedUrls和emails数组
   const existingProcessedUrls = taskStates[taskId]?.processedUrls || []
   const existingEmails = taskStates[taskId]?.emails || []
-
   // 初始化或更新任务状态
   if (!taskStates[taskId]) {
     taskStates[taskId] = {
@@ -240,8 +239,8 @@ function handleStartTask(taskId, tabId) {
       currentCombinationIndex: 0,
       progress: 0,
       discoveredEmails: 0,
-      processedUrls: existingProcessedUrls,
-      emails: existingEmails,
+      processedUrls: [],
+      emails: [],
       lastUpdated: Date.now(),
       tabId,
     }
@@ -252,11 +251,8 @@ function handleStartTask(taskId, tabId) {
       lastUpdated: Date.now(),
       tabId,
       // 确保保留现有的processedUrls和emails
-      processedUrls:
-        existingProcessedUrls.length > 0
-          ? existingProcessedUrls
-          : taskStates[taskId].processedUrls || [],
-      emails: existingEmails.length > 0 ? existingEmails : taskStates[taskId].emails || [],
+      processedUrls: [],
+      emails: [],
     }
   }
 
