@@ -135,7 +135,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   // 处理详情页的滚动和提取邮箱
   const handleDetailPageProcessing = useCallback(async () => {
-    debugger
     // 等待页面加载完成
     if (document.readyState !== 'complete') {
       console.log('等待页面加载完成...')
@@ -559,6 +558,16 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
       // 至此打开了新的标签，剩下的工作就是等待详情页处理完成后，关闭详情页，并标记链接为已访问
       // 等待详情页发通知回来，处理
+      // 如果30秒还没回来，则认为详情页处理失败，移动到下一个链接
+      timerRef.current = setTimeout(() => {
+        console.log('调试链接跳转：进入timeout:')
+        // 处理状态
+        handleNextStatus()
+        // 关闭详情页
+        handleDeleteTimerAndCloseDetailPage()
+        // 处理下一个链接
+        processNextLink()
+      }, 30000)
     } catch (error) {
       console.error('处理链接时出错:', error)
       updateState({ statusMessage: `处理链接时出错: ${error.message}` })
