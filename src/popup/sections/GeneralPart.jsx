@@ -172,7 +172,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
             <PencilIcon />
           </div>
         </legend>
-        <span style="display: flex; gap: 15px;">
+        <span style={{ display: 'flex', gap: '15px' }}>
           <select
             style={
               isUsingOpenAiApiModel(config) ||
@@ -181,7 +181,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
               isUsingAzureOpenAiApiModel(config) ||
               isUsingClaudeApiModel(config) ||
               isUsingMoonshotApiModel(config)
-                ? 'width: 50%;'
+                ? { width: '50%' }
                 : undefined
             }
             required
@@ -211,7 +211,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
           </select>
           {isUsingMultiModeModel(config) && (
             <select
-              style="width: 50%;"
+              style={{ width: '50%' }}
               required
               onChange={(e) => {
                 const modelMode = e.target.value
@@ -228,7 +228,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
             </select>
           )}
           {isUsingOpenAiApiModel(config) && (
-            <span style="width: 50%; display: flex; gap: 5px;">
+            <span style={{ width: '50%', display: 'flex', gap: '5px' }}>
               <input
                 type="password"
                 value={config.apiKey}
@@ -244,7 +244,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
                   target="_blank"
                   rel="nofollow noopener noreferrer"
                 >
-                  <button style="white-space: nowrap;" type="button">
+                  <button style={{ whiteSpace: 'nowrap' }} type="button">
                     {t('Get')}
                   </button>
                 </a>
@@ -261,7 +261,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
           )}
           {isUsingSpecialCustomModel(config) && (
             <input
-              style="width: 50%;"
+              style={{ width: '50%' }}
               type="text"
               value={config.customModelName}
               placeholder={t('Model Name')}
@@ -274,7 +274,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
           {isUsingAzureOpenAiApiModel(config) && (
             <input
               type="password"
-              style="width: 50%;"
+              style={{ width: '50%' }}
               value={config.azureApiKey}
               placeholder={t('Azure API Key')}
               onChange={(e) => {
@@ -286,7 +286,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
           {isUsingClaudeApiModel(config) && (
             <input
               type="password"
-              style="width: 50%;"
+              style={{ width: '50%' }}
               value={config.claudeApiKey}
               placeholder={t('Claude API Key')}
               onChange={(e) => {
@@ -298,7 +298,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
           {isUsingChatGLMApiModel(config) && (
             <input
               type="password"
-              style="width: 50%;"
+              style={{ width: '50%' }}
               value={config.chatglmApiKey}
               placeholder={t('ChatGLM API Key')}
               onChange={(e) => {
@@ -308,7 +308,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
             />
           )}
           {isUsingMoonshotApiModel(config) && (
-            <span style="width: 50%; display: flex; gap: 5px;">
+            <span style={{ width: '50%', display: 'flex', gap: '5px' }}>
               <input
                 type="password"
                 value={config.moonshotApiKey}
@@ -324,7 +324,7 @@ export function GeneralPart({ config, updateConfig, setTabIndex }) {
                   target="_blank"
                   rel="nofollow noopener noreferrer"
                 >
-                  <button style="white-space: nowrap;" type="button">
+                  <button style={{ whiteSpace: 'nowrap' }} type="button">
                     {t('Get')}
                   </button>
                 </a>

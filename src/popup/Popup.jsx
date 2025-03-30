@@ -94,7 +94,7 @@ function Popup() {
 
   return (
     <div className={popup === 'true' ? 'container-popup-mode' : 'container-page-mode'}>
-      <form style="width:100%;">
+      <form style={{ width: '100%' }}>
         <Tabs
           selectedTabClassName="popup-tab--selected"
           selectedIndex={tabIndex}

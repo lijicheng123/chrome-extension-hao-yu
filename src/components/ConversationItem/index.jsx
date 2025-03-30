@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 function AnswerTitle({ descName }) {
   const { t } = useTranslation()
 
-  return <p style="white-space: nowrap;">{descName ? `${descName}:` : t('Loading...')}</p>
+  return <p style={{ whiteSpace: 'nowrap' }}>{descName ? `${descName}:` : t('Loading...')}</p>
 }
 
 AnswerTitle.propTypes = {

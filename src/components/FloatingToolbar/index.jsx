@@ -1,10 +1,9 @@
-import { cloneElement, useCallback, useEffect, useState } from 'react'
+import { cloneElement, useCallback, useEffect, useState, useRef } from 'react'
 import ConversationCard from '../ConversationCard'
 import PropTypes from 'prop-types'
 import { config as toolsConfig } from '../../content-script/selection-tools'
 import { getClientPosition, isMobile, setElementPositionInViewport } from '../../utils'
 import Draggable from 'react-draggable'
-import { useClampWindowSize } from '../../hooks/use-clamp-window-size'
 import { useTranslation } from 'react-i18next'
 import { useConfig } from '../../hooks/use-config.mjs'
 
@@ -20,7 +19,7 @@ function FloatingToolbar(props) {
   const [closeable, setCloseable] = useState(props.closeable)
   const [position, setPosition] = useState(getClientPosition(props.container))
   const [virtualPosition, setVirtualPosition] = useState({ x: 0, y: 0 })
-  const windowSize = useClampWindowSize([750, 1500], [0, Infinity])
+  const draggableRef = useRef(null)
 
   const config = useConfig(() => {
     setRender(true)
@@ -36,6 +35,24 @@ function FloatingToolbar(props) {
       })
     }
   })
+
+  const updatePosition = useCallback(() => {
+    const newPosition = setElementPositionInViewport(props.container, position.x, position.y)
+    if (position.x !== newPosition.x || position.y !== newPosition.y) setPosition(newPosition) // clear extra virtual position offset
+  }, [props.container, position.x, position.y])
+
+  const onClose = useCallback(() => {
+    props.container.remove()
+  }, [props.container])
+
+  const onDock = useCallback(() => {
+    props.container.className = 'chatgptbox-toolbar-container-not-queryable'
+    setCloseable(true)
+  }, [props.container])
+
+  const onUpdate = useCallback(() => {
+    updatePosition()
+  }, [updatePosition])
 
   useEffect(() => {
     if (isMobile()) {
@@ -53,11 +70,6 @@ function FloatingToolbar(props) {
   if (!render) return <div />
 
   if (triggered || (prompt && !selection)) {
-    const updatePosition = () => {
-      const newPosition = setElementPositionInViewport(props.container, position.x, position.y)
-      if (position.x !== newPosition.x || position.y !== newPosition.y) setPosition(newPosition) // clear extra virtual position offset
-    }
-
     const dragEvent = {
       onDrag: (e, ui) => {
         setVirtualPosition({ x: virtualPosition.x + ui.deltaX, y: virtualPosition.y + ui.deltaY })
@@ -72,34 +84,20 @@ function FloatingToolbar(props) {
       updatePosition() // avoid jitter
     }
 
-    const onClose = useCallback(() => {
-      props.container.remove()
-    }, [])
-
-    const onDock = useCallback(() => {
-      props.container.className = 'chatgptbox-toolbar-container-not-queryable'
-      setCloseable(true)
-    }, [])
-
-    const onUpdate = useCallback(() => {
-      updatePosition()
-    }, [position])
-
     if (config.alwaysPinWindow) onDock()
     return (
       <div data-theme={config.themeMode} style={{ height: '100%' }}>
         <Draggable
+          nodeRef={draggableRef}
           handle=".draggable"
           onDrag={dragEvent.onDrag}
           onStop={dragEvent.onStop}
           position={virtualPosition}
         >
           <div
+            ref={draggableRef}
             className="chatgptbox-selection-window"
             style={{ height: '100%' }}
-            // style={{
-            //   width: windowSize[0] * 0.6 + 'px',
-            // }}
           >
             <div className="chatgptbox-container" style={{ height: '100%' }}>
               <ConversationCard
@@ -111,7 +109,7 @@ function FloatingToolbar(props) {
                 dockable={props.dockable}
                 onDock={onDock}
                 onUpdate={onUpdate}
-                waitForTrigger={prompt && !triggered && !selection}
+                waitForTrigger={!!(prompt && !triggered && !selection)}
                 windowType={windowType}
               />
             </div>
@@ -174,7 +172,7 @@ FloatingToolbar.propTypes = {
   closeable: PropTypes.bool,
   dockable: PropTypes.bool,
   prompt: PropTypes.string,
-  containerType: PropTypes.string,
+  windowType: PropTypes.string,
 }
 
 export default FloatingToolbar

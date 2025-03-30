@@ -44,6 +44,7 @@ function ConversationCard(props) {
   const bodyRef = useRef(null)
   const [completeDraggable, setCompleteDraggable] = useState(false)
   const useForegroundFetch = isUsingBingWebModel(session)
+  // eslint-disable-next-line no-unused-vars
   const [apiModes, setApiModes] = useState([])
 
   /**
@@ -92,12 +93,15 @@ function ConversationCard(props) {
     }
   }, [conversationItemData])
 
-  useEffect(async () => {
+  useEffect(() => {
     // when the page is responsive, session may accumulate redundant data and needs to be cleared after remounting and before making a new request
     if (props.question && triggered) {
-      const newSession = initSession({ ...session, question: props.question })
-      setSession(newSession)
-      await postMessage({ session: newSession })
+      const fetchData = async () => {
+        const newSession = initSession({ ...session, question: props.question })
+        setSession(newSession)
+        await postMessage({ session: newSession })
+      }
+      fetchData()
     }
   }, [props.question, triggered]) // usually only triggered once
 
@@ -322,7 +326,7 @@ function ConversationCard(props) {
         className={
           props.draggable ? `gpt-header${completeDraggable ? ' draggable' : ''}` : 'gpt-header'
         }
-        style="user-select:none;"
+        style={{ userSelect: 'none' }}
       >
         <div
           className="gpt-util-group"
@@ -332,7 +336,7 @@ function ConversationCard(props) {
             ...(isSafari() ? { maxWidth: '200px' } : {}),
           }}
         >
-          <img src={logo} style="user-select:none;width:20px;height:20px;" />
+          <img src={logo} style={{ userSelect: 'none', width: '20px', height: '20px' }} />
           <span className="slogan">好雨AI-更懂外贸的AI</span>
           {props.dockable ? (
             <span
@@ -405,7 +409,7 @@ function ConversationCard(props) {
               target="_blank"
               rel="nofollow noopener noreferrer"
               className="gpt-util-icon"
-              style="color: inherit;"
+              style={{ color: 'inherit' }}
             >
               <LinkExternalIcon size={16} />
             </a>

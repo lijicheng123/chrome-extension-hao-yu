@@ -78,6 +78,7 @@ export const useBackgroundState = (selectedTask) => {
   const saveStateToBackground = useCallback(
     async (state) => {
       if (!selectedTask?.id) return
+      debugger
       try {
         // 不要发送processedUrls字段，这样可以避免覆盖后台已有的processedUrls
         await LeadsMiningContentAPI.saveState({
@@ -131,7 +132,7 @@ export const useBackgroundState = (selectedTask) => {
     try {
       await LeadsMiningContentAPI.startTask(selectedTask.id)
 
-      // setTaskStatus('running')
+      setTaskStatus('running')
       // setCaptchaDetected(false)
       // setStatusMessage('任务开始执行')
       // 关掉随缘挖掘
@@ -142,7 +143,7 @@ export const useBackgroundState = (selectedTask) => {
       //   setDiscoveredEmails(0)
       // }
 
-      // await saveStateToBackground()
+      await saveStateToBackground()
     } catch (error) {
       console.error('hooks:开始任务失败:', error)
     }

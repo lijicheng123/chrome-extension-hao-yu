@@ -69,17 +69,21 @@ function LeadsMining() {
     return [isSearchPage && isRunning]
   }, [isSearchPage, taskStatus])
 
-  // 监听任务状态变化，当状态变为running时执行搜索
-  const debouncedExecuteSearch = useCallback(
-    debounce(() => {
-      if (isSearchPageAndTaskRunning) {
-        executeSearch()
-      }
-    }, 100),
-    [isSearchPageAndTaskRunning, executeSearch, taskStatus],
-  )
+  console.log('isSearchPageAndTaskRunning taskStatus====>', isSearchPageAndTaskRunning, taskStatus)
 
-  useEffect(debouncedExecuteSearch, [debouncedExecuteSearch])
+  // 监听任务状态变化，当状态变为running时执行搜索
+  // 这个方法应该只允许执行一次
+  // const debouncedExecuteSearch = useCallback(
+  //   debounce(() => {
+  //     debugger
+  //     if (isSearchPageAndTaskRunning) {
+  //       executeSearch()
+  //     }
+  //   }, 100),
+  //   [isSearchPageAndTaskRunning, executeSearch, taskStatus],
+  // )
+
+  // useEffect(debouncedExecuteSearch, [debouncedExecuteSearch])
 
   // 检查是否在搜索结果页可操作任务
   const canIOperateTask = useCallback(() => {
@@ -107,7 +111,7 @@ function LeadsMining() {
     } else {
       startTask()
     }
-  }, [isAutoMining, stopTask, startTask, searchCombinations])
+  }, [isAutoMining, stopTask, startTask, searchCombinations, taskStatus])
 
   // 随缘挖掘按钮是否禁用
   const casualMiningDisabled = useMemo(() => {
@@ -191,7 +195,7 @@ function LeadsMining() {
   }, [autoMiningDisabled, isAutoMining, autoHovered, taskStatus])
 
   // 开始任务
-  const startTask = useCallback(() => {
+  const startTask = useCallback(async () => {
     if (!canIOperateTask()) {
       return
     }
@@ -200,8 +204,17 @@ function LeadsMining() {
       message.error('请先选择任务并确保已生成搜索组合')
       return
     }
-    startTaskBackground()
-  }, [canIOperateTask, selectedTask, searchCombinations, startTaskBackground])
+    await startTaskBackground()
+    // 执行搜索
+    executeSearch()
+  }, [
+    canIOperateTask,
+    selectedTask,
+    searchCombinations,
+    startTaskBackground,
+    executeSearch,
+    taskStatus,
+  ])
 
   // 初始化表单
   useEffect(() => {

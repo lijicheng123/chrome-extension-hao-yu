@@ -1,4 +1,4 @@
-import { render } from 'preact'
+import { createRoot } from 'react-dom/client'
 import Popup from './Popup'
 import '../_locales/i18n-react'
 import { getUserConfig } from '../config/index.mjs'
@@ -7,7 +7,8 @@ import Browser from 'webextension-polyfill'
 
 getUserConfig().then(async (config) => {
   if (config.clickIconAction === 'popup' || (window.innerWidth > 100 && window.innerHeight > 100)) {
-    render(<Popup />, document.getElementById('app'))
+    const root = createRoot(document.getElementById('app'))
+    root.render(<Popup />)
   } else {
     const message = {
       itemId: config.clickIconAction,

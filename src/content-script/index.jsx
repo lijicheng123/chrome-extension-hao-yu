@@ -1,6 +1,6 @@
 import './styles.scss'
 import { unmountComponentAtNode } from 'react-dom'
-import { render } from 'preact'
+import { createRoot } from 'react-dom/client'
 import DecisionCard from '../components/DecisionCard'
 import { config as siteConfig } from './site-adapters'
 import { config as toolsConfig } from './selection-tools'
@@ -100,7 +100,8 @@ async function mountComponent(siteConfig) {
     else if (userConfig.triggerMode === 'questionMark' && endsWithQuestionMark(question.trim()))
       triggered = true
 
-    render(
+    const root = createRoot(toolbarContainer)
+    root.render(
       <FloatingToolbar
         session={initSession({
           modelName: userConfig.modelName,
@@ -113,14 +114,14 @@ async function mountComponent(siteConfig) {
         closeable={true}
         prompt={question}
       />,
-      toolbarContainer,
     )
     return
   }
 
   const container = document.createElement('div')
   container.id = 'chatgptbox-container'
-  render(
+  const root = createRoot(container)
+  root.render(
     <DecisionCard
       session={initSession({
         modelName: userConfig.modelName,
@@ -131,7 +132,6 @@ async function mountComponent(siteConfig) {
       siteConfig={siteConfig}
       container={container}
     />,
-    container,
   )
 }
 
@@ -171,7 +171,8 @@ const deleteToolbar = () => {
 const createSelectionTools = async (toolbarContainer, selection) => {
   toolbarContainer.className = 'chatgptbox-toolbar-container'
   const userConfig = await getUserConfig()
-  render(
+  const root = createRoot(toolbarContainer)
+  root.render(
     <FloatingToolbar
       session={initSession({
         modelName: userConfig.modelName,
@@ -182,7 +183,6 @@ const createSelectionTools = async (toolbarContainer, selection) => {
       container={toolbarContainer}
       dockable={true}
     />,
-    toolbarContainer,
   )
 }
 
@@ -312,7 +312,8 @@ async function prepareForRightClickMenu() {
       const container = createElementAtPosition(position.x, position.y, data.containerType)
       container.className = 'chatgptbox-toolbar-container-not-queryable'
       const userConfig = await getUserConfig()
-      render(
+      const root = createRoot(container)
+      root.render(
         <FloatingToolbar
           session={initSession({
             modelName: userConfig.modelName,
@@ -325,7 +326,6 @@ async function prepareForRightClickMenu() {
           closeable={true}
           prompt={prompt}
         />,
-        container,
       )
       return { success: true }
     },
@@ -491,9 +491,9 @@ async function prepareForJumpBackNotification() {
 
     const div = document.createElement('div')
     document.body.append(div)
-    render(
+    const root = createRoot(div)
+    root.render(
       <WebJumpBackNotification container={div} chatgptMode={location.hostname === 'chatgpt.com'} />,
-      div,
     )
   }
 }
@@ -507,7 +507,8 @@ async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
     apiMode: userConfig.apiMode,
     extraCustomModelName: userConfig.customModelName,
   })
-  render(
+  const root = createRoot(container)
+  root.render(
     <FloatingToolbar
       session={session}
       selection=""
@@ -517,7 +518,6 @@ async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
       windowType={windowType}
       prompt=""
     />,
-    container,
   )
 }
 
@@ -536,7 +536,8 @@ async function renderLeadsMining() {
  * @param {function} setLiving - 是否活着 暂未实现
  */
 function renderSidebar() {
-  render(
+  const root = createRoot(sideBarContainer)
+  root.render(
     <DraggableBar
       openToolBar={async ({ windowType }) => {
         renderFloatingToolbar({ x: 0, y: 0, windowType })
@@ -544,7 +545,6 @@ function renderSidebar() {
       foldedIcon={sideLogo}
       setLiving={(living) => {}}
     />,
-    sideBarContainer,
   )
 }
 

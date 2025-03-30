@@ -128,7 +128,7 @@ function App() {
                 <button
                   key={index}
                   className={`normal-button ${sessionId === session.sessionId ? 'active' : ''}`}
-                  style="display: flex; align-items: center; justify-content: space-between;"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                   onClick={() => {
                     setSessionIdSafe(session.sessionId)
                   }}
@@ -165,7 +165,7 @@ function App() {
         </div>
         <div className="chat-content">
           {renderContent && currentSession && currentSession.conversationRecords && (
-            <div className="chatgptbox-container" style="height:100%;">
+            <div className="chatgptbox-container" style={{ height: '100%' }}>
               <ConversationCard
                 session={currentSession}
                 notClampSize={true}

@@ -1,4 +1,4 @@
-import { render } from 'preact'
+import { createRoot } from 'react-dom/client'
 import '../../_locales/i18n-react'
 import App from './App'
 import { changeLanguage } from 'i18next'
@@ -19,4 +19,5 @@ i18nService.registerHandler(I18N_API.CHANGE_LANGUAGE, (data) => {
   return { success: true }
 })
 
-render(<App />, document.getElementById('app'))
+const root = createRoot(document.getElementById('root'))
+root.render(<App />)

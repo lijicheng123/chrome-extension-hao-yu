@@ -109,7 +109,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     }
   }, [isSearchResultPageDetected])
 
-  // 初始化页面深度，基本是详情页执行
+  // 详情页执行(自动挖掘)
   useEffect(() => {
     // 如果是详情页，自动执行滚动和提取邮箱
     if (isDetailPageDetected && selectedTask?.id && taskStatus === 'running') {
@@ -118,8 +118,9 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     }
   }, [handleDetailPageProcessing, isDetailPageDetected, selectedTask?.id, taskStatus])
 
-  console.log('casualMiningStatus====>', casualMiningStatus, taskStatus, selectedTask)
+  console.log('casualMiningStatus====>', casualMiningStatus, taskStatus)
 
+  // 所有页面（随缘挖掘）
   useEffect(() => {
     if (casualMiningStatus === 'cRunning') {
       console.log('闲时挖掘状态: 运行中')
@@ -199,6 +200,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   // 执行搜索
   const executeSearch = useCallback(async () => {
+    debugger
     // 检查当前页面是否为搜索结果页
     if (!checkIsSearchResultPage()) {
       message.warning('只能在搜索结果页执行任务')

@@ -20,7 +20,6 @@ async function deleteOldDir() {
 
 async function runWebpack(isWithoutKatex, isWithoutTiktoken, minimal, callback) {
   const shared = [
-    'preact',
     'webextension-polyfill',
     '@primer/octicons-react',
     'react-bootstrap-icons',
@@ -32,6 +31,8 @@ async function runWebpack(isWithoutKatex, isWithoutTiktoken, minimal, callback) 
     './src/_locales/i18n-react',
   ]
   if (isWithoutKatex) shared.push('./src/components')
+
+  const externals = ['react', 'react-dom']
 
   const compiler = webpack({
     entry: {
@@ -108,6 +109,9 @@ async function runWebpack(isWithoutKatex, isWithoutTiktoken, minimal, callback) 
             }),
           ]
         : []),
+      new webpack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development'),
+      }),
     ],
     resolve: {
       extensions: ['.jsx', '.mjs', '.js'],
@@ -146,7 +150,7 @@ async function runWebpack(isWithoutKatex, isWithoutTiktoken, minimal, callback) 
                     '@babel/plugin-transform-react-jsx',
                     {
                       runtime: 'automatic',
-                      importSource: 'preact',
+                      importSource: 'react',
                     },
                   ],
                 ],

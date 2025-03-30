@@ -20,7 +20,7 @@ export function FeaturePages({ config, updateConfig }) {
     })
 
   return (
-    <div style="display:flex;flex-direction:column;align-items:left;">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'left' }}>
       {!isMobile() && !isFirefox() && !isSafari() && (
         <button
           type="button"

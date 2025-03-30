@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Browser from 'webextension-polyfill'
 import Draggable from 'react-draggable'
+import PropTypes from 'prop-types'
 import './index.scss'
 import { WINDOW_TYPE } from '../../constants'
 
 export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [bounds, setBounds] = useState({ top: 0, bottom: 0 })
+  const draggableRef = useRef(null)
 
   const updateBounds = () => {
     const windowHeight = window.innerHeight
@@ -34,12 +36,13 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
 
   return (
     <Draggable
+      nodeRef={draggableRef}
       axis="y" // 只允许垂直方向拖动
       position={position}
       bounds={bounds}
       onDrag={(e, data) => setPosition({ x: 0, y: data.y })}
     >
-      <div className="bar-standby-container">
+      <div ref={draggableRef} className="bar-standby-container">
         <div className="tool">网页翻译</div>
         <div className="tool">网页总结</div>
         <div
@@ -97,4 +100,10 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
       </div>
     </Draggable>
   )
+}
+
+DraggableBar.propTypes = {
+  openToolBar: PropTypes.func.isRequired,
+  foldedIcon: PropTypes.string.isRequired,
+  setLiving: PropTypes.func.isRequired,
 }
