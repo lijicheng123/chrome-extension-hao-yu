@@ -10,9 +10,6 @@ import { isSearchUrl } from '../components/LeadsMining/utils/searchEngineUtils.j
 // 任务状态存储
 const taskStates = {}
 
-// 活动任务标签页映射 {taskId: tabId}
-const activeTaskTabs = {}
-
 // 初始化
 export async function initLeadsMiningManager() {
   // 从存储中恢复任务状态
@@ -22,7 +19,7 @@ export async function initLeadsMiningManager() {
   }
 
   // 监听标签页关闭事件
-  // Browser.tabs.onRemoved.addListener(handleTabRemoved)
+  Browser.tabs.onRemoved.addListener(handleTabRemoved)
 
   // 注册消息处理器
   registerMessageHandlers()
@@ -75,7 +72,6 @@ function registerMessageHandlers() {
       return exists
     },
 
-    // TODO:应该是发送到结果列表页，所以可以写死tabid
     // 跨Tab通信 - 转发提取到的邮箱
     [LEADS_MINING_API.SEND_EXTRACTED_EMAILS]: async (data, sender) => {
       const { taskId, emails, timestamp, sender: senderUrl } = data
@@ -88,36 +84,54 @@ function registerMessageHandlers() {
       console.log(`收到来自标签页 ${sourceTabId} 的提取邮箱:`, emails)
 
       try {
-        // 获取活动任务的标签页ID
-        const activeTabId = activeTaskTabs[taskId]
+        // 获取任务状态
+        const task = taskStates[taskId]
+        if (!task) {
+          console.warn(`任务 ${taskId} 不存在`)
+          return { success: false, error: '任务不存在' }
+        }
 
-        // 如果存在活动任务的标签页，并且与源标签页不同，则转发消息
-        if (activeTabId && activeTabId !== sourceTabId) {
-          console.log(`转发提取的邮箱到标签页 ${activeTabId}`)
+        // 获取搜索结果列表页的tabId
+        const targetTabId = task.tabId
 
-          // 转发消息到活动任务的标签页
-          await leadsMiningService.sendMessageToTab(
-            activeTabId,
-            LEADS_MINING_API.RECEIVE_EXTRACTED_EMAILS,
-            {
-              taskId,
-              emails,
-              timestamp,
-              source: senderUrl,
-              sourceTabId,
-            },
-          )
+        // 如果存在目标标签页，并且与源标签页不同，则转发消息
+        if (targetTabId && targetTabId !== sourceTabId) {
+          console.log(`转发提取的邮箱到搜索结果列表页 ${targetTabId}`)
 
-          // 同时注册提取到的邮箱
-          emails.forEach((email) => {
-            if (email && typeof email === 'string') {
-              handleRegisterEmail(taskId, email)
-            }
-          })
+          try {
+            // 转发消息到搜索结果列表页
+            await leadsMiningService.sendMessageToTab(
+              targetTabId,
+              LEADS_MINING_API.RECEIVE_EXTRACTED_EMAILS,
+              {
+                taskId,
+                emails,
+                timestamp,
+                source: senderUrl,
+                sourceTabId,
+              },
+            )
 
-          return { success: true, forwarded: true }
+            // 同时注册提取到的邮箱
+            emails.forEach((email) => {
+              if (email && typeof email === 'string') {
+                handleRegisterEmail(taskId, email)
+              }
+            })
+
+            return { success: true, forwarded: true }
+          } catch (err) {
+            console.error(`转发到搜索结果列表页 ${targetTabId} 失败:`, err)
+            // 注册邮箱即使转发失败
+            emails.forEach((email) => {
+              if (email && typeof email === 'string') {
+                handleRegisterEmail(taskId, email)
+              }
+            })
+            return { success: true, forwarded: false }
+          }
         } else {
-          // 没有活动标签页或源标签页就是活动标签页，只注册邮箱不转发
+          // 没有搜索结果列表页或源标签页就是搜索结果列表页，只注册邮箱不转发
           emails.forEach((email) => {
             if (email && typeof email === 'string') {
               handleRegisterEmail(taskId, email)
@@ -164,31 +178,30 @@ async function checkIfOtherTabHasSearchResultPage(currentTabId) {
 /**
  * 处理保存状态请求
  * @param {Object} state - 任务状态
- * @param {number} tabId - 标签页ID
+ * @param {number} tabId - 标签页ID（仅用于日志记录，不更新任务的tabId）
  */
 function handleSaveState(state, tabId) {
   if (!state || !state.taskId) return { success: false, error: '缺少必要参数' }
   const taskId = state.taskId
 
+  // 记录日志，方便调试
+  console.log(`保存任务状态: ${taskId}, 来自标签页: ${tabId}`)
+
   // 保存现有的processedUrls数组
   const existingProcessedUrls = taskStates[taskId]?.processedUrls || []
   const existingEmails = taskStates[taskId]?.emails || []
+  // 保留原有的tabId，这个ID应该是搜索结果列表页的ID
+  const existingTabId = taskStates[taskId]?.tabId
 
-  // 更新任务状态，但保留processedUrls数组
+  // 更新任务状态，但保留processedUrls数组和tabId
   taskStates[taskId] = {
     ...state,
     // 如果状态中包含processedUrls则使用它，否则保留现有的
     processedUrls: state.processedUrls || existingProcessedUrls,
     emails: state.emails || existingEmails,
     lastUpdated: Date.now(),
-    tabId,
-  }
-
-  // 如果任务正在运行，更新活动标签页映射
-  if (state.taskStatus === 'running' && tabId) {
-    activeTaskTabs[taskId] = tabId
-  } else if (state.taskStatus !== 'running' && activeTaskTabs[taskId]) {
-    delete activeTaskTabs[taskId]
+    // 保留原有的tabId，仅当是新任务或任务重启时在handleStartTask中设置
+    tabId: existingTabId,
   }
 
   // 持久化到存储
@@ -213,20 +226,6 @@ function handleGetState(taskId) {
  */
 function handleStartTask(taskId, tabId) {
   if (!taskId || !tabId) return { success: false, error: '缺少必要参数' }
-
-  // 检查任务是否已在其他标签页中运行
-  const existingTabId = activeTaskTabs[taskId]
-  if (existingTabId && existingTabId !== tabId) {
-    // 通知原标签页停止任务
-    leadsMiningService
-      .sendMessageToTab(existingTabId, LEADS_MINING_API.TASK_TAKEN_OVER, { taskId })
-      .catch(() => {
-        // 如果发送失败，可能标签页已关闭，直接更新映射
-        activeTaskTabs[taskId] = tabId
-      })
-  } else {
-    activeTaskTabs[taskId] = tabId
-  }
 
   // 保存现有的processedUrls和emails数组
   const existingProcessedUrls = taskStates[taskId]?.processedUrls || []
@@ -278,10 +277,6 @@ function handleCompleteTask(taskId) {
   taskStates[taskId].progress = 100
   taskStates[taskId].lastUpdated = Date.now()
 
-  if (activeTaskTabs[taskId]) {
-    delete activeTaskTabs[taskId]
-  }
-
   persistTaskStates()
 
   return { success: true }
@@ -296,10 +291,6 @@ function handleStopTask(taskId) {
 
   taskStates[taskId].taskStatus = 'idle'
   taskStates[taskId].lastUpdated = Date.now()
-
-  if (activeTaskTabs[taskId]) {
-    delete activeTaskTabs[taskId]
-  }
 
   persistTaskStates()
 
@@ -450,15 +441,11 @@ function handleRegisterUrl(taskId, url) {
  */
 function handleTabRemoved(tabId) {
   // 检查是否有任务在此标签页中运行
-  for (const [taskId, activeTabId] of Object.entries(activeTaskTabs)) {
-    if (activeTabId === tabId) {
+  for (const taskId in taskStates) {
+    if (taskStates[taskId].tabId === tabId && taskStates[taskId].taskStatus === 'running') {
       // 更新任务状态为停止
-      if (taskStates[taskId]) {
-        taskStates[taskId].taskStatus = 'idle'
-        taskStates[taskId].statusMessage = '标签页已关闭，任务已停止'
-      }
-
-      delete activeTaskTabs[taskId]
+      taskStates[taskId].taskStatus = 'idle'
+      taskStates[taskId].statusMessage = '标签页已关闭，任务已停止'
       persistTaskStates()
     }
   }
@@ -483,7 +470,7 @@ function cleanupTaskStates() {
   const maxAge = 1 * 24 * 60 * 60 * 1000 // 1天
 
   for (const taskId in taskStates) {
-    // 删除超过7天未更新的任务状态
+    // 删除超过1天未更新的任务状态
     if (taskStates[taskId].lastUpdated && now - taskStates[taskId].lastUpdated > maxAge) {
       delete taskStates[taskId]
     }
@@ -493,38 +480,5 @@ function cleanupTaskStates() {
       // 只保留最近的1000个URL
       taskStates[taskId].processedUrls = taskStates[taskId].processedUrls.slice(-1000)
     }
-  }
-}
-
-/**
- * 获取任务的活动标签页
- * @param {string} taskId - 任务ID
- * @returns {number|null} 标签页ID
- */
-export function getTaskActiveTab(taskId) {
-  return activeTaskTabs[taskId] || null
-}
-
-/**
- * 获取所有任务状态
- * @returns {Object} 任务状态映射
- */
-export function getAllTaskStates() {
-  return { ...taskStates }
-}
-
-/**
- * 清除任务状态
- * @param {string} taskId - 任务ID
- */
-export function clearTaskState(taskId) {
-  if (taskStates[taskId]) {
-    delete taskStates[taskId]
-
-    if (activeTaskTabs[taskId]) {
-      delete activeTaskTabs[taskId]
-    }
-
-    persistTaskStates()
   }
 }

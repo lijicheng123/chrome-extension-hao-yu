@@ -131,53 +131,42 @@ export const useBackgroundState = (selectedTask) => {
     try {
       await LeadsMiningContentAPI.startTask(selectedTask.id)
 
-      setTaskStatus('running')
-      setCaptchaDetected(false)
-      setStatusMessage('任务开始执行')
+      // setTaskStatus('running')
+      // setCaptchaDetected(false)
+      // setStatusMessage('任务开始执行')
       // 关掉随缘挖掘
       setCasualMiningStatus('cStopped')
-      // 如果是从头开始，重置状态
-      if (currentCombinationIndex === 0 && currentPage === 1) {
-        setProgress(0)
-        setDiscoveredEmails(0)
-      }
+      // // 如果是从头开始，重置状态
+      // if (currentCombinationIndex === 0 && currentPage === 1) {
+      //   setProgress(0)
+      //   setDiscoveredEmails(0)
+      // }
 
-      await saveStateToBackground()
+      // await saveStateToBackground()
     } catch (error) {
-      console.error('开始任务失败:', error)
+      console.error('hooks:开始任务失败:', error)
     }
-  }, [selectedTask, currentCombinationIndex, currentPage, saveStateToBackground])
+  }, [selectedTask])
 
   // 停止任务
   const stopTask = useCallback(async () => {
     if (!selectedTask?.id) return
-
     try {
       await LeadsMiningContentAPI.stopTask(selectedTask.id)
-
-      setTaskStatus('idle')
-      setStatusMessage('任务已停止')
-      await saveStateToBackground()
     } catch (error) {
       console.error('停止任务失败:', error)
     }
-  }, [selectedTask, saveStateToBackground])
+  }, [selectedTask])
 
   // 完成任务
   const completeTask = useCallback(async () => {
     if (!selectedTask?.id) return
-
     try {
       await LeadsMiningContentAPI.completeTask(selectedTask.id)
-
-      setTaskStatus('completed')
-      setStatusMessage('任务已完成')
-      setProgress(100)
-      await saveStateToBackground()
     } catch (error) {
-      console.error('完成任务失败:', error)
+      console.error('hooks:完成任务失败:', error)
     }
-  }, [selectedTask, saveStateToBackground])
+  }, [selectedTask])
 
   // 处理验证码检测
   const handleCaptchaDetected = useCallback(async () => {

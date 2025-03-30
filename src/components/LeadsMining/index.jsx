@@ -76,7 +76,7 @@ function LeadsMining() {
         executeSearch()
       }
     }, 100),
-    [isSearchPageAndTaskRunning, executeSearch],
+    [isSearchPageAndTaskRunning, executeSearch, taskStatus],
   )
 
   useEffect(debouncedExecuteSearch, [debouncedExecuteSearch])
@@ -107,7 +107,7 @@ function LeadsMining() {
     } else {
       startTask()
     }
-  }, [isAutoMining, stopTask, startTask])
+  }, [isAutoMining, stopTask, startTask, searchCombinations])
 
   // 随缘挖掘按钮是否禁用
   const casualMiningDisabled = useMemo(() => {
@@ -155,7 +155,7 @@ function LeadsMining() {
       return casualHovered ? '停止随缘挖掘' : '随缘挖掘中'
     }
     return casualHovered ? '开启随缘挖掘' : '随缘挖掘已停止'
-  }, [casualMiningDisabled, isCasualMining, casualHovered])
+  }, [casualMiningDisabled, isCasualMining, casualHovered, taskStatus])
 
   // 随缘挖掘tooltip文案
   const casualTooltipText = useMemo(() => {
@@ -166,7 +166,7 @@ function LeadsMining() {
     } else {
       return casualHovered ? '点击开启随缘挖掘' : '随缘挖掘已停止'
     }
-  }, [casualMiningDisabled, isCasualMining, casualHovered])
+  }, [casualMiningDisabled, isCasualMining, casualHovered, taskStatus])
 
   // 自动挖掘按钮文案
   const autoButtonText = useMemo(() => {
@@ -177,7 +177,7 @@ function LeadsMining() {
       return autoHovered ? '停止自动挖掘' : '自动挖掘中'
     }
     return autoHovered ? '开启自动挖掘' : '自动挖掘已停止'
-  }, [autoMiningDisabled, isAutoMining, autoHovered])
+  }, [autoMiningDisabled, isAutoMining, autoHovered, taskStatus])
 
   // 自动挖掘tooltip文案
   const autoTooltipText = useMemo(() => {
@@ -188,10 +188,10 @@ function LeadsMining() {
     } else {
       return autoHovered ? '点击开启自动挖掘' : '自动挖掘已停止'
     }
-  }, [autoMiningDisabled, isAutoMining, autoHovered])
+  }, [autoMiningDisabled, isAutoMining, autoHovered, taskStatus])
 
   // 开始任务
-  const startTask = () => {
+  const startTask = useCallback(() => {
     if (!canIOperateTask()) {
       return
     }
@@ -201,7 +201,7 @@ function LeadsMining() {
       return
     }
     startTaskBackground()
-  }
+  }, [canIOperateTask, selectedTask, searchCombinations, startTaskBackground])
 
   // 初始化表单
   useEffect(() => {
