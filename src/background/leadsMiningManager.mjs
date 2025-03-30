@@ -12,12 +12,6 @@ const taskStates = {}
 
 // 初始化
 export async function initLeadsMiningManager() {
-  // 从存储中恢复任务状态
-  const storage = await Browser.storage.local.get('leadsMiningTaskStates')
-  if (storage.leadsMiningTaskStates) {
-    Object.assign(taskStates, storage.leadsMiningTaskStates)
-  }
-
   // 监听标签页关闭事件
   Browser.tabs.onRemoved.addListener(handleTabRemoved)
 
@@ -204,9 +198,6 @@ function handleSaveState(state, tabId) {
     tabId: existingTabId,
   }
 
-  // 持久化到存储
-  persistTaskStates()
-
   return { success: true }
 }
 
@@ -256,8 +247,6 @@ function handleStartTask(taskId, tabId) {
     }
   }
 
-  persistTaskStates()
-
   return { success: true }
 }
 
@@ -273,8 +262,6 @@ function handleCompleteTask(taskId) {
   taskStates[taskId].progress = 100
   taskStates[taskId].lastUpdated = Date.now()
 
-  persistTaskStates()
-
   return { success: true }
 }
 
@@ -287,8 +274,6 @@ function handleStopTask(taskId) {
 
   taskStates[taskId].taskStatus = 'idle'
   taskStates[taskId].lastUpdated = Date.now()
-
-  persistTaskStates()
 
   return { success: true }
 }
@@ -309,7 +294,6 @@ function handleRegisterEmail(taskId, email) {
   if (!taskStates[taskId].emails.includes(email)) {
     taskStates[taskId].emails.push(email)
     taskStates[taskId].discoveredEmails = taskStates[taskId].emails.length
-    persistTaskStates()
   }
 }
 
@@ -419,7 +403,6 @@ function handleRegisterUrl(taskId, url) {
   // 如果URL不存在，则添加原始URL（保留完整信息）
   if (!exists) {
     taskStates[taskId].processedUrls.push(url)
-    persistTaskStates()
     console.log(
       `URL已注册: ${url} (规范化为: ${normalizedUrl}), 已处理URL总数: ${taskStates[taskId].processedUrls.length}`,
     )
@@ -442,39 +425,6 @@ function handleTabRemoved(tabId) {
       // 更新任务状态为停止
       taskStates[taskId].taskStatus = 'idle'
       taskStates[taskId].statusMessage = '标签页已关闭，任务已停止'
-      persistTaskStates()
-    }
-  }
-}
-
-/**
- * 持久化任务状态到存储
- */
-function persistTaskStates() {
-  // 清理过期数据
-  cleanupTaskStates()
-
-  // 保存到存储
-  Browser.storage.local.set({ leadsMiningTaskStates: taskStates })
-}
-
-/**
- * 清理过期的任务状态
- */
-function cleanupTaskStates() {
-  const now = Date.now()
-  const maxAge = 1 * 24 * 60 * 60 * 1000 // 1天
-
-  for (const taskId in taskStates) {
-    // 删除超过1天未更新的任务状态
-    if (taskStates[taskId].lastUpdated && now - taskStates[taskId].lastUpdated > maxAge) {
-      delete taskStates[taskId]
-    }
-
-    // 限制处理过的URL数量，防止存储过大
-    if (taskStates[taskId].processedUrls && taskStates[taskId].processedUrls.length > 1000) {
-      // 只保留最近的1000个URL
-      taskStates[taskId].processedUrls = taskStates[taskId].processedUrls.slice(-1000)
     }
   }
 }
