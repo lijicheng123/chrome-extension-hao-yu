@@ -1,6 +1,6 @@
 import Browser from 'webextension-polyfill'
 import leadsMiningService, { LEADS_MINING_API } from '../services/messaging/leadsMining'
-import { isSearchUrl } from '../components/LeadsMining/utils/searchEngineUtils.js'
+import { isSearchUrl, PAGE_DEPTH_KEY } from '../components/LeadsMining/utils/searchEngineUtils.js'
 
 /**
  * 线索挖掘任务管理器
@@ -267,13 +267,16 @@ function handleCompleteTask(taskId) {
 
 /**
  * 处理停止任务请求
- * @param {string} taskId - 任务ID
+ * 关闭所有带有LeadsMining_taskId=taskId的标签页
  */
-function handleStopTask(taskId) {
-  if (!taskId || !taskStates[taskId]) return { success: false, error: '任务不存在' }
-
-  taskStates[taskId].taskStatus = 'idle'
-  taskStates[taskId].lastUpdated = Date.now()
+async function handleStopTask(taskId) {
+  // 获取所有标签页
+  const tabs = await Browser.tabs.query({})
+  for (const tab of tabs) {
+    if (tab.url.includes(PAGE_DEPTH_KEY)) {
+      await Browser.tabs.remove(tab.id)
+    }
+  }
 
   return { success: true }
 }

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+import { message } from 'antd'
 import { LeadsMiningContentAPI } from '../../../services/messaging/leadsMining'
 import Browser from 'webextension-polyfill'
+import { cleanupLinkMarkers } from '../utils/searchEngineUtils'
 /**
  * 与background脚本通信的Hook
  * 用于管理任务状态
@@ -159,7 +161,15 @@ export const useBackgroundState = (selectedTask) => {
   const stopTask = useCallback(async () => {
     if (!selectedTask?.id) return
     try {
+      setTaskStatus('idle')
+      await saveStateToBackground({
+        taskStatus: 'idle',
+        statusMessage: '任务已停止',
+      })
+      setCasualMiningStatus('cRunning')
+      message.success('自动挖掘已停止，随缘挖掘已恢复~')
       await LeadsMiningContentAPI.stopTask(selectedTask.id)
+      cleanupLinkMarkers()
     } catch (error) {
       console.error('停止任务失败:', error)
     }
