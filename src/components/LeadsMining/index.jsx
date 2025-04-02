@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo, useState } from 'react'
+import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react'
 import { Form, ConfigProvider, message, Select, Button, Space, Tooltip, Col, Row } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 // 自定义Hooks
@@ -24,6 +24,8 @@ const showDebugger = false
  */
 function LeadsMining() {
   const [form] = Form.useForm()
+  // 添加一个ref来跟踪是否已执行搜索
+  const hasExecutedSearchRef = useRef(false)
 
   // 使用自定义Hooks
   const taskManager = useTaskManager()
@@ -41,7 +43,7 @@ function LeadsMining() {
     captchaDetected,
     statusMessage,
     emailList,
-    startTask: startTaskBackground,
+    startTaskBackground,
     stopTask,
     casualMiningStatus,
     onCasualMiningClick,
@@ -73,17 +75,32 @@ function LeadsMining() {
 
   // 监听任务状态变化，当状态变为running时执行搜索
   // 这个方法应该只允许执行一次
-  // const debouncedExecuteSearch = useCallback(
-  //   debounce(() => {
-  //     debugger
-  //     if (isSearchPageAndTaskRunning) {
-  //       executeSearch()
-  //     }
-  //   }, 100),
-  //   [isSearchPageAndTaskRunning, executeSearch, taskStatus],
-  // )
+  const debouncedExecuteSearch = useCallback(
+    debounce(() => {
+      if (isSearchPageAndTaskRunning && !hasExecutedSearchRef.current) {
+        // 标记为已执行
+        hasExecutedSearchRef.current = true
+        console.log('执行搜索，并标记为已执行')
+        executeSearch()
+      }
+    }, 100),
+    [isSearchPageAndTaskRunning, executeSearch, taskStatus],
+  )
 
-  // useEffect(debouncedExecuteSearch, [debouncedExecuteSearch])
+  useEffect(() => {
+    console.log('useEffect触发，状态:', taskStatus, '已执行:', hasExecutedSearchRef.current)
+
+    // 重置执行标记的条件：当任务状态变为非running
+    if (taskStatus !== 'running') {
+      hasExecutedSearchRef.current = false
+      console.log('任务状态不是running，重置执行标记')
+    }
+
+    // 只有当未执行且条件满足时才调用
+    if (!hasExecutedSearchRef.current) {
+      debouncedExecuteSearch()
+    }
+  }, [debouncedExecuteSearch, taskStatus, isSearchPageAndTaskRunning])
 
   // 检查是否在搜索结果页可操作任务
   const canIOperateTask = useCallback(() => {
@@ -105,13 +122,13 @@ function LeadsMining() {
     return isSearchPageAndTaskRunning
   }, [taskStatus, isSearchPageAndTaskRunning])
 
-  const autoMining = useCallback(() => {
+  const autoMining = () => {
     if (isAutoMining) {
       stopTask()
     } else {
       startTask()
     }
-  }, [isAutoMining, stopTask, startTask, searchCombinations, taskStatus])
+  }
 
   // 随缘挖掘按钮是否禁用
   const casualMiningDisabled = useMemo(() => {
@@ -195,26 +212,32 @@ function LeadsMining() {
   }, [autoMiningDisabled, isAutoMining, autoHovered, taskStatus])
 
   // 开始任务
-  const startTask = useCallback(async () => {
-    if (!canIOperateTask()) {
-      return
-    }
+  const startTask = async () => {
+    try {
+      if (!canIOperateTask()) {
+        return
+      }
 
-    if (!selectedTask || searchCombinations.length === 0) {
-      message.error('请先选择任务并确保已生成搜索组合')
-      return
+      if (!selectedTask || searchCombinations.length === 0) {
+        message.error('请先选择任务并确保已生成搜索组合')
+        return
+      }
+
+      console.log('开始任务，当前执行标记:', hasExecutedSearchRef.current)
+
+      // 重置执行标记，允许任务重新开始时执行搜索
+      hasExecutedSearchRef.current = false
+
+      // 执行开始任务，这会更新状态为running
+      await startTaskBackground()
+
+      // 任务启动后，状态更新会触发useEffect
+      // useEffect中会根据hasExecutedSearchRef确保只执行一次
+      console.log('任务已启动，等待状态更新触发useEffect')
+    } catch (error) {
+      console.error('启动任务出错:', error)
     }
-    await startTaskBackground()
-    // 执行搜索
-    executeSearch()
-  }, [
-    canIOperateTask,
-    selectedTask,
-    searchCombinations,
-    startTaskBackground,
-    executeSearch,
-    taskStatus,
-  ])
+  }
 
   // 初始化表单
   useEffect(() => {
@@ -277,7 +300,6 @@ function LeadsMining() {
                 </Button>
               </Tooltip>
             )}
-
             <Tooltip title={autoTooltipText}>
               <Button
                 type={isAutoMining ? 'primary' : 'default'}
@@ -292,7 +314,7 @@ function LeadsMining() {
             </Tooltip>
           </Space>
 
-          {showDebugger && (
+          {/* {showDebugger && (
             <Space>
               <Button
                 type="primary"
@@ -316,9 +338,9 @@ function LeadsMining() {
                 测试：获取总页数、当前页数、是否最后一页
               </Button>
             </Space>
-          )}
+          )} */}
 
-          {showDebugger && (
+          {/* {showDebugger && (
             <TaskStatus
               taskStatus={taskStatus}
               progress={progress}
@@ -331,11 +353,12 @@ function LeadsMining() {
               stopTask={stopTask}
               fetchTaskList={fetchTaskList}
             />
-          )}
+          )} */}
         </Form>
 
         {(taskStatus != 'running' && casualMiningStatus === 'cRunning') || isDetailPage ? (
           <EmailList
+            isShowCurrentPageEmails={true}
             emailList={currentPageEmails}
             handleEditEmail={handleEditEmail}
             handleDeleteCustomer={handleDeleteCustomer}
@@ -344,6 +367,7 @@ function LeadsMining() {
           />
         ) : (
           <EmailList
+            isShowCurrentPageEmails={false}
             emailList={emailList}
             handleEditEmail={handleEditEmail}
             handleDeleteCustomer={handleDeleteCustomer}

@@ -126,15 +126,15 @@ export const useBackgroundState = (selectedTask) => {
   }, [casualMiningStatus])
 
   // 开始任务
-  const startTask = useCallback(async () => {
+  const startTaskBackground = useCallback(async () => {
     if (!selectedTask?.id) return
 
     try {
-      await LeadsMiningContentAPI.startTask(selectedTask.id)
-
+      // await LeadsMiningContentAPI.startTask(selectedTask.id)
       setTaskStatus('running')
-      // setCaptchaDetected(false)
-      // setStatusMessage('任务开始执行')
+      setCaptchaDetected(false)
+      setStatusMessage('任务开始执行')
+
       // 关掉随缘挖掘
       setCasualMiningStatus('cStopped')
       // // 如果是从头开始，重置状态
@@ -143,7 +143,13 @@ export const useBackgroundState = (selectedTask) => {
       //   setDiscoveredEmails(0)
       // }
 
-      await saveStateToBackground()
+      await saveStateToBackground({
+        taskStatus: 'running',
+        captchaDetected: false,
+        statusMessage: '任务开始执行',
+        processedUrls: [],
+        emails: [],
+      })
     } catch (error) {
       console.error('hooks:开始任务失败:', error)
     }
@@ -277,7 +283,7 @@ export const useBackgroundState = (selectedTask) => {
     setStatusMessage,
 
     // 任务控制方法
-    startTask,
+    startTaskBackground,
     stopTask,
     completeTask,
 

@@ -181,9 +181,9 @@ function handleSaveState(state, tabId) {
   // 记录日志，方便调试
   console.log(`保存任务状态: ${taskId}, 来自标签页: ${tabId}`)
 
-  // 保存现有的processedUrls数组
-  const existingProcessedUrls = taskStates[taskId]?.processedUrls || []
-  const existingEmails = taskStates[taskId]?.emails || []
+  // 新的processedUrls和emails也推入数组里
+  const processedUrls = [...(taskStates[taskId]?.processedUrls || []), ...state.processedUrls]
+  const emails = [...(taskStates[taskId]?.emails || []), ...state.emails]
   // 保留原有的tabId，这个ID应该是搜索结果列表页的ID
   const existingTabId = taskStates[taskId]?.tabId
 
@@ -191,8 +191,8 @@ function handleSaveState(state, tabId) {
   taskStates[taskId] = {
     ...state,
     // 如果状态中包含processedUrls则使用它，否则保留现有的
-    processedUrls: state.processedUrls || existingProcessedUrls,
-    emails: state.emails || existingEmails,
+    processedUrls,
+    emails,
     lastUpdated: Date.now(),
     // 保留原有的tabId，仅当是新任务或任务重启时在handleStartTask中设置
     tabId: existingTabId,
