@@ -109,6 +109,47 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     }
   }, [isSearchResultPageDetected])
 
+  // 只有搜索结果列表页才需要关闭详情页&清理工具
+  useEffect(() => {
+    if (isSearchResultPageDetected) {
+      // 我希望在这里实现一个消息监听，监听详情页发过来的消息
+
+      // 2. 通过background监听跨域详情页发来的消息
+      if (selectedTask?.id) {
+        console.log('why no receive message listen:', selectedTask?.id)
+        LeadsMiningContentAPI.registerExtractedEmailsHandler((data) => {
+          console.log('why no receive message data:', data)
+          const { emails, taskId: emailTaskId } = data
+          const currentTaskId = selectedTask?.id
+
+          // 验证是否是当前任务的邮箱
+          if (emailTaskId === currentTaskId && emails && emails.length > 0) {
+            // 处理提取到的邮箱
+            try {
+              registerEmail(emails)
+              console.log('新增注册邮箱====>成功:', emails)
+            } catch (error) {
+              console.error('新增注册邮箱====>失败:', error)
+            }
+            handleNextStatus()
+            // 处理完成后关闭详情页并继续处理下一个链接
+            handleDeleteTimerAndCloseDetailPage()
+            processNextLink()
+          }
+        })
+      }
+    }
+  }, [
+    isSearchResultPageDetected,
+    handleDeleteTimerAndCloseDetailPage,
+    processNextLink,
+    selectedTask?.id,
+    registerEmail,
+    handleNextStatus,
+    handleDeleteTimerAndCloseDetailPage,
+    taskStatus,
+  ])
+
   // 详情页执行(自动挖掘)
   useEffect(() => {
     // 如果是详情页，自动执行滚动和提取邮箱
@@ -175,8 +216,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     if (emails && selectedTask?.id) {
       const taskId = selectedTask.id
 
-      console.log('通过background发送提取到的邮箱:', emails, '任务ID:', taskId)
-
+      console.log('why no receive message send emails:', emails)
       // 使用LeadsMiningContentAPI发送邮箱到background
       LeadsMiningContentAPI.sendExtractedEmails(taskId, emails)
         .then((result) => {
@@ -193,14 +233,11 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
   }, [extractCurrentPageEmails, selectedTask])
 
   const test = useCallback(() => {
-    console.log('test total pages', getTotalPages())
-    console.log('test current page', getCurrentPage())
-    console.log('test is last page', isLastPage())
-  }, [])
+    handleDetailPageProcessing()
+  }, [handleDetailPageProcessing])
 
   // 执行搜索
   const executeSearch = useCallback(async () => {
-    debugger
     // 检查当前页面是否为搜索结果页
     if (!checkIsSearchResultPage()) {
       message.warning('只能在搜索结果页执行任务')
@@ -457,7 +494,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
           searchResults.length - visitedCount
         }个链接为待访问状态`,
       )
-
+      debugger
       // 开始处理第一个链接
       await processNextLink()
     } catch (error) {
@@ -474,6 +511,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   // 处理下一个链接(这个方法只在搜索结果列表页执行)
   const processNextLink = useCallback(async () => {
+    console.log('processNextLink debug enter ====>', taskStatus)
     // 清除之前的定时器
     if (timerRef.current) {
       clearTimeout(timerRef.current)
@@ -493,6 +531,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         clickNextPage()
         return
       }
+      console.log('processNextLink debug 1 ====>', currentIndex, searchResults, taskStatus)
 
       // 如果没有更多链接或任务不在运行状态，则结束处理
       if (currentIndex >= searchResults.length || taskStatus !== 'running') {
@@ -504,6 +543,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         )
         return
       }
+      console.log('processNextLink debug 2 ====>')
 
       isProcessingLinkRef.current = true
       const linkData = searchResults[currentIndex]
@@ -526,11 +566,12 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
         currentLinkIndexRef.current++
         isProcessingLinkRef.current = false
         setTimeout(() => {
+          debugger
           processNextLink()
         }, 100)
         return
       }
-
+      console.log('processNextLink debug 3 ====>')
       // 标记URL为已处理
       await registerProcessedUrl(url)
       // 更新链接状态
@@ -557,16 +598,18 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
       console.log('check next link 在新标签页中打开链接===>: ', urlWithDepth)
       // 在新标签页中打开链接
       detailWindowRef.current = window.open(urlWithDepth, '_blank')
+      console.log('processNextLink debug 4 ====>')
 
       // 至此打开了新的标签，剩下的工作就是等待详情页处理完成后，关闭详情页，并标记链接为已访问
       // 等待详情页发通知回来，处理
       // 如果30秒还没回来，则认为详情页处理失败，移动到下一个链接
       timerRef.current = setTimeout(() => {
-        console.log('调试链接跳转：进入timeout:')
+        console.log('processNextLink debug 5 ====>')
         // 处理状态
         handleNextStatus()
         // 关闭详情页
         handleDeleteTimerAndCloseDetailPage()
+        debugger
         // 处理下一个链接
         processNextLink()
       }, 30000)
@@ -592,7 +635,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
   const handleNextStatus = useCallback(() => {
     const searchResults = searchResultsRef.current
     const currentIndex = currentLinkIndexRef.current
-    const linkData = searchResults[currentIndex]
+    const linkData = searchResults[currentIndex] || {}
     console.log(`下一个链接信息====>:`, searchResults, currentIndex, linkData)
     const { link, url } = linkData
     // 标记链接为已访问
@@ -605,48 +648,6 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     isProcessingLinkRef.current = false
   }, [currentLinkIndexRef, isProcessingLinkRef, markLinkStatus])
 
-  // 只有搜索结果列表页才需要关闭详情页&清理工具
-  useEffect(() => {
-    if (isSearchResultPageDetected) {
-      // 我希望在这里实现一个消息监听，监听详情页发过来的消息
-
-      // 2. 通过background监听跨域详情页发来的消息
-      if (selectedTask?.id) {
-        LeadsMiningContentAPI.registerExtractedEmailsHandler((data) => {
-          console.log('收到详情页提取的邮箱(background中转):', data)
-
-          const { emails, taskId: emailTaskId } = data
-          const currentTaskId = selectedTask?.id
-          handleNextStatus()
-
-          // 验证是否是当前任务的邮箱
-          if (emailTaskId === currentTaskId && emails && emails.length > 0) {
-            // 处理提取到的邮箱
-            emails.forEach(async (email) => {
-              if (email && typeof email === 'string') {
-                try {
-                  await registerEmail(email)
-                } catch (error) {
-                  console.error('注册邮箱失败:', error)
-                }
-              }
-            })
-
-            // 处理完成后关闭详情页并继续处理下一个链接
-            handleDeleteTimerAndCloseDetailPage()
-            processNextLink()
-          }
-        })
-      }
-    }
-  }, [
-    isSearchResultPageDetected,
-    handleDeleteTimerAndCloseDetailPage,
-    processNextLink,
-    selectedTask?.id,
-    registerEmail,
-  ])
-
   /**
    * 删除定时器&关闭详情页
    */
@@ -654,58 +655,15 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     // 清除定时器
     if (timerRef.current) {
       clearTimeout(timerRef.current)
+      timerRef.current = null
     }
 
     // 关闭详情页窗口
     if (detailWindowRef.current && !detailWindowRef.current.closed) {
       detailWindowRef.current.close()
+      detailWindowRef.current = null
     }
   }, [timerRef, detailWindowRef])
-
-  // 监听任务状态变化
-  useEffect(() => {
-    // 只有当任务状态与上一个状态不同时才执行
-    if (isStatusChanged(prevTaskStatusRef.current, taskStatus) && isSearchResultPageDetected) {
-      console.log(`任务状态变化: ${prevTaskStatusRef.current} -> ${taskStatus}`)
-
-      // 保存上一次的任务状态
-      const prevStatus = prevTaskStatusRef.current
-      prevTaskStatusRef.current = taskStatus
-
-      // 如果任务从运行变为停止
-      if (prevStatus === 'running' && taskStatus !== 'running') {
-        console.log('任务从运行变为停止')
-
-        // 清除定时器，但不关闭窗口，以便用户可以继续浏览
-        if (timerRef.current) {
-          clearTimeout(timerRef.current)
-          timerRef.current = null
-        }
-
-        // 更新状态
-        isProcessingLinkRef.current = false
-        updateState({ statusMessage: '任务已停止' })
-      }
-      // 如果任务停止
-      else if (taskStatus === 'idle' || taskStatus === 'completed') {
-        console.log(`任务${taskStatus === 'idle' ? '停止' : '完成'}`)
-
-        // 清除定时器
-        if (timerRef.current) {
-          clearTimeout(timerRef.current)
-          timerRef.current = null
-        }
-
-        // 关闭详情页窗口
-        if (detailWindowRef.current && !detailWindowRef.current.closed) {
-          detailWindowRef.current.close()
-          detailWindowRef.current = null
-        }
-
-        isProcessingLinkRef.current = false
-      }
-    }
-  }, [taskStatus, updateState, processNextLink, isSearchResultPageDetected])
 
   // 定位到邮箱
   const locateEmail = useCallback((email) => {
@@ -725,6 +683,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     checkExistingSearchPage,
     isSearchPage: isSearchResultPageDetected,
     isDetailPage: isDetailPageDetected,
+    handleDeleteTimerAndCloseDetailPage,
     test,
   }
 }

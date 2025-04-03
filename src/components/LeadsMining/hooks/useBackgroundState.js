@@ -55,21 +55,7 @@ export const useBackgroundState = (selectedTask) => {
         setDiscoveredEmails(state.discoveredEmails || 0)
         setCaptchaDetected(state.captchaDetected || false)
         setStatusMessage(state.statusMessage || '')
-
-        // 获取邮箱列表
-        const response = await LeadsMiningContentAPI.getEmails(selectedTask.id)
-
-        console.log('getEmailListFromBackground response =========>', response)
-
-        if (response) {
-          if (Array.isArray(response)) {
-            // 如果response本身就是数组
-            setEmailList(response)
-          } else if (response.emails) {
-            // 如果response是带emails属性的对象
-            setEmailList(response.emails)
-          }
-        }
+        setEmailList(state.emails || [])
       }
     } catch (error) {
       console.error('获取任务状态失败:', error)
@@ -80,7 +66,6 @@ export const useBackgroundState = (selectedTask) => {
   const saveStateToBackground = useCallback(
     async (state) => {
       if (!selectedTask?.id) return
-      debugger
       try {
         // 不要发送processedUrls字段，这样可以避免覆盖后台已有的processedUrls
         await LeadsMiningContentAPI.saveState({
@@ -93,8 +78,6 @@ export const useBackgroundState = (selectedTask) => {
           discoveredEmails,
           captchaDetected,
           statusMessage,
-          // 明确设置processedUrls为undefined，这样后台会保留现有的processedUrls
-          processedUrls: undefined,
           ...state,
         })
       } catch (error) {
@@ -132,7 +115,7 @@ export const useBackgroundState = (selectedTask) => {
     if (!selectedTask?.id) return
 
     try {
-      // await LeadsMiningContentAPI.startTask(selectedTask.id)
+      await LeadsMiningContentAPI.startTask(selectedTask.id)
       setTaskStatus('running')
       setCaptchaDetected(false)
       setStatusMessage('任务开始执行')
@@ -236,21 +219,30 @@ export const useBackgroundState = (selectedTask) => {
   const registerEmail = useCallback(
     async (email) => {
       if (!selectedTask?.id || !email) return
-
       try {
-        await LeadsMiningContentAPI.registerEmail(selectedTask.id, email)
-
-        // 更新本地邮箱列表
-        if (!emailList.includes(email)) {
-          setEmailList((prev) => [...prev, email])
-          setDiscoveredEmails((prev) => prev + 1)
+        // 如果邮箱是个数组，则遍历数组去重，然后一次性更新
+        if (Array.isArray(email)) {
+          const uniqueEmails = [...new Set(email)]
+          setEmailList((prev) => [...prev, ...uniqueEmails])
+          setDiscoveredEmails((prev) => prev + uniqueEmails.length)
+        } else {
+          if (!emailList.includes(email)) {
+            setEmailList((prev) => [...prev, email])
+            setDiscoveredEmails((prev) => prev + 1)
+          }
         }
+        // 更新到background
+        saveStateToBackground({
+          emails: emailList,
+        })
       } catch (error) {
         console.error('注册邮箱失败:', error)
       }
     },
     [selectedTask, emailList],
   )
+
+  console.log('emailList useBackgroundState =========>', taskStatus)
 
   // 更新状态
   const updateState = useCallback(

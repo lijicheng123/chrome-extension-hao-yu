@@ -64,7 +64,8 @@ function LeadsMining() {
   } = emailProcessor
 
   const searchEngine = useSearchEngine(taskManager, backgroundState, emailProcessor)
-  const { executeSearch, isSearchPage, isDetailPage, checkExistingSearchPage, test } = searchEngine
+  const { executeSearch, isSearchPage, isDetailPage, handleDeleteTimerAndCloseDetailPage, test } =
+    searchEngine
 
   const [isSearchPageAndTaskRunning] = useMemo(() => {
     const isRunning = taskStatus === 'running'
@@ -124,6 +125,7 @@ function LeadsMining() {
 
   const autoMining = () => {
     if (isAutoMining) {
+      handleDeleteTimerAndCloseDetailPage()
       stopTask()
     } else {
       startTask()
@@ -247,6 +249,8 @@ function LeadsMining() {
     }
   }, [selectedTask?.id, form])
 
+  console.log('emailList useBackgroundState index.jsx =========>', emailList)
+
   return (
     <ConfigProvider>
       <div className={style['email-list']}>
@@ -284,6 +288,9 @@ function LeadsMining() {
               />
             </Col>
           </Row>
+          <Button type="primary" onClick={test}>
+            测试
+          </Button>
 
           <Space>
             {!isAutoMining && (

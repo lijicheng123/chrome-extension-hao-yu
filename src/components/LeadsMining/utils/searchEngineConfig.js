@@ -8,6 +8,7 @@ export const SEARCH_ENGINES = {
   GOOGLE: {
     domains: [
       'google.com',
+      'mail.google.com',
       'google.co.jp',
       'google.co.uk',
       'google.de',

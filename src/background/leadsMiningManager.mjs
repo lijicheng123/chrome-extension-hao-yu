@@ -9,6 +9,10 @@ import { isSearchUrl, PAGE_DEPTH_KEY } from '../components/LeadsMining/utils/sea
 
 // 任务状态存储
 const taskStates = {}
+const taskTabIds = {
+  resultListPage: null,
+  detailPage: null,
+}
 
 // 初始化
 export async function initLeadsMiningManager() {
@@ -86,32 +90,32 @@ function registerMessageHandlers() {
         }
 
         // 获取搜索结果列表页的tabId
-        const targetTabId = task.tabId
+        const targetTabId = taskTabIds.resultListPage
 
         // 如果存在目标标签页，并且与源标签页不同，则转发消息
         if (targetTabId && targetTabId !== sourceTabId) {
           console.log(`转发提取的邮箱到搜索结果列表页 ${targetTabId}`)
 
           try {
-            // 转发消息到搜索结果列表页
-            await leadsMiningService.sendMessageToTab(
-              targetTabId,
-              LEADS_MINING_API.RECEIVE_EXTRACTED_EMAILS,
-              {
-                taskId,
-                emails,
-                timestamp,
-                source: senderUrl,
-                sourceTabId,
-              },
-            )
-
             // 同时注册提取到的邮箱
             emails.forEach((email) => {
               if (email && typeof email === 'string') {
                 handleRegisterEmail(taskId, email)
               }
             })
+
+            // 转发消息到搜索结果列表页
+            await leadsMiningService.sendMessageToTab(
+              targetTabId,
+              LEADS_MINING_API.RECEIVE_EXTRACTED_EMAILS,
+              {
+                taskId,
+                emails: task.emails,
+                timestamp,
+                source: senderUrl,
+                sourceTabId,
+              },
+            )
 
             return { success: true, forwarded: true }
           } catch (err) {
@@ -179,23 +183,27 @@ function handleSaveState(state, tabId) {
   const taskId = state.taskId
 
   // 记录日志，方便调试
-  console.log(`保存任务状态: ${taskId}, 来自标签页: ${tabId}`)
-
+  console.log(`保存任务状态: ${taskId}, 来自标签页: ${tabId}`, state)
   // 新的processedUrls和emails也推入数组里
-  const processedUrls = [...(taskStates[taskId]?.processedUrls || []), ...state.processedUrls]
-  const emails = [...(taskStates[taskId]?.emails || []), ...state.emails]
-  // 保留原有的tabId，这个ID应该是搜索结果列表页的ID
-  const existingTabId = taskStates[taskId]?.tabId
+  const processedUrls = [
+    ...(taskStates[taskId]?.processedUrls || []),
+    ...(state.processedUrls || []),
+  ]
+  const emails = [...(taskStates[taskId]?.emails || []), ...(state.emails || [])]
+  // 如果processedUrls和emails有重复的，则只保留一个
+  const uniqueProcessedUrls = [...new Set(processedUrls)]
+  const uniqueEmails = [...new Set(emails)]
 
-  // 更新任务状态，但保留processedUrls数组和tabId
+  if (state.taskStatus === 'idle') {
+    debugger
+  }
+
   taskStates[taskId] = {
     ...state,
     // 如果状态中包含processedUrls则使用它，否则保留现有的
-    processedUrls,
-    emails,
+    processedUrls: uniqueProcessedUrls,
+    emails: uniqueEmails,
     lastUpdated: Date.now(),
-    // 保留原有的tabId，仅当是新任务或任务重启时在handleStartTask中设置
-    tabId: existingTabId,
   }
 
   return { success: true }
@@ -215,12 +223,8 @@ function handleGetState(taskId) {
  * @param {string} taskId - 任务ID
  * @param {number} tabId - 标签页ID
  */
-function handleStartTask(taskId, tabId) {
+async function handleStartTask(taskId, tabId) {
   if (!taskId || !tabId) return { success: false, error: '缺少必要参数' }
-
-  // 保存现有的processedUrls和emails数组
-  const existingProcessedUrls = taskStates[taskId]?.processedUrls || []
-  const existingEmails = taskStates[taskId]?.emails || []
   // 初始化或更新任务状态
   if (!taskStates[taskId]) {
     taskStates[taskId] = {
@@ -233,19 +237,19 @@ function handleStartTask(taskId, tabId) {
       processedUrls: [],
       emails: [],
       lastUpdated: Date.now(),
-      tabId,
     }
   } else {
     taskStates[taskId] = {
       ...taskStates[taskId],
       taskStatus: 'running',
       lastUpdated: Date.now(),
-      tabId,
       // 确保保留现有的processedUrls和emails
       processedUrls: [],
       emails: [],
     }
   }
+
+  taskTabIds.resultListPage = await getSearchResultListPageTabId()
 
   return { success: true }
 }
@@ -267,9 +271,9 @@ function handleCompleteTask(taskId) {
 
 /**
  * 处理停止任务请求
- * 关闭所有带有LeadsMining_taskId=taskId的标签页
+ * 关闭所有带有PAGE_DEPTH_KEY的标签页
  */
-async function handleStopTask(taskId) {
+async function handleStopTask() {
   // 获取所有标签页
   const tabs = await Browser.tabs.query({})
   for (const tab of tabs) {
@@ -417,17 +421,36 @@ function handleRegisterUrl(taskId, url) {
 }
 
 /**
- * 处理标签页关闭事件
+ * 处理标签页关闭事件（暂时不用，考虑删除）
  * 此函数通过Browser.tabs.onRemoved.addListener注册为事件处理器
  * @param {number} tabId - 标签页ID
  */
 function handleTabRemoved(tabId) {
   // 检查是否有任务在此标签页中运行
   for (const taskId in taskStates) {
-    if (taskStates[taskId].tabId === tabId && taskStates[taskId].taskStatus === 'running') {
+    if (taskStates[taskId].taskStatus === 'running' && tabId === taskTabIds.resultListPage) {
       // 更新任务状态为停止
       taskStates[taskId].taskStatus = 'idle'
       taskStates[taskId].statusMessage = '标签页已关闭，任务已停止'
+      // 延迟2秒关掉所有标签
+      setTimeout(() => {
+        handleStopTask()
+      }, 2000)
     }
   }
+}
+
+/**
+ * 获取搜索结果列表页的tabId
+ * 规则：url是搜索结果列表页，则tabId为搜索结果列表页的tabId
+ * @returns {number} 搜索结果列表页的tabId
+ */
+async function getSearchResultListPageTabId() {
+  const tabs = await Browser.tabs.query({})
+  for (const tab of tabs) {
+    if (isSearchUrl(tab.url)) {
+      return tab.id
+    }
+  }
+  return null
 }

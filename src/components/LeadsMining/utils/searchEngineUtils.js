@@ -11,7 +11,6 @@ export const SEARCH_PAGE_KEY = 'leadsMining_isSearchPage'
  * 检查URL是否为搜索结果页
  * @param {string} url - 要检查的URL
  * @returns {boolean} 是否为搜索结果页
- * TODO: 要删除
  */
 export const isSearchUrl = (url) => {
   if (!url) return false
