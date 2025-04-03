@@ -18,7 +18,7 @@ import {
   getDelayParams,
   PAGE_DEPTH_KEY,
   MAX_PAGE_DEPTH,
-  isStatusChanged,
+  debounce,
 } from '../utils/searchEngineUtils'
 import { LeadsMiningContentAPI } from '../../../services/messaging/leadsMining'
 import { isSearchResultPage } from '../utils/searchEngineConfig'
@@ -163,17 +163,13 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
 
   // 所有页面（随缘挖掘）
   useEffect(() => {
-    if (casualMiningStatus === 'cRunning') {
-      console.log('闲时挖掘状态: 运行中')
-      // 执行收集邮箱
-      const emails = extractCurrentPageEmails()
-      if (emails?.length > 0) {
-        submitEmailLead(emails, { forceSubmit: true })
+    const timer = setTimeout(() => {
+      if (casualMiningStatus === 'cRunning') {
+        extractCurrentPageEmails({ forceSubmit: true })
       }
-    } else {
-      console.log('闲时挖掘状态: 停止')
-    }
-  }, [casualMiningStatus])
+    }, 1000) // 延迟1秒执行
+    return () => clearTimeout(timer)
+  }, [casualMiningStatus, selectedTask?.id])
 
   // 处理详情页的滚动和提取邮箱
   const handleDetailPageProcessing = useCallback(async () => {
@@ -215,7 +211,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
     // 如果有提取到的邮箱，通过background发送，支持跨域通信
     if (emails && selectedTask?.id) {
       const taskId = selectedTask.id
-
+      // submitEmailLead(emails)
       console.log('why no receive message send emails:', emails)
       // 使用LeadsMiningContentAPI发送邮箱到background
       LeadsMiningContentAPI.sendExtractedEmails(taskId, emails)
@@ -421,7 +417,7 @@ export const useSearchEngine = (taskManager, backgroundState, emailProcessor) =>
   const processCurrentPage = useCallback(async () => {
     try {
       // 提取当前页面的邮箱
-      extractCurrentPageEmails()
+      // extractCurrentPageEmails()
 
       const searchResults = getSearchResultLinks()
       // 重置链接索引

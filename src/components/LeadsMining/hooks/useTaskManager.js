@@ -130,9 +130,9 @@ export const useTaskManager = () => {
     if (!task) return
 
     const { keywords = '', exclusion_keywords = '', email_suffixes = '' } = task
-    const keywordList = keywords.split('\n').filter((k) => k.trim())
-    const emailSuffixList = email_suffixes.split('\n').filter((k) => k.trim())
-    const exclusionList = exclusion_keywords.split('\n').filter((k) => k.trim())
+    const keywordList = (keywords || '').split('\n').filter((k) => k.trim())
+    const emailSuffixList = (email_suffixes || '').split('\n').filter((k) => k.trim())
+    const exclusionList = (exclusion_keywords || '').split('\n').filter((k) => k.trim())
 
     const combinations = []
 

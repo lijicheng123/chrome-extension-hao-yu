@@ -124,31 +124,26 @@ class LeadsMiningService {
 
   /**
    * 提交线索到 Odoo
-   * @param {object} leadData - 线索数据
+   * @param {Array} leadData - 线索数据
    * @returns {Promise<object>} 提交结果
    */
-  async submitLead(leadData = {}) {
+  async submitLead(leadData = []) {
     try {
-      // 验证必填字段
-      if (!leadData.user_name) {
-        throw new Error('联系人姓名不能为空')
-      }
-      if (!leadData.company_name) {
-        throw new Error('公司名称不能为空')
-      }
-      if (!leadData.thread_name) {
-        throw new Error('线索名称不能为空')
-      }
-      if (!leadData.task_id) {
-        throw new Error('任务ID不能为空')
-      }
+      const submitLeads = leadData.filter((lead) => {
+        // 是否完整
+        const isFullLead = lead.user_name && lead.company_name && lead.thread_name && lead.task_id
+        if (!isFullLead) {
+          console.error('线索数据不完整:', lead)
+        }
+        return isFullLead
+      })
 
       const response = await requestManager.request('/api/create/thread', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: leadData,
+        body: submitLeads,
       })
 
       return response
@@ -222,60 +217,6 @@ class LeadsMiningService {
 
       throw errorObj
     }
-  }
-
-  /**
-   * 提交线索（带模板数据）
-   * @param {Object} data - 覆盖默认模板的数据
-   * @returns {Promise}
-   */
-  async submitLeadWithTemplate(data = {}) {
-    // 构建线索数据
-    const leadData = {
-      // 联系人信息
-      user_name: data.user_email, // 联系人姓名（必填）
-      user_function: '销售总监', // 联系人职位
-      user_email: data.user_email, // 联系人邮箱
-      user_phone: '13800138000', // 联系人电话
-      user_mobile: '13900139000', // 联系人手机
-      user_website: 'https://personal.example.com', // 联系人网站
-      user_street: '朝阳区建国路88号', // 联系人地址
-      user_street2: '2号楼3层', // 联系人地址2
-      user_city: '北京', // 联系人城市
-      user_country_id: 233, // 联系人国家ID
-      user_state_id: 13, // 联系人省份ID
-      user_title_id: 3, // 联系人称谓ID
-
-      // 公司信息
-      company_name: '示例科技有限公司11', // 公司名称（必填）
-      company_street: '朝阳区建国路88号', // 公司地址
-      company_street2: '2号楼整栋', // 公司地址2
-      company_city: '北京', // 公司城市
-      company_country_id: 233, // 公司国家ID
-      company_state_id: 13, // 公司省份ID
-      company_phone: '010-12345678', // 公司电话
-      company_email: 'contact@example.com', // 公司邮箱
-      company_website: 'https://www.example.com', // 公司网站
-
-      // 线索信息
-      thread_name: '示例科技合作机会11', // 线索名称（必填）
-      thread_type: 'lead', // 线索类型：lead(线索)或opportunity(商机)
-      linkin_site: 'https://linkedin.com/in/zhangsan', // LinkedIn链接
-      city: '北京', // 线索城市
-      country_id: 233, // 线索国家ID
-      state_id: 13, // 线索省份ID
-      street: '朝阳区建国路88号', // 线索地址
-      street2: '2号楼', // 线索地址2
-      tag_names: ['潜在客户', '高价值', '科技行业'], // 标签名称列表
-      priority: '2', // 优先级：0(低)、1(中)、2(高)、3(很高)
-      leads_keywords: '',
-      ...data,
-      // 来源信息
-      leads_source_url: optimizeUrl(data.leads_source_url),
-      leads_target_url: optimizeUrl(data.leads_target_url),
-    }
-
-    return this.submitLead(leadData)
   }
 }
 

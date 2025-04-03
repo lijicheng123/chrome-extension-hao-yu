@@ -243,13 +243,13 @@ function LeadsMining() {
 
   // 初始化表单
   useEffect(() => {
-    console.log('selectedTask=====>', selectedTask)
     if (selectedTask?.id) {
       form.setFieldsValue({ currentTask: selectedTask.id })
     }
   }, [selectedTask?.id, form])
 
-  console.log('emailList useBackgroundState index.jsx =========>', emailList)
+  console.log('currentPageEmails=====>2:', currentPageEmails)
+  // console.log('emailList useBackgroundState index.jsx =========>', emailList)
 
   return (
     <ConfigProvider>
