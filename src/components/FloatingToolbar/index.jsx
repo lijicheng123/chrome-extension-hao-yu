@@ -21,9 +21,12 @@ function FloatingToolbar(props) {
   const [virtualPosition, setVirtualPosition] = useState({ x: 0, y: 0 })
   const draggableRef = useRef(null)
 
+  console.log('props.containerprops.containerprops.container:', props)
+
   const config = useConfig(() => {
-    setRender(true)
-    // NOTE: 研究一下triggered和selection
+    if (!render) {
+      setRender(true)
+    }
     if (!triggered && selection) {
       props.container.style.position = 'absolute'
       setTimeout(() => {
@@ -84,7 +87,7 @@ function FloatingToolbar(props) {
       updatePosition() // avoid jitter
     }
 
-    if (config.alwaysPinWindow) onDock()
+    // if (config.alwaysPinWindow) onDock()
     return (
       <div data-theme={config.themeMode} style={{ height: '100%' }}>
         <Draggable

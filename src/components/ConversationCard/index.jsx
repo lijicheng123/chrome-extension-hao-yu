@@ -32,7 +32,7 @@ class ConversationItemData extends Object {
   }
 }
 
-function ConversationCard(props) {
+function ConversationCard(props = {}) {
   const { t } = useTranslation()
   const { windowType } = props
   const [isReady, setIsReady] = useState(!props.question)
