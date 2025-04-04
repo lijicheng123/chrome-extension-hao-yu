@@ -1,8 +1,7 @@
 import { calcContainerStyle } from './calc-container-style.mjs'
-export function createElementAtPosition(x = 0, y = 0, containerType, zIndex = 999) {
+export function createElementAtPosition(x = 0, y = 0, containerType, zIndex = 9999999) {
   const containerStyle = calcContainerStyle(containerType)
 
-  console.log('containerStyle:', containerStyle)
   const element = document.createElement('div')
   element.style.position = 'fixed'
   element.style.zIndex = zIndex

@@ -252,7 +252,15 @@ function LeadsMining() {
   // console.log('emailList useBackgroundState index.jsx =========>', emailList)
 
   return (
-    <ConfigProvider>
+    <ConfigProvider
+      theme={{
+        components: {
+          Select: {
+            zIndexPopup: 99999999,
+          },
+        },
+      }}
+    >
       <div className={style['email-list']}>
         <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
           <Row align="top">
