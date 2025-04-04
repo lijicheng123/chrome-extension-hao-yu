@@ -288,38 +288,42 @@ function LeadsMining() {
               />
             </Col>
           </Row>
-          <Button type="primary" onClick={test}>
-            测试
-          </Button>
-
-          <Space>
+          <Row justify="center">
             {!isAutoMining && (
-              <Tooltip title={casualTooltipText}>
-                <Button
-                  type="primary"
-                  danger={isCasualMining && !casualHovered}
-                  onClick={onCasualMiningClick}
-                  disabled={casualMiningDisabled}
-                  onMouseEnter={handleCasualMouseEnter}
-                  onMouseLeave={handleCasualMouseLeave}
-                >
-                  {casualButtonText}
-                </Button>
-              </Tooltip>
+              <Col span={12}>
+                <Tooltip title={casualTooltipText}>
+                  <Button
+                    type="primary"
+                    danger={isCasualMining && !casualHovered}
+                    onClick={onCasualMiningClick}
+                    disabled={casualMiningDisabled}
+                    onMouseEnter={handleCasualMouseEnter}
+                    onMouseLeave={handleCasualMouseLeave}
+                    loading={casualMiningStatus === 'cRunning'}
+                    style={{ borderRadius: 16 }}
+                  >
+                    {casualButtonText}
+                  </Button>
+                </Tooltip>
+              </Col>
             )}
-            <Tooltip title={autoTooltipText}>
-              <Button
-                type={isAutoMining ? 'primary' : 'default'}
-                danger={isAutoMining && autoHovered}
-                onClick={autoMining}
-                disabled={autoMiningDisabled}
-                onMouseEnter={handleAutoMouseEnter}
-                onMouseLeave={handleAutoMouseLeave}
-              >
-                {autoButtonText}
-              </Button>
-            </Tooltip>
-          </Space>
+            {isSearchPage && (
+              <Col span={12}>
+                <Tooltip title={autoTooltipText}>
+                  <Button
+                    type={isAutoMining ? 'primary' : 'default'}
+                    danger={isAutoMining && autoHovered}
+                    onClick={autoMining}
+                    disabled={autoMiningDisabled}
+                    onMouseEnter={handleAutoMouseEnter}
+                    onMouseLeave={handleAutoMouseLeave}
+                  >
+                    {autoButtonText}
+                  </Button>
+                </Tooltip>
+              </Col>
+            )}
+          </Row>
 
           {/* {showDebugger && (
             <Space>
