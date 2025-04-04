@@ -11,14 +11,24 @@
   min-height: 32px;
   pointer-events: auto;
   .tool-wrapper {
+    width: 100%;
+    text-align: right;
+    padding: 8px;
+    &>a {
+      margin-right: 12px;
+    }
     .tool-item-wrapper {
       display: none;
       flex-direction: column;
-      border: 1px solid #efefef;
-      padding: 6px;
+      padding: 8px;
       .tool-item {
         margin-bottom: 8px;
         cursor: pointer;
+        color: #000;
+        font-size: 12px;
+        &:hover {
+          color: #5d5fef;
+        }
       }
     }
     &:hover {

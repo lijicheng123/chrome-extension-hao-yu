@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import Browser from 'webextension-polyfill'
 import Draggable from 'react-draggable'
 import PropTypes from 'prop-types'
+import { ToolOutlined } from '@ant-design/icons'
 import './index.scss'
 import { WINDOW_TYPE } from '../../constants'
 
@@ -43,27 +44,13 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
       onDrag={(e, data) => setPosition({ x: 0, y: data.y })}
     >
       <div ref={draggableRef} className="bar-standby-container">
-        <div className="tool">网页翻译</div>
-        <div className="tool">网页总结</div>
-        <div
-          className="tool"
-          onClick={() => {
-            openToolBar({ windowType: WINDOW_TYPE.LEADS_MINING })
-          }}
-        >
-          线索挖掘
-        </div>
-        <div className="tool-wrapper">
-          <a>工具箱</a>
-          <div className="tool-item-wrapper">
-            <a onClick={openAIPic} className="tool-item">
-              生成图片
-            </a>
-            <a className="tool-item">处理图片</a>
-          </div>
-        </div>
+        {/* <div className="tool">网页翻译</div>
+        <div className="tool">网页总结</div> */}
+
         <div className="bar-standby-icon-wrapper">
+          {/* 图片不能选中 */}
           <img
+            draggable={false}
             onClick={() => {
               openToolBar()
             }}
@@ -96,6 +83,25 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
               </svg>
             </span>
           </>
+        </div>
+        <div className="tool-wrapper">
+          <a>
+            <ToolOutlined />
+          </a>
+          <div className="tool-item-wrapper">
+            <a onClick={openAIPic} className="tool-item">
+              生成图片
+            </a>
+            <a className="tool-item">处理图片</a>
+            <a
+              className="tool-item"
+              onClick={() => {
+                openToolBar({ windowType: WINDOW_TYPE.LEADS_MINING })
+              }}
+            >
+              客户开发
+            </a>
+          </div>
         </div>
       </div>
     </Draggable>
