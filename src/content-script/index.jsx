@@ -168,6 +168,11 @@ const deleteToolbar = () => {
     toolbarContainer.remove()
 }
 
+/**
+ * 划词选中创建浮层
+ * @param {HTMLElement} toolbarContainer 浮层容器
+ * @param {string} selection 选中内容
+ */
 const createSelectionTools = async (toolbarContainer, selection) => {
   toolbarContainer.className = 'chatgptbox-toolbar-container'
   const userConfig = await getUserConfig()
@@ -181,6 +186,7 @@ const createSelectionTools = async (toolbarContainer, selection) => {
       })}
       selection={selection}
       container={toolbarContainer}
+      closeable={true}
       dockable={true}
     />,
   )
@@ -585,12 +591,12 @@ async function run() {
   // 顶部通知返回条
   prepareForJumpBackNotification()
 
-  if (isShowMiningPanel()) {
-    setTimeout(() => {
-      // 渲染 leadsMining
-      renderLeadsMining()
-    }, 1000)
-  }
+  // if (isShowMiningPanel()) {
+  //   setTimeout(() => {
+  //     // 渲染 leadsMining
+  //     renderLeadsMining()
+  //   }, 1000)
+  // }
 }
 
 run()

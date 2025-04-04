@@ -82,7 +82,9 @@
   margin-bottom: 20px;
 
   .gpt-inner {
-    height: 100%;
+    max-width: 450px;
+    max-height: 600px;
+    overflow-y: auto;
     display: flex;
     position: relative;
     flex-direction: column;
@@ -1432,6 +1434,9 @@
   }
 }
 
+.chatgptbox-toolbar-container {
+  
+}
 .chatgptbox-selection-toolbar {
   display: flex;
   align-items: center;

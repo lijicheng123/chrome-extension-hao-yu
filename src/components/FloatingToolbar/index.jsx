@@ -72,6 +72,8 @@ function FloatingToolbar(props) {
 
   if (!render) return <div />
 
+  // 如果是划词场景，这里的triggered为true，prompt有值且selection有选中内容
+  // 如果是聊天场景，这里的triggered为true，prompt无值且selection无选中内容
   if (triggered || (prompt && !selection)) {
     const dragEvent = {
       onDrag: (e, ui) => {

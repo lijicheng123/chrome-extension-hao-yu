@@ -16,7 +16,7 @@ import { generateAnswersWithBingWebApi } from '../../services/apis/bing-web.mjs'
 import { handlePortError } from '../../services/wrappers.mjs'
 import LeadsMining from '../LeadsMining'
 import { WINDOW_TYPE } from '../../constants/index.jsx'
-import { ExpandAltOutlined } from '@ant-design/icons'
+import { ExpandOutlined } from '@ant-design/icons'
 const logo = Browser.runtime.getURL('logo.png')
 class ConversationItemData extends Object {
   /**
@@ -319,7 +319,6 @@ function ConversationCard(props = {}) {
 
   const retryFn = useMemo(() => getRetryFn(session), [session])
 
-
   return (
     <div className="gpt-inner">
       <div
@@ -469,7 +468,7 @@ function ConversationCard(props = {}) {
                 })
               }}
             >
-              <ExpandAltOutlined size={16} />
+              <ExpandOutlined size={16} />
             </span>
           )}
           {props.closeable && (
