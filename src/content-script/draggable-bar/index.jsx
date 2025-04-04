@@ -52,7 +52,7 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
           <img
             draggable={false}
             onClick={() => {
-              openToolBar()
+              openToolBar({ windowType: WINDOW_TYPE.COMMON_CHAT })
             }}
             className="folded-icon"
             src={foldedIcon}
