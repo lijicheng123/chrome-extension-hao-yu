@@ -18,7 +18,7 @@
     "stage"
   ],
   "dependencies": {
-    "@ant-design/icons": "^5.5.1",
+    "@ant-design/icons": "^5.6.1",
     "@babel/runtime": "^7.25.7",
     "@fingerprintjs/fingerprintjs": "^4.5.1",
     "@mozilla/readability": "^0.5.0",

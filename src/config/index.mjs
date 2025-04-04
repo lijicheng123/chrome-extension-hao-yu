@@ -591,5 +591,9 @@ const miningBlacklist = [
  */
 export const isShowMiningPanel = () => {
   const currentUrl = window.location.href
+  // 必须是http或者https开头
+  if (!currentUrl.startsWith('http') && !currentUrl.startsWith('https')) {
+    return false
+  }
   return !miningBlacklist.some((blacklist) => currentUrl.includes(blacklist))
 }

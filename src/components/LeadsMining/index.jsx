@@ -256,7 +256,7 @@ function LeadsMining() {
       theme={{
         components: {
           Select: {
-            zIndexPopup: 99999999,
+            zIndexPopup: 2147483647,
           },
         },
       }}
