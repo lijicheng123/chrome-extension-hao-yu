@@ -76,14 +76,17 @@
 
 .chatgptbox-container,
 #chatgptbox-container {
+  min-width: 450px;
+  z-index: 99;
   width: 100%;
   flex-basis: 0;
   flex-grow: 1;
   margin-bottom: 20px;
+  margin-left: 0;
 
   .gpt-inner {
     max-width: 450px;
-    max-height: 600px;
+    max-height: 100vh;
     overflow-y: auto;
     display: flex;
     position: relative;

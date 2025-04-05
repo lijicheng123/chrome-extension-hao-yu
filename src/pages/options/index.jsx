@@ -19,5 +19,5 @@ i18nService.registerHandler(I18N_API.CHANGE_LANGUAGE, (data) => {
   return { success: true }
 })
 
-const root = createRoot(document.getElementById('root'))
+const root = createRoot(document.getElementById('app'))
 root.render(<App />)

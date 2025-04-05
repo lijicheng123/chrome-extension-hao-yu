@@ -16,7 +16,7 @@ import { generateAnswersWithBingWebApi } from '../../services/apis/bing-web.mjs'
 import { handlePortError } from '../../services/wrappers.mjs'
 import LeadsMining from '../LeadsMining'
 import { WINDOW_TYPE } from '../../constants/index.jsx'
-import { ExpandOutlined } from '@ant-design/icons'
+import { FullscreenOutlined } from '@ant-design/icons'
 const logo = Browser.runtime.getURL('logo.png')
 class ConversationItemData extends Object {
   /**
@@ -410,7 +410,7 @@ function ConversationCard(props = {}) {
               className="gpt-util-icon"
               style={{ color: 'inherit' }}
             >
-              <ExpandOutlined size={16} />
+              <FullscreenOutlined size={16} />
             </a>
           )}
           {/* <span
@@ -468,7 +468,7 @@ function ConversationCard(props = {}) {
                 })
               }}
             >
-              <ExpandOutlined size={16} />
+              <FullscreenOutlined size={16} />
             </span>
           )}
           {props.closeable && (

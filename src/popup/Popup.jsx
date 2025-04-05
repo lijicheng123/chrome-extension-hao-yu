@@ -9,7 +9,7 @@ import {
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs'
 import 'react-tabs/style/react-tabs.css'
 import './styles.scss'
-import { MarkGithubIcon } from '@primer/octicons-react'
+import { FormOutlined } from '@ant-design/icons'
 import Browser from 'webextension-polyfill'
 import { useWindowTheme } from '../hooks/use-window-theme.mjs'
 import { isMobile } from '../utils/index.mjs'
@@ -26,7 +26,8 @@ function Footer({ currentVersion, latestVersion }) {
   return (
     <div className="footer">
       <div>
-        {`${t('Current Version')}: ${currentVersion} `}
+        当前是测试版，更多功能正在开发中，请耐心等待……
+        {/* {`${t('Current Version')}: ${currentVersion} `}
         {currentVersion >= latestVersion ? (
           `(${t('Latest')})`
         ) : (
@@ -41,16 +42,16 @@ function Footer({ currentVersion, latestVersion }) {
             </a>
             )
           </>
-        )}
+        )} */}
       </div>
       <div>
         <a
-          href="https://github.com/josStorer/chatGPTBox"
+          href={`chrome-extension://${Browser.runtime.id}/options.html#feedback`}
           target="_blank"
-          rel="nofollow noopener noreferrer"
+          rel="noreferrer"
         >
-          <span>{t('Help | Changelog ')}</span>
-          <MarkGithubIcon />
+          <FormOutlined />
+          <span style={{ marginLeft: '4px' }}>联系我们</span>
         </a>
       </div>
     </div>

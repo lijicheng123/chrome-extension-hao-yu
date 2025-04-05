@@ -29,8 +29,8 @@ const EmailList = ({
                 <Text strong>{email}</Text>
               </Paragraph>
               <Space>
-                <a onClick={() => handleEditEmail(email)}>编辑</a>
-                <a onClick={() => handleDeleteCustomer(email)}>删除</a>
+                {/* <a onClick={() => handleEditEmail(email)}>编辑</a> */}
+                {/* <a onClick={() => handleDeleteCustomer(email)}>删除</a> */}
                 <a onClick={() => locateEmail(email)}>定位</a>
               </Space>
             </div>

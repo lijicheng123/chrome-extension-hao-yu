@@ -3,6 +3,7 @@ import { Tabs, Button } from 'antd'
 import Prompt from './components/prompt'
 import ConfigPanel from './components/config-panel'
 import LoginPage from './components/auth/login'
+import Feedback from './components/feedback'
 
 function options() {
   // 从URL里获取hash，不需要#
@@ -27,6 +28,11 @@ function options() {
       label: 'Config',
       key: 'config',
       children: <ConfigPanel />,
+    },
+    {
+      label: 'Feedback',
+      key: 'feedback',
+      children: <Feedback />,
     },
   ]
   return (
