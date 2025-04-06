@@ -85,3 +85,10 @@
     }
   }
 }
+
+
+@media print {
+  .bar-standby-container {
+    display: none !important;
+  }
+}
