@@ -72,19 +72,28 @@
   font-size: 12px;
 }
 
-.popup-tab {
-  display: inline-block;
-  position: relative;
-  list-style: none;
-  padding: 6px 12px 0;
-  cursor: pointer;
-  border-radius: 5px;
-  margin-right: 5px;
-  font-size: 14px;
-  background-color: var(--theme-color);
-  color: var(--font-color);
+/* 更新为适配antd的Tabs样式 */
+.popup-tabs {
+  width: 100%;
+  
+  .ant-tabs-tab {
+    font-size: 14px;
+    padding: 6px 12px;
+    margin-right: 5px;
+    border-radius: 5px;
+    color: var(--font-color);
+    background-color: var(--theme-color);
 
-  &--selected {
-    background: var(--active-color);
+    &.ant-tabs-tab-active {
+      background: var(--active-color);
+    }
+  }
+
+  .ant-tabs-tab-btn {
+    color: var(--font-color);
+  }
+
+  .ant-tabs-ink-bar {
+    display: none;
   }
 }

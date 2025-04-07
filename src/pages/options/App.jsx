@@ -4,7 +4,7 @@ import Prompt from './components/prompt'
 import ConfigPanel from './components/config-panel'
 import LoginPage from './components/auth/login'
 import Feedback from './components/feedback'
-
+import Setting from './components/setting'
 function options() {
   // 从URL里获取hash，不需要#
   const hash = window.location.hash.slice(1)
@@ -28,6 +28,11 @@ function options() {
       label: 'Config',
       key: 'config',
       children: <ConfigPanel />,
+    },
+    {
+      label: 'Setting',
+      key: 'setting',
+      children: <Setting />,
     },
     {
       label: 'Feedback',

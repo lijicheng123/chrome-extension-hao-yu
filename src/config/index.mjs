@@ -589,7 +589,7 @@ const miningBlacklist = [
  * 是否显示邮箱挖掘面板
  * 通过当前页面地址判断是否显示邮箱挖掘面板
  */
-export const isShowMiningPanel = () => {
+export const isShowSidebar = () => {
   const currentUrl = window.location.href
   // 必须是http或者https开头
   if (!currentUrl.startsWith('http') && !currentUrl.startsWith('https')) {

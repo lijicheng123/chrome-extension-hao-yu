@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { parseFloatWithClamp, parseIntWithClamp } from '../../utils/index.mjs'
 import PropTypes from 'prop-types'
-import { Tab, TabList, TabPanel, Tabs } from 'react-tabs'
+import { Tabs } from 'antd'
 import Browser from 'webextension-polyfill'
 
 ApiParams.propTypes = {
@@ -224,25 +224,27 @@ AdvancedPart.propTypes = {
 export function AdvancedPart({ config, updateConfig }) {
   const { t } = useTranslation()
 
+  const items = [
+    {
+      key: '1',
+      label: t('API Params'),
+      children: <ApiParams config={config} updateConfig={updateConfig} />,
+    },
+    {
+      key: '2',
+      label: t('API Url'),
+      children: <ApiUrl config={config} updateConfig={updateConfig} />,
+    },
+    {
+      key: '3',
+      label: t('Others'),
+      children: <Others config={config} updateConfig={updateConfig} />,
+    },
+  ]
+
   return (
     <>
-      <Tabs selectedTabClassName="popup-tab--selected">
-        <TabList>
-          <Tab className="popup-tab">{t('API Params')}</Tab>
-          <Tab className="popup-tab">{t('API Url')}</Tab>
-          <Tab className="popup-tab">{t('Others')}</Tab>
-        </TabList>
-
-        <TabPanel>
-          <ApiParams config={config} updateConfig={updateConfig} />
-        </TabPanel>
-        <TabPanel>
-          <ApiUrl config={config} updateConfig={updateConfig} />
-        </TabPanel>
-        <TabPanel>
-          <Others config={config} updateConfig={updateConfig} />
-        </TabPanel>
-      </Tabs>
+      <Tabs className="popup-tabs" items={items} />
     </>
   )
 }

@@ -3,7 +3,7 @@ import { Form, Input, Button, message, Card } from 'antd'
 import Browser from 'webextension-polyfill'
 import { MailOutlined } from '@ant-design/icons'
 import { authService } from '../../../../services/auth/auth-service'
-import { configManager } from '../../../../services/config/config-manager'
+// import { configManager } from '../../../../services/config/config-manager'
 
 function LoginPage() {
   const [form] = Form.useForm()
@@ -18,7 +18,8 @@ function LoginPage() {
 
   // 检查登录状态
   const checkLoginStatus = async () => {
-    const info = await configManager.getUserInfo()
+    // const info = await configManager.getUserInfo()
+    const info = {}
     setUserInfo(info)
   }
 
@@ -26,7 +27,7 @@ function LoginPage() {
   const handleLogout = async () => {
     try {
       setLoading(true)
-      await configManager.clearUserInfo()
+      // await configManager.clearUserInfo()
       setUserInfo(null)
       message.success('退出登录成功')
     } catch (error) {
@@ -83,7 +84,7 @@ function LoginPage() {
       const response = await authService.verifyAndLogin(values.email, values.code)
 
       // 保存用户信息
-      await configManager.saveUserInfo(response.data)
+      // await configManager.saveUserInfo(response.data)
 
       message.success('登录成功')
 

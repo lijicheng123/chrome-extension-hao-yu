@@ -35,7 +35,7 @@ import { WINDOW_TYPE } from '../constants'
 import { UI_API } from '../services/messaging/ui'
 import uiService from '../services/messaging/ui'
 import i18nService, { I18N_API } from '../services/messaging/i18n'
-import { isShowMiningPanel } from '../config/index.mjs'
+import { isShowSidebar } from '../config/index.mjs'
 const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
 const sideBarContainer = document.createElement('div')
 sideBarContainer.id = 'chatgptbox-sidebar-container'
@@ -542,6 +542,7 @@ async function renderLeadsMining() {
  * @param {function} setLiving - 是否活着 暂未实现
  */
 function renderSidebar() {
+  if (!isShowSidebar()) return
   const root = createRoot(sideBarContainer)
   root.render(
     <DraggableBar

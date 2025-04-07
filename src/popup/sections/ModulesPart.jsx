@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import PropTypes from 'prop-types'
-import { Tab, TabList, TabPanel, Tabs } from 'react-tabs'
+import { Tabs } from 'antd'
 import { ApiModes } from './ApiModes'
 import { SelectionTools } from './SelectionTools'
 import { SiteAdapters } from './SiteAdapters'
@@ -13,25 +13,27 @@ ModulesPart.propTypes = {
 export function ModulesPart({ config, updateConfig }) {
   const { t } = useTranslation()
 
+  const items = [
+    {
+      key: '1',
+      label: t('API Modes'),
+      children: <ApiModes config={config} updateConfig={updateConfig} />,
+    },
+    {
+      key: '2',
+      label: t('Selection Tools'),
+      children: <SelectionTools config={config} updateConfig={updateConfig} />,
+    },
+    {
+      key: '3',
+      label: t('Sites'),
+      children: <SiteAdapters config={config} updateConfig={updateConfig} />,
+    },
+  ]
+
   return (
     <>
-      <Tabs selectedTabClassName="popup-tab--selected">
-        <TabList>
-          <Tab className="popup-tab">{t('API Modes')}</Tab>
-          <Tab className="popup-tab">{t('Selection Tools')}</Tab>
-          <Tab className="popup-tab">{t('Sites')}</Tab>
-        </TabList>
-
-        <TabPanel>
-          <ApiModes config={config} updateConfig={updateConfig} />
-        </TabPanel>
-        <TabPanel>
-          <SelectionTools config={config} updateConfig={updateConfig} />
-        </TabPanel>
-        <TabPanel>
-          <SiteAdapters config={config} updateConfig={updateConfig} />
-        </TabPanel>
-      </Tabs>
+      <Tabs className="popup-tabs" items={items} />
     </>
   )
 }

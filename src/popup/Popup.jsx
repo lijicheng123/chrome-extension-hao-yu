@@ -6,10 +6,9 @@ import {
   getUserConfig,
   setUserConfig,
 } from '../config/index.mjs'
-import { Tab, TabList, TabPanel, Tabs } from 'react-tabs'
-import 'react-tabs/style/react-tabs.css'
+import { Tabs } from 'antd'
 import './styles.scss'
-import { FormOutlined } from '@ant-design/icons'
+import { FormOutlined, SettingOutlined } from '@ant-design/icons'
 import Browser from 'webextension-polyfill'
 import { useWindowTheme } from '../hooks/use-window-theme.mjs'
 import { isMobile } from '../utils/index.mjs'
@@ -26,7 +25,7 @@ function Footer({ currentVersion, latestVersion }) {
   return (
     <div className="footer">
       <div>
-        当前是测试版，更多功能正在开发中，请耐心等待……
+        当前是测试版，更多功能正在开发中……
         {/* {`${t('Current Version')}: ${currentVersion} `}
         {currentVersion >= latestVersion ? (
           `(${t('Latest')})`
@@ -52,6 +51,15 @@ function Footer({ currentVersion, latestVersion }) {
         >
           <FormOutlined />
           <span style={{ marginLeft: '4px' }}>联系我们</span>
+        </a>
+        <a
+          href={`chrome-extension://${Browser.runtime.id}/options.html#setting`}
+          target="_blank"
+          rel="noreferrer"
+          style={{ marginLeft: '8px' }}
+        >
+          <SettingOutlined />
+          <span style={{ marginLeft: '4px' }}>更多设置</span>
         </a>
       </div>
     </div>
@@ -93,36 +101,40 @@ function Popup() {
   const search = new URLSearchParams(window.location.search)
   const popup = !isMobile() && search.get('popup') // manifest v2
 
+  const tabItems = [
+    {
+      key: '0',
+      label: t('General'),
+      children: (
+        <GeneralPart config={config} updateConfig={updateConfig} setTabIndex={setTabIndex} />
+      ),
+    },
+    {
+      key: '1',
+      label: t('Feature Pages'),
+      children: <FeaturePages config={config} updateConfig={updateConfig} />,
+    },
+    {
+      key: '2',
+      label: t('Modules'),
+      children: <ModulesPart config={config} updateConfig={updateConfig} />,
+    },
+    {
+      key: '3',
+      label: t('Advanced'),
+      children: <AdvancedPart config={config} updateConfig={updateConfig} />,
+    },
+  ]
+
   return (
     <div className={popup === 'true' ? 'container-popup-mode' : 'container-page-mode'}>
       <form style={{ width: '100%' }}>
         <Tabs
-          selectedTabClassName="popup-tab--selected"
-          selectedIndex={tabIndex}
-          onSelect={(index) => {
-            setTabIndex(index)
-          }}
-        >
-          <TabList>
-            <Tab className="popup-tab">{t('General')}</Tab>
-            <Tab className="popup-tab">{t('Feature Pages')}</Tab>
-            <Tab className="popup-tab">{t('Modules')}</Tab>
-            <Tab className="popup-tab">{t('Advanced')}</Tab>
-          </TabList>
-
-          <TabPanel>
-            <GeneralPart config={config} updateConfig={updateConfig} setTabIndex={setTabIndex} />
-          </TabPanel>
-          <TabPanel>
-            <FeaturePages config={config} updateConfig={updateConfig} />
-          </TabPanel>
-          <TabPanel>
-            <ModulesPart config={config} updateConfig={updateConfig} />
-          </TabPanel>
-          <TabPanel>
-            <AdvancedPart config={config} updateConfig={updateConfig} />
-          </TabPanel>
-        </Tabs>
+          activeKey={tabIndex.toString()}
+          onChange={(key) => setTabIndex(parseInt(key))}
+          className="popup-tabs"
+          items={tabItems}
+        />
       </form>
       <br />
       <Footer currentVersion={currentVersion} latestVersion={latestVersion} />
