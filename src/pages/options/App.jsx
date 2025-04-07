@@ -1,5 +1,5 @@
 import React from 'react'
-import { Tabs, Button } from 'antd'
+import { Tabs } from 'antd'
 import Prompt from './components/prompt'
 import ConfigPanel from './components/config-panel'
 import LoginPage from './components/auth/login'
@@ -41,8 +41,14 @@ function options() {
     },
   ]
   return (
-    <div>
-      <Tabs tabPosition="left" items={tabItems} defaultActiveKey={hash} />
+    <div style={{ display: 'flex', height: '100vh' }}>
+      <Tabs
+        tabPosition="left"
+        items={tabItems}
+        defaultActiveKey={hash}
+        style={{ flex: 1 }}
+        tabBarStyle={{ width: '100px', height: '100%' }}
+      />
     </div>
   )
 }

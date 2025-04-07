@@ -4,6 +4,7 @@ import { isEdge, isFirefox, isMobile, isSafari, openUrl } from '../../utils/inde
 import Browser from 'webextension-polyfill'
 import PropTypes from 'prop-types'
 import { UiContentAPI } from '../../services/messaging/ui'
+import { Button, Checkbox, Form } from 'antd'
 
 FeaturePages.propTypes = {
   config: PropTypes.object.isRequired,
@@ -20,40 +21,45 @@ export function FeaturePages({ config, updateConfig }) {
     })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'left' }}>
+    <Form layout="vertical">
       {!isMobile() && !isFirefox() && !isSafari() && (
-        <button
-          type="button"
+        <Form.Item>
+          <Button
+            type="primary"
+            onClick={() => {
+              if (isEdge()) openUrl('edge://extensions/shortcuts')
+              else openUrl('chrome://extensions/shortcuts')
+            }}
+          >
+            {t('Keyboard Shortcuts')}
+          </Button>
+        </Form.Item>
+      )}
+      <Form.Item>
+        <Button
+          type="primary"
           onClick={() => {
-            if (isEdge()) openUrl('edge://extensions/shortcuts')
-            else openUrl('chrome://extensions/shortcuts')
+            UiContentAPI.openUrl(Browser.runtime.getURL('IndependentPanel.html'))
           }}
         >
-          {t('Keyboard Shortcuts')}
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() => {
-          UiContentAPI.openUrl(Browser.runtime.getURL('IndependentPanel.html'))
-        }}
-      >
-        {t('Open Conversation Page')}
-      </button>
+          {t('Open Conversation Page')}
+        </Button>
+      </Form.Item>
       {!isMobile() && (
-        <button
-          type="button"
-          onClick={() => {
-            UiContentAPI.openChatWindow()
-          }}
-        >
-          {t('Open Conversation Window')}
-        </button>
+        <Form.Item>
+          <Button
+            type="primary"
+            onClick={() => {
+              UiContentAPI.openChatWindow()
+            }}
+          >
+            {t('Open Conversation Window')}
+          </Button>
+        </Form.Item>
       )}
       {!isMobile() && !isFirefox() && !isSafari() && (
-        <label>
-          <input
-            type="checkbox"
+        <Form.Item>
+          <Checkbox
             checked={backgroundPermission}
             onChange={(e) => {
               const checked = e.target.checked
@@ -66,23 +72,23 @@ export function FeaturePages({ config, updateConfig }) {
                   setBackgroundPermission(result)
                 })
             }}
-          />
-          {t('Keep Conversation Window in Background')}
-        </label>
+          >
+            {t('Keep Conversation Window in Background')}
+          </Checkbox>
+        </Form.Item>
       )}
       {!isMobile() && (
-        <label>
-          <input
-            type="checkbox"
+        <Form.Item>
+          <Checkbox
             checked={config.alwaysCreateNewConversationWindow}
             onChange={(e) => {
-              const checked = e.target.checked
-              updateConfig({ alwaysCreateNewConversationWindow: checked })
+              updateConfig({ alwaysCreateNewConversationWindow: e.target.checked })
             }}
-          />
-          {t('Always Create New Conversation Window')}
-        </label>
+          >
+            {t('Always Create New Conversation Window')}
+          </Checkbox>
+        </Form.Item>
       )}
-    </div>
+    </Form>
   )
 }
