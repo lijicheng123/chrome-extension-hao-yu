@@ -160,7 +160,7 @@ function LoginPage() {
           <div className="card-title">
             <span>用户信息</span>
             <div className="user-avatar">
-              {userInfo.name?.[0]?.toUpperCase() || userInfo.email[0].toUpperCase()}
+              {userInfo.name?.[0]?.toUpperCase() || userInfo.email?.[0]?.toUpperCase()}
             </div>
           </div>
         }

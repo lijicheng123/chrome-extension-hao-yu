@@ -1459,6 +1459,10 @@
   color: var(--toolbar-color);
   cursor: pointer;
   z-index: 2147483647;
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 .chatgptbox-selection-toolbar-button:hover {

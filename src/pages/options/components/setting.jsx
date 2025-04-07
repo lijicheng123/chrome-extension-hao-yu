@@ -39,11 +39,11 @@ function Setting() {
         <GeneralPart config={config} updateConfig={updateConfig} setTabIndex={setTabIndex} />
       ),
     },
-    {
-      key: '1',
-      label: t('Feature Pages'),
-      children: <FeaturePages config={config} updateConfig={updateConfig} />,
-    },
+    // {
+    //   key: '1',
+    //   label: t('Feature Pages'),
+    //   children: <FeaturePages config={config} updateConfig={updateConfig} />,
+    // },
     {
       key: '2',
       label: t('Modules'),
@@ -58,15 +58,12 @@ function Setting() {
 
   return (
     <div className="container-page-mode">
-      <form style={{ width: '100%' }}>
-        <Tabs
-          activeKey={tabIndex.toString()}
-          onChange={(key) => setTabIndex(parseInt(key))}
-          className="popup-tabs"
-          items={tabItems}
-        />
-      </form>
-      <br />
+      <Tabs
+        activeKey={tabIndex.toString()}
+        onChange={(key) => setTabIndex(parseInt(key))}
+        className="popup-tabs"
+        items={tabItems}
+      />
     </div>
   )
 }
