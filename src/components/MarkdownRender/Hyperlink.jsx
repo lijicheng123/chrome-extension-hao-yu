@@ -4,7 +4,7 @@ import Browser from 'webextension-polyfill'
 export function Hyperlink({ href, children }) {
   const linkProperties = {
     target: '_blank',
-    style: 'color: #8ab4f8; cursor: pointer;',
+    style: { color: '#8ab4f8', cursor: 'pointer' },
     rel: 'nofollow noopener noreferrer',
   }
 

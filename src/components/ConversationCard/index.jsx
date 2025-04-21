@@ -531,7 +531,7 @@ function ConversationCard(props = {}) {
             content={data.content}
             key={idx}
             type={data.type}
-            descName={data.type === 'answer' && session.aiName}
+            descName={data.type === 'answer' ? `${session.aiName}` : ''}
             onRetry={idx === conversationItemData.length - 1 ? retryFn : null}
           />
         ))}
