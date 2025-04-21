@@ -40,6 +40,19 @@ export const isSearchUrl = (url) => {
   }
 }
 
+
+/**
+ * 检查URL是否为详情页
+ * @returns {boolean} 是否为详情页
+ */
+export const isDetailPage = () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const depthParam = urlParams.get(PAGE_DEPTH_KEY)
+
+  return depthParam !== null && depthParam > 0
+}
+
+
 /**
  * 创建延时函数
  * @param {number} ms - 延时毫秒数

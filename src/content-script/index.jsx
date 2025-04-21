@@ -5,6 +5,7 @@ import DecisionCard from '../components/DecisionCard'
 import { config as siteConfig } from './site-adapters'
 import { config as toolsConfig } from './selection-tools'
 import { config as menuConfig } from './menu-tools'
+import { isDetailPage } from '../components/LeadsMining/utils/searchEngineUtils'
 import {
   chatgptWebModelKeys,
   getPreferredLanguageKey,
@@ -591,13 +592,11 @@ async function run() {
 
   // 顶部通知返回条
   prepareForJumpBackNotification()
+  renderLeadsMining()
 
-  // if (isShowMiningPanel()) {
-  //   setTimeout(() => {
-  //     // 渲染 leadsMining
-  //     renderLeadsMining()
-  //   }, 1000)
-  // }
+  if (isDetailPage()) {
+    renderLeadsMining()
+  }
 }
 
 run()
