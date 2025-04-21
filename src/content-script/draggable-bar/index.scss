@@ -14,7 +14,7 @@
     width: 100%;
     text-align: right;
     padding: 8px;
-    &>a {
+    & > a {
       margin-right: 12px;
     }
     .tool-item-wrapper {
@@ -85,7 +85,6 @@
     }
   }
 }
-
 
 @media print {
   .bar-standby-container {

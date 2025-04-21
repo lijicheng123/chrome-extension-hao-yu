@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types'
 import { Progress, Tag, Alert, Typography } from 'antd'
-const { Text } = Typography;
+const { Text } = Typography
 /**
  * 任务状态组件
  * 显示任务的执行状态和控制按钮
@@ -14,11 +14,15 @@ const TaskStatus = ({
   statusMessage,
 }) => {
   return (
-    <div style={{
-      marginTop: 12,
-    }}>
+    <div
+      style={{
+        marginTop: 12,
+      }}
+    >
       {statusMessage && (
-        <Text type={taskStatus === 'error' ? 'error' : 'info'} ellipsis={{ rows: 1 }}>{statusMessage}</Text>
+        <Text type={taskStatus === 'error' ? 'error' : 'info'} ellipsis={{ rows: 1 }}>
+          {statusMessage}
+        </Text>
       )}
       <Progress percent={progress} status={taskStatus === 'error' ? 'exception' : undefined} />
       <div
@@ -49,7 +53,6 @@ const TaskStatus = ({
 }
 
 export default TaskStatus
-
 
 TaskStatus.propTypes = {
   taskStatus: PropTypes.string,

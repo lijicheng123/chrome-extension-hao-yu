@@ -582,9 +582,7 @@ export async function clearOldAccessToken() {
  * 指定规则的域名地址不挖掘邮箱
  * http://localhost:8069/
  */
-const miningBlacklist = [
-  'localhost:8069',
-]
+const miningBlacklist = ['localhost:8069']
 /**
  * 是否显示邮箱挖掘面板
  * 通过当前页面地址判断是否显示邮箱挖掘面板
