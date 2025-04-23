@@ -69,7 +69,7 @@ function LeadsMining() {
 
   const [isSearchPageAndTaskRunning] = useMemo(() => {
     const isRunning = taskStatus === 'running'
-    return [isSearchPage && isRunning]
+    return [isSearchPage && isRunning && false]
   }, [isSearchPage, taskStatus])
 
   console.log('isSearchPageAndTaskRunning taskStatus====>', isSearchPageAndTaskRunning, taskStatus)
