@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { useLayoutEffect, useState } from 'react'
+import { useLayoutEffect, useState, useEffect } from 'react'
 import Header from '../../components/header'
 import {
   openUrl,
@@ -17,7 +17,7 @@ import {
   RocketOutlined,
   GlobalOutlined,
   PictureOutlined,
-  CompressOutlined,
+  CheckOutlined,
   EditOutlined,
   TranslationOutlined,
   ShareAltOutlined,
@@ -42,16 +42,14 @@ import Browser from 'webextension-polyfill'
 import { languageList } from '../../config/language.mjs'
 import PropTypes from 'prop-types'
 import { config as menuConfig } from '../../content-script/menu-tools'
-import { PencilIcon } from '@primer/octicons-react'
-import { Select, Input, Button, Form, Checkbox } from 'antd'
-
+import { Select, Input, Button, Form, Checkbox, Badge, message } from 'antd'
+import { getStorage, setStorage } from '../../components/LeadsMining/utils/leadsMiningStorage'
 SimpleSettings.propTypes = {
   config: PropTypes.object.isRequired,
   updateConfig: PropTypes.func.isRequired,
-  setTabIndex: PropTypes.func.isRequired,
   from: PropTypes.string,
+  moreSettingsHref: PropTypes.string,
 }
-
 function formatDate(date) {
   const year = date.getFullYear()
   const month = (date.getMonth() + 1).toString().padStart(2, '0')
@@ -109,17 +107,29 @@ function isUsingSpecialCustomModel(configOrSession) {
   return isUsingCustomModel(configOrSession) && !configOrSession.apiMode
 }
 
-export function SimpleSettings({ config, updateConfig, setTabIndex, moreSettingsHref }) {
+export function SimpleSettings({ config, updateConfig, moreSettingsHref }) {
   const { t, i18n } = useTranslation()
   const [balance, setBalance] = useState(null)
   const [apiModes, setApiModes] = useState([])
+  const [casualMiningStatus, setCasualMiningStatus] = useState('cRunning')
 
-  const [backgroundPermission, setBackgroundPermission] = useState(false)
+  // 初始化
+  useEffect(() => {
+    initStatus()
+  }, [])
 
-  if (!isMobile() && !isFirefox() && !isSafari())
-    Browser.permissions.contains({ permissions: ['background'] }).then((result) => {
-      setBackgroundPermission(result)
-    })
+  async function initStatus() {
+    const storage = await getStorage('casualMiningStatus')
+    setCasualMiningStatus(storage)
+  }
+
+  // TODO: 添加背景权限?这里有用吗？
+  // const [backgroundPermission, setBackgroundPermission] = useState(false)
+
+  // if (!isMobile() && !isFirefox() && !isSafari())
+  //   Browser.permissions.contains({ permissions: ['background'] }).then((result) => {
+  //     setBackgroundPermission(result)
+  //   })
 
   useLayoutEffect(() => {
     setApiModes(getApiModesFromConfig(config, true))
@@ -145,6 +155,12 @@ export function SimpleSettings({ config, updateConfig, setTabIndex, moreSettings
     }
   }
 
+  const toggleLeadsMining = () => {
+    const newStatus = casualMiningStatus === 'cRunning' ? 'cStopped' : 'cRunning'
+    setStorage('casualMiningStatus', newStatus)
+    setCasualMiningStatus(newStatus)
+  }
+
   return (
     <div className="container-popup-mode">
       <Header />
@@ -153,9 +169,13 @@ export function SimpleSettings({ config, updateConfig, setTabIndex, moreSettings
         <div className="feature-grid">
           <FeatureItem
             icon={<RocketOutlined />}
+            onClick={toggleLeadsMining}
             color="blue"
             title="客户开发"
             description="实时抓取互联网上公开信息，如邮箱、手机号等"
+            badgeContent={
+              casualMiningStatus === 'cRunning' ? <CheckOutlined style={{ color: 'red' }} /> : ''
+            }
           />
 
           <FeatureItem
@@ -199,15 +219,14 @@ export function SimpleSettings({ config, updateConfig, setTabIndex, moreSettings
             label={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {t('API Mode')}
-                <div
+                <a
                   style={{ cursor: 'pointer' }}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    setTabIndex(2)
-                  }}
+                  href={moreSettingsHref}
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  <PencilIcon />
-                </div>
+                  <EditOutlined />
+                </a>
               </div>
             }
           >
@@ -552,11 +571,15 @@ export function SimpleSettings({ config, updateConfig, setTabIndex, moreSettings
 
 export default SimpleSettings
 
-const FeatureItem = ({ icon, color, title, description }) => (
-  <div className="feature-item">
-    <div className={`feature-icon ${color}`}>{icon}</div>
-    <div className="feature-label">{title}</div>
-    <div className="feature-desc">{description}</div>
+const FeatureItem = ({ icon, color, title, description, onClick, badgeContent = '' }) => (
+  <div className="feature-item" onClick={onClick}>
+    <Badge count={badgeContent}>
+      <div className="center">
+        <div className={`feature-icon ${color}`}>{icon}</div>
+        <div className="feature-label">{title}</div>
+        <div className="feature-desc">{description}</div>
+      </div>
+    </Badge>
   </div>
 )
 const FeatureHeader = ({ title, seeMore, href }) => (

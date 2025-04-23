@@ -592,7 +592,6 @@ async function run() {
 
   // 顶部通知返回条
   prepareForJumpBackNotification()
-  renderLeadsMining()
 
   if (isDetailPage()) {
     renderLeadsMining()
