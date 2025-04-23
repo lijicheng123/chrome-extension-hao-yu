@@ -1,5 +1,6 @@
 import './styles.scss'
 import { unmountComponentAtNode } from 'react-dom'
+import { useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import DecisionCard from '../components/DecisionCard'
 import { config as siteConfig } from './site-adapters'
@@ -24,6 +25,8 @@ import {
 } from '../utils'
 import FloatingToolbar from '../components/FloatingToolbar'
 import Browser from 'webextension-polyfill'
+import { LEADS_MINING_KEY } from './../components/LeadsMining/utils/leadsMiningStorage'
+
 import { getPreferredLanguage } from '../config/language.mjs'
 import '../_locales/i18n-react'
 import { changeLanguage } from 'i18next'
@@ -32,7 +35,7 @@ import { getChatGptAccessToken, registerPortListener } from '../services/wrapper
 import { generateAnswersWithChatgptWebApi } from '../services/apis/chatgpt-web.mjs'
 import WebJumpBackNotification from '../components/WebJumpBackNotification'
 import { DraggableBar } from './draggable-bar'
-import { WINDOW_TYPE } from '../constants'
+import { WINDOW_TYPE, ELEMENT_ID } from '../constants'
 import { UI_API } from '../services/messaging/ui'
 import uiService from '../services/messaging/ui'
 import i18nService, { I18N_API } from '../services/messaging/i18n'
@@ -508,6 +511,9 @@ async function prepareForJumpBackNotification() {
 async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
   const container = createElementAtPosition(x, y, 'sideWindow')
   container.className = 'chatgptbox-toolbar-container-not-queryable'
+  if (windowType === WINDOW_TYPE.LEADS_MINING) {
+    container.id = ELEMENT_ID.FLOATING_TOOL_CONTAINER
+  }
   const userConfig = await getUserConfig()
   const session = initSession({
     modelName: userConfig.modelName,
@@ -542,18 +548,43 @@ async function renderLeadsMining() {
  * @param {HTMLElement} sideBarContainer - 工具栏要被渲染进去的DOM容器
  * @param {function} setLiving - 是否活着 暂未实现
  */
-function renderSidebar() {
-  if (!isShowSidebar()) return
-  const root = createRoot(sideBarContainer)
-  root.render(
+function Sidebar() {
+  if (!isShowSidebar()) return null
+
+  useEffect(() => {
+    const handleStorageChange = (changes, area) => {
+      if (area === 'local' && changes[LEADS_MINING_KEY]) {
+        const newTaskStates = changes[LEADS_MINING_KEY].newValue
+        if (newTaskStates.casualMiningStatus != '') {
+          const container = document.getElementById(ELEMENT_ID.FLOATING_TOOL_CONTAINER)
+          if (container && newTaskStates.casualMiningStatus === 'cStopped') {
+            container.remove()
+          } else if (newTaskStates.casualMiningStatus === 'cRunning') {
+            renderLeadsMining()
+          }
+        }
+      }
+    }
+    Browser.storage.onChanged.addListener(handleStorageChange)
+    return () => {
+      Browser.storage.onChanged.removeListener(handleStorageChange)
+    }
+  }, [])
+
+  return (
     <DraggableBar
       openToolBar={async ({ windowType }) => {
         renderFloatingToolbar({ x: 0, y: 0, windowType })
       }}
       foldedIcon={sideLogo}
-      setLiving={(living) => {}}
-    />,
+      setLiving={() => {}}
+    />
   )
+}
+
+function renderSidebar() {
+  const root = createRoot(sideBarContainer)
+  root.render(<Sidebar />)
 }
 
 async function run() {

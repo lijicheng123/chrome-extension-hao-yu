@@ -6,9 +6,6 @@ import { getClientPosition, isMobile, setElementPositionInViewport } from '../..
 import Draggable from 'react-draggable'
 import { useTranslation } from 'react-i18next'
 import { useConfig } from '../../hooks/use-config.mjs'
-import Browser from 'webextension-polyfill'
-import { LEADS_MINING_KEY } from './../LeadsMining/utils/leadsMiningStorage'
-import { WINDOW_TYPE } from './../../constants'
 
 // const logo = Browser.runtime.getURL('logo.png')
 
@@ -25,25 +22,6 @@ function FloatingToolbar(props) {
   const draggableRef = useRef(null)
 
   console.log('props.containerprops.containerprops.container:', props)
-
-  useEffect(() => {
-    const handleStorageChange = (changes, area) => {
-      if (area === 'local' && changes[LEADS_MINING_KEY]) {
-        const newTaskStates = changes[LEADS_MINING_KEY].newValue
-        if (
-          newTaskStates.casualMiningStatus === 'cStopped' &&
-          windowType === WINDOW_TYPE.LEADS_MINING &&
-          props.container
-        ) {
-          props.container.remove()
-        }
-      }
-    }
-    Browser.storage.onChanged.addListener(handleStorageChange)
-    return () => {
-      Browser.storage.onChanged.removeListener(handleStorageChange)
-    }
-  }, [])
 
   const config = useConfig(() => {
     if (!render) {
