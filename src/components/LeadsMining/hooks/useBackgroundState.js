@@ -3,13 +3,14 @@ import { message } from 'antd'
 import { LeadsMiningContentAPI } from '../../../services/messaging/leadsMining'
 import Browser from 'webextension-polyfill'
 import { cleanupLinkMarkers } from '../utils/searchEngineUtils'
+import { getStorage, setStorage } from '../utils/leadsMiningStorage'
 /**
  * 与background脚本通信的Hook
  * 用于管理任务状态
  */
 export const useBackgroundState = (selectedTask) => {
   const [taskStatus, setTaskStatus] = useState('idle')
-  const [casualMiningStatus, setCasualMiningStatus] = useState('cRunning') // 闲时挖掘状态: cRunning 运行中, cStopped 停止
+  const [casualMiningStatus, originalSetCasualMiningStatus] = useState('cRunning') // 闲时挖掘状态: cRunning 运行中, cStopped 停止
 
   const [currentSearchTerm, setCurrentSearchTerm] = useState('')
   const [currentCombinationIndex, setCurrentCombinationIndex] = useState(0)
@@ -21,14 +22,19 @@ export const useBackgroundState = (selectedTask) => {
   const [emailList, setEmailList] = useState([])
 
   useEffect(() => {
-    Browser.storage.local.get('casualMiningStatus').then((res) => {
-      setCasualMiningStatus(res.casualMiningStatus)
-    })
+    init()
   }, [])
 
-  useEffect(() => {
-    Browser.storage.local.set({ casualMiningStatus })
-  }, [casualMiningStatus])
+  const setCasualMiningStatus = (status) => {
+    originalSetCasualMiningStatus(status)
+    setStorage('casualMiningStatus', status)
+  }
+
+
+  const init = async () => {
+    const status = await getStorage('casualMiningStatus')
+    originalSetCasualMiningStatus(status)
+  }
 
   // 初始化：从background获取任务状态
   useEffect(() => {
