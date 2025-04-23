@@ -1,6 +1,6 @@
 import Browser from 'webextension-polyfill'
 
-const LEADS_MINING_KEY = 'leadsMining'
+export const LEADS_MINING_KEY = 'leadsMining'
 
 // 设置本地缓存，key为LEADS_MINING_KEY，value为任务状态
 export const setStorage = (key, value) => {
