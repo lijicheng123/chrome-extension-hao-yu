@@ -136,6 +136,7 @@ function FloatingToolbar(props) {
           size: 18,
           className: 'chatgptbox-selection-toolbar-button',
           title: name,
+          key: name,
           onClick: async () => {
             const p = getClientPosition(props.container)
             props.container.style.position = 'fixed'
