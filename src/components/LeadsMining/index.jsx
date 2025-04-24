@@ -7,7 +7,7 @@ import { useBackgroundState } from './hooks/useBackgroundState'
 import { useEmailProcessor } from './hooks/useEmailProcessor'
 import { useSearchEngine } from './hooks/useSearchEngine'
 import { debounce } from './utils/searchEngineUtils'
-
+import { WINDOW_TYPE } from '../../constants'
 // UI组件
 import TaskStatus from './components/TaskStatus'
 import EmailList from './components/EmailList'
@@ -22,7 +22,7 @@ const showDebugger = false
  * 线索挖掘组件
  * 用于自动化采集邮箱线索
  */
-function LeadsMining() {
+function LeadsMining({ windowType }) {
   const [form] = Form.useForm()
   // 添加一个ref来跟踪是否已执行搜索
   const hasExecutedSearchRef = useRef(false)
@@ -248,8 +248,6 @@ function LeadsMining() {
     }
   }, [selectedTask?.id, form])
 
-  // console.log('emailList useBackgroundState index.jsx =========>', emailList)
-
   return (
     <ConfigProvider
       theme={{
@@ -260,145 +258,76 @@ function LeadsMining() {
         },
       }}
     >
-      <div className={style['email-list']}>
-        <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-          <Row align="top">
-            <Col span={22}>
-              <Form.Item
-                label="挖掘任务"
-                name="currentTask"
-                tooltip="选择要执行的挖掘任务"
-                rules={[{ required: true, message: '请选择挖掘任务' }]}
-                style={{ marginBottom: 16 }}
-                disabled={taskStatus === 'running'}
-              >
-                <Select
-                  placeholder="请选择挖掘任务"
-                  onChange={handleTaskSelect}
-                  style={{ width: '100%' }}
+      {windowType === WINDOW_TYPE.LEADS_MINING && (
+        <div className={style['email-list']}>
+          <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+            <Row align="top">
+              <Col span={22}>
+                <Form.Item
+                  label="挖掘任务"
+                  name="currentTask"
+                  tooltip="选择要执行的挖掘任务"
+                  rules={[{ required: true, message: '请选择挖掘任务' }]}
+                  style={{ marginBottom: 16 }}
+                  disabled={taskStatus === 'running'}
                 >
-                  {taskList?.map((task) => (
-                    <Select.Option key={task.id} value={task.id}>
-                      {task.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={2}>
-              <Button
-                style={{ marginTop: 4 }}
-                size="small"
-                type="link"
-                onClick={fetchTaskList}
-                icon={<ReloadOutlined />}
-                title="刷新任务列表"
-              />
-            </Col>
-          </Row>
-          <Row justify="center">
-            <Col span={12}>
-              <Button
-                type="primary"
-                danger={isCasualMining && !casualHovered}
-                onClick={onCasualMiningClick}
-                disabled={casualMiningDisabled}
-                // loading={casualMiningStatus === 'cRunning'}
-                style={{ borderRadius: 16 }}
-              >
-                {casualButtonText}
-              </Button>
-            </Col>
-            {isSearchPage && (
-              <Col span={12}>
-                <Tooltip title={autoTooltipText}>
-                  <Button
-                    type={isAutoMining ? 'primary' : 'default'}
-                    danger={isAutoMining && autoHovered}
-                    onClick={autoMining}
-                    disabled={autoMiningDisabled}
-                    onMouseEnter={handleAutoMouseEnter}
-                    onMouseLeave={handleAutoMouseLeave}
+                  <Select
+                    placeholder="请选择挖掘任务"
+                    onChange={handleTaskSelect}
+                    style={{ width: '100%' }}
                   >
-                    {autoButtonText}
-                  </Button>
-                </Tooltip>
+                    {taskList?.map((task) => (
+                      <Select.Option key={task.id} value={task.id}>
+                        {task.name}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
               </Col>
-            )}
-          </Row>
+              <Col span={2}>
+                <Button
+                  style={{ marginTop: 4 }}
+                  size="small"
+                  type="link"
+                  onClick={fetchTaskList}
+                  icon={<ReloadOutlined />}
+                  title="刷新任务列表"
+                />
+              </Col>
+            </Row>
+          </Form>
 
-          {/* {showDebugger && (
-            <Space>
-              <Button
-                type="primary"
-                onClick={() => {
-                  console.log('当前是否是搜索结果页：', isSearchPage)
-                }}
-              >
-                测试：当前是否是搜索结果页
-              </Button>
-              <Button
-                type="primary"
-                onClick={() => {
-                  checkExistingSearchPage().then((res) => {
-                    console.log('当前是否有其他标签页打开了搜索结果页：', res)
-                  })
-                }}
-              >
-                测试：当前是否有其他标签页打开了搜索结果页
-              </Button>
-              <Button type="primary" onClick={test}>
-                测试：获取总页数、当前页数、是否最后一页
-              </Button>
-            </Space>
-          )} */}
-
-          {/* {showDebugger && (
-            <TaskStatus
-              taskStatus={taskStatus}
-              progress={progress}
-              currentSearchTerm={currentSearchTerm}
-              discoveredEmails={discoveredEmails}
-              currentPage={currentPage}
-              captchaDetected={captchaDetected}
-              statusMessage={statusMessage}
-              startTask={startTask}
-              stopTask={stopTask}
-              fetchTaskList={fetchTaskList}
+          {(taskStatus != 'running' && casualMiningStatus === 'cRunning') || isDetailPage ? (
+            <EmailList
+              isShowCurrentPageEmails={true}
+              emailList={currentPageEmails}
+              handleEditEmail={handleEditEmail}
+              handleDeleteCustomer={handleDeleteCustomer}
+              locateEmail={searchEngine.locateEmail}
+              style={style}
             />
-          )} */}
-        </Form>
+          ) : (
+            <EmailList
+              isShowCurrentPageEmails={false}
+              emailList={emailList}
+              handleEditEmail={handleEditEmail}
+              handleDeleteCustomer={handleDeleteCustomer}
+              locateEmail={searchEngine.locateEmail}
+              style={style}
+            />
+          )}
 
-        {(taskStatus != 'running' && casualMiningStatus === 'cRunning') || isDetailPage ? (
-          <EmailList
-            isShowCurrentPageEmails={true}
-            emailList={currentPageEmails}
-            handleEditEmail={handleEditEmail}
-            handleDeleteCustomer={handleDeleteCustomer}
-            locateEmail={searchEngine.locateEmail}
-            style={style}
+          <EmailEditModal
+            editingEmail={editingEmail}
+            newEmailValue={newEmailValue}
+            newNoteValue={newNoteValue}
+            setNewEmailValue={setNewEmailValue}
+            setNewNoteValue={setNewNoteValue}
+            handleUpdateEmail={handleUpdateEmail}
+            setEditingEmail={setEditingEmail}
           />
-        ) : (
-          <EmailList
-            isShowCurrentPageEmails={false}
-            emailList={emailList}
-            handleEditEmail={handleEditEmail}
-            handleDeleteCustomer={handleDeleteCustomer}
-            locateEmail={searchEngine.locateEmail}
-            style={style}
-          />
-        )}
-
-        <EmailEditModal
-          editingEmail={editingEmail}
-          newEmailValue={newEmailValue}
-          newNoteValue={newNoteValue}
-          setNewEmailValue={setNewEmailValue}
-          setNewNoteValue={setNewNoteValue}
-          handleUpdateEmail={handleUpdateEmail}
-          setEditingEmail={setEditingEmail}
-        />
-      </div>
+        </div>
+      )}
     </ConfigProvider>
   )
 }

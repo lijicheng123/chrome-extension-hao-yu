@@ -1,7 +1,9 @@
 import './styles.scss'
 import { unmountComponentAtNode } from 'react-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { Space, Spin, Typography } from 'antd'
+import { RadarChartOutlined } from '@ant-design/icons'
 import DecisionCard from '../components/DecisionCard'
 import { config as siteConfig } from './site-adapters'
 import { config as toolsConfig } from './selection-tools'
@@ -44,6 +46,10 @@ const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
 const sideBarContainer = document.createElement('div')
 sideBarContainer.id = 'chatgptbox-sidebar-container'
 document.body.appendChild(sideBarContainer)
+
+import { getStorage } from './../components/LeadsMining/utils/leadsMiningStorage'
+
+const { Text, Link } = Typography
 
 /**
  * @param {SiteConfig} siteConfig
@@ -529,7 +535,7 @@ async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
   }
 
   // 创建新容器
-  container = createElementAtPosition(x, y, 'sideWindow')
+  container = createElementAtPosition(x, y, windowType)
   container.id = ELEMENT_ID.FLOATING_TOOL_CONTAINER
   container.className = 'chatgptbox-toolbar-container-not-queryable'
 
@@ -557,8 +563,8 @@ async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
   )
 }
 
-async function renderLeadsMining() {
-  renderFloatingToolbar({ x: 0, y: 0, windowType: WINDOW_TYPE.LEADS_MINING })
+async function renderLeadsMining(windowType) {
+  renderFloatingToolbar({ x: 0, y: 0, windowType: windowType || WINDOW_TYPE.LEADS_MINING })
 }
 
 /**
@@ -572,9 +578,11 @@ async function renderLeadsMining() {
  * @param {function} setLiving - 是否活着 暂未实现
  */
 function Sidebar() {
+  const [activeTaskList, setActiveTaskList] = useState([])
   if (!isShowSidebar()) return null
 
   useEffect(() => {
+    init()
     const handleStorageChange = (changes, area) => {
       if (area === 'local' && changes[LEADS_MINING_KEY]) {
         const newTaskStates = changes[LEADS_MINING_KEY].newValue
@@ -593,9 +601,27 @@ function Sidebar() {
       Browser.storage.onChanged.removeListener(handleStorageChange)
     }
   }, [])
+  async function init() {
+    const { casualMiningStatus, headless } = await getStorage(['casualMiningStatus', 'headless'])
+    if (casualMiningStatus === 'cRunning' && headless != 'false') {
+      renderLeadsMining(WINDOW_TYPE.LEADS_MINING_MINI_SIDE_WINDOW)
+      setActiveTaskList((prev) => [
+        ...prev,
+        {
+          id: 'casualMining',
+          name: '挖掘中',
+          icon: <RadarChartOutlined />,
+          onClick: () => {
+            renderLeadsMining(WINDOW_TYPE.LEADS_MINING)
+          },
+        },
+      ])
+    }
+  }
 
   return (
     <DraggableBar
+      activeTasks={<RenderActiveTasks activeTaskList={activeTaskList} />}
       openToolBar={async ({ windowType }) => {
         renderFloatingToolbar({ x: 0, y: 0, windowType })
       }}
@@ -608,6 +634,21 @@ function Sidebar() {
 function renderSidebar() {
   const root = createRoot(sideBarContainer)
   root.render(<Sidebar />)
+}
+
+function RenderActiveTasks({ activeTaskList = [] }) {
+  return (
+    <Space direction="vertical" gap={4}>
+      {activeTaskList.map((task) => {
+        return (
+          <Link key={task.id} onClick={task.onClick} style={{ fontSize: '12px', margin: '0 6px' }}>
+            {task.icon}
+            {task.name}
+          </Link>
+        )
+      })}
+    </Space>
+  )
 }
 
 async function run() {

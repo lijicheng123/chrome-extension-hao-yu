@@ -6,7 +6,7 @@ import { ToolOutlined } from '@ant-design/icons'
 import './index.scss'
 import { WINDOW_TYPE } from '../../constants'
 
-export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
+export const DraggableBar = ({ openToolBar, foldedIcon, setLiving, activeTasks }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [bounds, setBounds] = useState({ top: 0, bottom: 0 })
   const draggableRef = useRef(null)
@@ -46,7 +46,7 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving }) => {
       <div ref={draggableRef} className="bar-standby-container">
         {/* <div className="tool">网页翻译</div>
         <div className="tool">网页总结</div> */}
-
+        {activeTasks}
         <div className="bar-standby-icon-wrapper">
           {/* 图片不能选中 */}
           <img
