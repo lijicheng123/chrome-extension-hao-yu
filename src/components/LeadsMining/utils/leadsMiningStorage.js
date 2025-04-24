@@ -7,10 +7,19 @@ export const setStorage = (key, value) => {
   Browser.storage.local.set({ [LEADS_MINING_KEY]: { [key]: value } })
 }
 
-// 获取本地缓存，key为LEADS_MINING_KEY，value为任务状态
-export const getStorage = async (key) => {
+// 获取本地缓存，可以传入单个key或key数组
+export const getStorage = async (keys) => {
   const storage = await Browser.storage.local.get(LEADS_MINING_KEY)
-  return storage[LEADS_MINING_KEY][key]
+  const data = storage[LEADS_MINING_KEY] || {}
+  
+  if (Array.isArray(keys)) {
+    return keys.reduce((result, key) => {
+      result[key] = data[key]
+      return result
+    }, {})
+  }
+  
+  return data[keys]
 }
 
 // 清除缓存
