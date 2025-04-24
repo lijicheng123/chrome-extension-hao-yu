@@ -80,15 +80,17 @@ function ConversationCard(props = {}) {
   }, [session, conversationItemData])
 
   useEffect(() => {
-    const { offsetHeight, scrollHeight, scrollTop } = bodyRef.current
-    if (
-      config.lockWhenAnswer &&
-      scrollHeight <= scrollTop + offsetHeight + config.answerScrollMargin
-    ) {
-      bodyRef.current.scrollTo({
-        top: scrollHeight,
-        behavior: 'instant',
-      })
+    if (bodyRef.current) {
+      const { offsetHeight, scrollHeight, scrollTop } = bodyRef.current
+      if (
+        config.lockWhenAnswer &&
+        scrollHeight <= scrollTop + offsetHeight + config.answerScrollMargin
+      ) {
+        bodyRef.current.scrollTo({
+          top: scrollHeight,
+          behavior: 'instant',
+        })
+      }
     }
   }, [conversationItemData])
 
@@ -318,6 +320,10 @@ function ConversationCard(props = {}) {
   }
 
   const retryFn = useMemo(() => getRetryFn(session), [session])
+
+  if (windowType === WINDOW_TYPE.LEADS_MINING_MINI_SIDE_WINDOW) {
+    return <LeadsMining windowType={windowType} />
+  }
 
   return (
     <div className="gpt-inner">
@@ -556,9 +562,7 @@ function ConversationCard(props = {}) {
           </span>
         </p>
       ) : windowType === WINDOW_TYPE.LEADS_MINING ? (
-        <>
-          <LeadsMining />
-        </>
+        <LeadsMining windowType={windowType} />
       ) : (
         <InputBox
           enabled={isReady}
