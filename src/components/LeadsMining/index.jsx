@@ -248,7 +248,6 @@ function LeadsMining() {
     }
   }, [selectedTask?.id, form])
 
-  console.log('currentPageEmails=====>2:', currentPageEmails)
   // console.log('emailList useBackgroundState index.jsx =========>', emailList)
 
   return (
@@ -293,28 +292,23 @@ function LeadsMining() {
                 type="link"
                 onClick={fetchTaskList}
                 icon={<ReloadOutlined />}
+                title="刷新任务列表"
               />
             </Col>
           </Row>
           <Row justify="center">
-            {!isAutoMining && (
-              <Col span={12}>
-                <Tooltip title={casualTooltipText}>
-                  <Button
-                    type="primary"
-                    danger={isCasualMining && !casualHovered}
-                    onClick={onCasualMiningClick}
-                    disabled={casualMiningDisabled}
-                    onMouseEnter={handleCasualMouseEnter}
-                    onMouseLeave={handleCasualMouseLeave}
-                    loading={casualMiningStatus === 'cRunning'}
-                    style={{ borderRadius: 16 }}
-                  >
-                    {casualButtonText}
-                  </Button>
-                </Tooltip>
-              </Col>
-            )}
+            <Col span={12}>
+              <Button
+                type="primary"
+                danger={isCasualMining && !casualHovered}
+                onClick={onCasualMiningClick}
+                disabled={casualMiningDisabled}
+                // loading={casualMiningStatus === 'cRunning'}
+                style={{ borderRadius: 16 }}
+              >
+                {casualButtonText}
+              </Button>
+            </Col>
             {isSearchPage && (
               <Col span={12}>
                 <Tooltip title={autoTooltipText}>

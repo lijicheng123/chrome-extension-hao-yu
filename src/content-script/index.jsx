@@ -508,19 +508,42 @@ async function prepareForJumpBackNotification() {
   }
 }
 
+/**
+ * 渲染浮层工具栏
+ * @param {Object} options - 渲染选项
+ * @param {number} options.x - 浮层容器的x坐标
+ * @param {number} options.y - 浮层容器的y坐标
+ * @param {string} options.windowType - 窗口类型
+ */
 async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
-  const container = createElementAtPosition(x, y, 'sideWindow')
-  container.className = 'chatgptbox-toolbar-container-not-queryable'
-  if (windowType === WINDOW_TYPE.LEADS_MINING) {
-    container.id = ELEMENT_ID.FLOATING_TOOL_CONTAINER
+  // 先检查是否已存在容器
+  let container = document.getElementById(ELEMENT_ID.FLOATING_TOOL_CONTAINER)
+
+  // 如果存在容器，先清理旧的实例
+  if (container) {
+    const oldRoot = container._reactRoot
+    if (oldRoot) {
+      oldRoot.unmount()
+    }
+    container.remove()
   }
+
+  // 创建新容器
+  container = createElementAtPosition(x, y, 'sideWindow')
+  container.id = ELEMENT_ID.FLOATING_TOOL_CONTAINER
+  container.className = 'chatgptbox-toolbar-container-not-queryable'
+
   const userConfig = await getUserConfig()
   const session = initSession({
     modelName: userConfig.modelName,
     apiMode: userConfig.apiMode,
     extraCustomModelName: userConfig.customModelName,
   })
+
+  // 创建新的 root 实例并保存引用
   const root = createRoot(container)
+  container._reactRoot = root
+
   root.render(
     <FloatingToolbar
       session={session}
