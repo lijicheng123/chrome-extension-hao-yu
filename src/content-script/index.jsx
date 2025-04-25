@@ -636,7 +636,11 @@ function Sidebar({ close }) {
 function renderSidebar() {
   // 检查是否已存在root实例
   if (sideBarContainer._reactRoot) {
-    sideBarContainer._reactRoot.unmount()
+    try {
+      sideBarContainer._reactRoot.unmount()
+    } catch (e) {
+      console.error('Error unmounting sidebar:', e)
+    }
   }
 
   // 确保容器可见
@@ -650,10 +654,15 @@ function renderSidebar() {
     setUserConfig({
       alwaysShowToolSidebar: false,
     })
-    // 卸载组件
+    // 卸载组件 - 安全地处理卸载
     if (sideBarContainer._reactRoot) {
-      sideBarContainer._reactRoot.unmount()
-      sideBarContainer._reactRoot = null
+      try {
+        sideBarContainer._reactRoot.unmount()
+      } catch (e) {
+        console.error('Error unmounting sidebar:', e)
+      } finally {
+        sideBarContainer._reactRoot = null
+      }
     }
     // 隐藏容器而不是移除
     sideBarContainer.style.display = 'none'
@@ -760,8 +769,12 @@ function MonitConfigForView() {
   }, [])
 
   useEffect(() => {
+    // Use setTimeout to defer the sidebar rendering to the next tick
+    // This prevents synchronous unmounting during React rendering
     if (userConfig?.alwaysShowToolSidebar !== false) {
-      renderSidebar()
+      setTimeout(() => {
+        renderSidebar()
+      }, 0)
     }
   }, [userConfig?.alwaysShowToolSidebar])
 
