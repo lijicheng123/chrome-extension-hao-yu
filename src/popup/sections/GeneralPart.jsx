@@ -517,6 +517,16 @@ export function GeneralPart({ config, updateConfig, setTabIndex, from }) {
         </Form.Item>
         <Form.Item>
           <Checkbox
+            checked={config.alwaysShowToolSidebar}
+            onChange={(e) => {
+              updateConfig({ alwaysShowToolSidebar: e.target.checked })
+            }}
+          >
+            {t('Always Show Tool Sidebar')}
+          </Checkbox>
+        </Form.Item>
+        <Form.Item>
+          <Checkbox
             checked={config.insertAtTop}
             onChange={(e) => {
               updateConfig({ insertAtTop: e.target.checked })

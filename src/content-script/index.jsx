@@ -205,7 +205,7 @@ const createSelectionTools = async (toolbarContainer, selection) => {
 /**
  * 在PC端使用
  */
-async function prepareForSelectionTools() {
+async function prepareForSelectionTools(userConfig) {
   document.addEventListener('mouseup', (e) => {
     if (toolbarContainer && toolbarContainer.contains(e.target)) return
     const selectionElement =
@@ -223,7 +223,7 @@ async function prepareForSelectionTools() {
       if (selection) {
         let position
 
-        const config = await getUserConfig()
+        const config = userConfig || (await getUserConfig())
         if (!config.selectionToolsNextToInputBox) position = { x: e.pageX + 20, y: e.pageY + 20 }
         else {
           const inputElement = selectionElement.querySelector('input, textarea')
@@ -352,8 +352,8 @@ async function prepareForRightClickMenu() {
   })
 }
 
-async function prepareForStaticCard() {
-  const userConfig = await getUserConfig()
+async function prepareForStaticCard(config) {
+  const userConfig = config || (await getUserConfig())
   let siteRegex
   if (userConfig.useSiteRegexOnly) siteRegex = userConfig.siteRegex
   else
@@ -412,10 +412,10 @@ async function overwriteAccessToken() {
   }
 }
 
-async function prepareForForegroundRequests() {
+async function prepareForForegroundRequests(config) {
   if (location.hostname !== 'chatgpt.com' || location.pathname === '/auth/login') return
 
-  const userConfig = await getUserConfig()
+  const userConfig = config || (await getUserConfig())
 
   if (
     !chatgptWebModelKeys.some((model) =>
@@ -652,7 +652,13 @@ function RenderActiveTasks({ activeTaskList = [] }) {
 }
 
 async function run() {
-  await getPreferredLanguageKey().then((lang) => {
+  const userConfig = await getUserConfig()
+
+  if (userConfig.alwaysShowToolSidebar !== false) {
+    renderSidebar()
+  }
+
+  await getPreferredLanguageKey(userConfig).then((lang) => {
     changeLanguage(lang)
   })
 
@@ -668,29 +674,22 @@ async function run() {
   await overwriteAccessToken()
 
   // 这个方法只有在chatgpt.com页面才会执行，后面要考虑是否干掉
-  await prepareForForegroundRequests()
-
-  // 渲染侧边Bar
-  renderSidebar()
+  await prepareForForegroundRequests(userConfig)
 
   // pc 端划词准备
-  prepareForSelectionTools()
+  prepareForSelectionTools(userConfig)
 
   // 移动端划词准备
   prepareForSelectionToolsTouch()
 
   // 网站适配准备
-  prepareForStaticCard()
+  prepareForStaticCard(userConfig)
 
   // 右键菜单准备
   prepareForRightClickMenu()
 
   // 顶部通知返回条
   prepareForJumpBackNotification()
-
-  if (isDetailPage()) {
-    renderLeadsMining()
-  }
 }
 
 run()

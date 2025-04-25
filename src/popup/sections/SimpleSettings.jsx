@@ -192,20 +192,6 @@ export function SimpleSettings({ config, updateConfig, moreSettingsHref }) {
             description="完全免费的AI抠图、扩图、去水印等功能"
           />
 
-          {/* <FeatureItem
-              icon={<CompressOutlined />}
-              color="black"
-              title="图片压缩"
-              description="大幅降低图片体积，提高加载速度"
-            />
-
-            <FeatureItem
-              icon={<EditOutlined />}
-              color="red"
-              title="在线PS平替"
-              description="完全免费的在线PS平替，任何操作都在本地"
-            /> */}
-
           <FeatureItem
             icon={<TranslationOutlined />}
             color="blue-light"
@@ -529,7 +515,16 @@ export function SimpleSettings({ config, updateConfig, moreSettingsHref }) {
               })}
             </Select>
           </Form.Item>
-
+          <Form.Item>
+            <Checkbox
+              checked={config.alwaysShowToolSidebar}
+              onChange={(e) => {
+                updateConfig({ alwaysShowToolSidebar: e.target.checked })
+              }}
+            >
+              {t('Always Show Tool Sidebar')}
+            </Checkbox>
+          </Form.Item>
           <Form.Item>
             <Checkbox
               checked={config.insertAtTop}

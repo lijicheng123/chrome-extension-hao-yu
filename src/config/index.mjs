@@ -286,6 +286,8 @@ for (const modelName in Models) {
 export const defaultConfig = {
   // general
 
+  alwaysShowToolSidebar: true,
+
   /** @type {keyof TriggerMode}*/
   triggerMode: 'manually',
   /** @type {keyof ThemeMode}*/
@@ -535,8 +537,8 @@ export function isUsingCustomNameOnlyModel(configOrSession) {
   return isUsingModelName('poeAiWebCustom', configOrSession)
 }
 
-export async function getPreferredLanguageKey() {
-  const config = await getUserConfig()
+export async function getPreferredLanguageKey(userConfig) {
+  const config = userConfig || (await getUserConfig())
   if (config.preferredLanguage === 'auto') return config.userLanguage
   return config.preferredLanguage
 }
