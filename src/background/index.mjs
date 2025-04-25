@@ -57,6 +57,7 @@ import { ApiBackgroundHandlers } from '../services/messaging/api'
 import { UiBackgroundHandlers } from '../services/messaging/ui'
 import i18nService from '../services/messaging/i18n'
 import { AuthBackgroundHandlers } from '../services/messaging/auth'
+import { fetchOdooUserSessionInfo, getStoredUserSessionInfo } from './userSessionInfo.mjs'
 
 function setPortProxy(port, proxyTabId) {
   port.proxy = Browser.tabs.connect(proxyTabId)
@@ -250,6 +251,9 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
     case 'GET_COOKIE': {
       return (await Browser.cookies.get({ url: message.data.url, name: message.data.name }))?.value
     }
+    case 'GET_USER_SESSION_INFO': {
+      return await getStoredUserSessionInfo()
+    }
   }
 })
 
@@ -347,4 +351,9 @@ AuthBackgroundHandlers.registerHandlers()
 // 初始化线索挖掘管理器
 initLeadsMiningManager().catch((error) => {
   console.error('初始化线索挖掘管理器失败:', error)
+})
+
+// 初始化Odoo用户会话跟踪
+fetchOdooUserSessionInfo().catch((error) => {
+  console.error('初始化Odoo用户会话跟踪失败:', error)
 })

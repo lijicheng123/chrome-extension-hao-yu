@@ -760,8 +760,7 @@ function MonitConfigForView() {
   }, [])
 
   useEffect(() => {
-    if (!userConfig) return
-    if (userConfig.alwaysShowToolSidebar !== false) {
+    if (userConfig?.alwaysShowToolSidebar !== false) {
       renderSidebar()
     }
   }, [userConfig?.alwaysShowToolSidebar])

@@ -1,6 +1,8 @@
 import Browser from 'webextension-polyfill'
 import leadsMiningService, { LEADS_MINING_API } from '../services/messaging/leadsMining'
 import { isSearchUrl, PAGE_DEPTH_KEY } from '../components/LeadsMining/utils/searchEngineUtils.js'
+// 使用合并后的ApiBackgroundHandlers进行Odoo API调用
+// import { ApiBackgroundHandlers } from '../services/messaging/api'
 
 /**
  * 线索挖掘任务管理器
@@ -195,7 +197,8 @@ function handleSaveState(state, tabId) {
   const uniqueEmails = [...new Set(emails)]
 
   if (state.taskStatus === 'idle') {
-    debugger
+    // 任务进入空闲状态，记录日志
+    console.log(`任务${taskId}进入空闲状态`)
   }
 
   taskStates[taskId] = {
