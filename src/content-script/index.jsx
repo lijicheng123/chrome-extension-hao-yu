@@ -577,7 +577,7 @@ async function renderLeadsMining(windowType) {
  * @param {HTMLElement} sideBarContainer - 工具栏要被渲染进去的DOM容器
  * @param {function} setLiving - 是否活着 暂未实现
  */
-function Sidebar() {
+function Sidebar({ close }) {
   const [activeTaskList, setActiveTaskList] = useState([])
   if (!isShowSidebar()) return null
 
@@ -626,14 +626,40 @@ function Sidebar() {
         renderFloatingToolbar({ x: 0, y: 0, windowType })
       }}
       foldedIcon={sideLogo}
-      setLiving={() => {}}
+      setLiving={(bool) => {
+        if (!bool) close()
+      }}
     />
   )
 }
 
 function renderSidebar() {
+  // 检查是否已存在root实例
+  if (sideBarContainer._reactRoot) {
+    sideBarContainer._reactRoot.unmount()
+  }
+
+  // 确保容器可见
+  sideBarContainer.style.display = 'block'
+
   const root = createRoot(sideBarContainer)
-  root.render(<Sidebar />)
+  // 保存root引用
+  sideBarContainer._reactRoot = root
+
+  const close = () => {
+    setUserConfig({
+      alwaysShowToolSidebar: false,
+    })
+    // 卸载组件
+    if (sideBarContainer._reactRoot) {
+      sideBarContainer._reactRoot.unmount()
+      sideBarContainer._reactRoot = null
+    }
+    // 隐藏容器而不是移除
+    sideBarContainer.style.display = 'none'
+  }
+
+  root.render(<Sidebar close={close} />)
 }
 
 function RenderActiveTasks({ activeTaskList = [] }) {
@@ -653,10 +679,6 @@ function RenderActiveTasks({ activeTaskList = [] }) {
 
 async function run() {
   const userConfig = await getUserConfig()
-
-  if (userConfig.alwaysShowToolSidebar !== false) {
-    renderSidebar()
-  }
 
   await getPreferredLanguageKey(userConfig).then((lang) => {
     changeLanguage(lang)
@@ -693,3 +715,56 @@ async function run() {
 }
 
 run()
+
+// 渲染MonitConfigForView
+const root = createRoot(document.createElement('div'))
+root.render(<MonitConfigForView />)
+function MonitConfigForView() {
+  const [userConfig, setUserConfig] = useState(null)
+
+  // 初始化配置并监听storage变更
+  useEffect(() => {
+    // 初始加载配置
+    const initConfig = async () => {
+      const config = await getUserConfig()
+      setUserConfig(config)
+    }
+    initConfig()
+
+    // 监听storage变更
+    const handleStorageChange = (changes, area) => {
+      if (area === 'local') {
+        // 遍历变更的存储项
+        const relevantChanges = Object.keys(changes).filter(
+          (key) =>
+            // 过滤出与userConfig相关的存储项
+            key === 'alwaysShowToolSidebar' || key === 'alwaysFloatingSidebar',
+        )
+
+        // 如果有相关变更，重新获取完整的userConfig
+        if (relevantChanges.length > 0) {
+          getUserConfig().then((newConfig) => {
+            setUserConfig(newConfig)
+          })
+        }
+      }
+    }
+
+    // 添加监听器
+    Browser.storage.onChanged.addListener(handleStorageChange)
+
+    // 清理监听器
+    return () => {
+      Browser.storage.onChanged.removeListener(handleStorageChange)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!userConfig) return
+    if (userConfig.alwaysShowToolSidebar !== false) {
+      renderSidebar()
+    }
+  }, [userConfig?.alwaysShowToolSidebar])
+
+  return null
+}
