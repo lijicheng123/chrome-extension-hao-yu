@@ -33,11 +33,12 @@ export class AuthBackgroundHandlers {
 
     try {
       // 获取当前活动标签页
-      const currentTab = await Browser.tabs.query({ active: true, currentWindow: true })
-      const currentUrl = currentTab[0]?.url || ''
+      // const currentTab = await Browser.tabs.query({ active: true, currentWindow: true })
+      // const currentUrl = currentTab[0]?.url || ''
 
-      // 带上重定向地址，并打开登录页
-      const loginUrl = `${API_CONFIG.BASE_URL}/web/login?redirect=${encodeURIComponent(currentUrl)}&from=extension`
+      // 带上重定向地址，并打开登录页，一般从这里发起的都不是odoo的页面，所以不能带redirect参数
+      // redirect=${encodeURIComponent(currentUrl)}&
+      const loginUrl = `${API_CONFIG.BASE_URL}/web/login?from=extension`
       await Browser.tabs.create({ url: loginUrl, active: true })
 
       return { success: true }
