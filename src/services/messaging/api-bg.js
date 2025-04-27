@@ -1,5 +1,6 @@
 import Browser from 'webextension-polyfill'
 import { API_CONFIG } from '../../constants/api.js'
+import { AuthBackgroundHandlers } from './auth.js'
 import { USER_SESSION_KEY, SESSION_ERROR_CODES, SESSION_ERROR_NAMES } from '../../constants/session.js'
 
 /**
@@ -83,10 +84,14 @@ export class ApiBackgroundHandlers {
 
       const response = await fetch(url, requestOptions)
       console.log(`收到响应 [ID:${requestId}]:`, response.status, response.statusText)
-
+      console.log(`收到响应 response:`, response)
+      if (response.redirected === true && response.url?.includes('login')) {
+        AuthBackgroundHandlers.handleNeedLogin()
+        Browser.storage.local.remove(USER_SESSION_KEY);
+        console.log(`请求被重定向 [ID:${requestId}]:`, response.url)
+      }
       const responseData = await response.json()
       console.log(`响应数据 [ID:${requestId}]:`, responseData)
-
       // 处理Odoo会话过期情况
       if (responseData.error) {
         console.error('Odoo API返回错误:', responseData.error);

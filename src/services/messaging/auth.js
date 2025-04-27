@@ -1,6 +1,7 @@
 import { MessagingService } from './index'
 import Browser from 'webextension-polyfill'
 import { API_CONFIG } from '../../constants/api.js'
+
 /**
  * 认证消息服务
  * 命名空间: AUTH
@@ -36,7 +37,7 @@ export class AuthBackgroundHandlers {
       const currentUrl = currentTab[0]?.url || ''
 
       // 带上重定向地址，并打开登录页
-      const loginUrl = `${API_CONFIG.BASE_URL}/web/login?redirect=${encodeURIComponent(currentUrl)}`
+      const loginUrl = `${API_CONFIG.BASE_URL}/web/login?redirect=${encodeURIComponent(currentUrl)}&from=extension`
       await Browser.tabs.create({ url: loginUrl, active: true })
 
       return { success: true }
