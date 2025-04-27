@@ -57,7 +57,7 @@ import { ApiBackgroundHandlers } from '../services/messaging/api'
 import { UiBackgroundHandlers } from '../services/messaging/ui'
 import i18nService from '../services/messaging/i18n'
 import { AuthBackgroundHandlers } from '../services/messaging/auth'
-import { fetchOdooUserSessionInfo, getStoredUserSessionInfo } from './userSessionInfo.mjs'
+import { fetchOdooUserSessionInfo, clearUserSessionInfo } from './userSessionInfo.mjs'
 
 function setPortProxy(port, proxyTabId) {
   port.proxy = Browser.tabs.connect(proxyTabId)
@@ -251,8 +251,8 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
     case 'GET_COOKIE': {
       return (await Browser.cookies.get({ url: message.data.url, name: message.data.name }))?.value
     }
-    case 'GET_USER_SESSION_INFO': {
-      return await getStoredUserSessionInfo()
+    case 'LOGOUT': {
+      return await clearUserSessionInfo()
     }
   }
 })

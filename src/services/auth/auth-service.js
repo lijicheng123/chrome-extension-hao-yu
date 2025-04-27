@@ -1,6 +1,6 @@
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
 import { requestManager } from '../api/request'
-import { API_CONFIG } from '../api/config'
+import { API_CONFIG } from '../../constants/api.js'
 import Browser from 'webextension-polyfill'
 
 class AuthService {

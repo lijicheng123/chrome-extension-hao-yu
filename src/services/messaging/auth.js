@@ -1,7 +1,6 @@
 import { MessagingService } from './index'
 import Browser from 'webextension-polyfill'
-import { setUserConfig } from '../../config/index.mjs'
-
+import { API_CONFIG } from '../../constants/api.js'
 /**
  * 认证消息服务
  * 命名空间: AUTH
@@ -36,17 +35,9 @@ export class AuthBackgroundHandlers {
       const currentTab = await Browser.tabs.query({ active: true, currentWindow: true })
       const currentUrl = currentTab[0]?.url || ''
 
-      // 清除用户信息缓存
-      await setUserConfig({
-        userInfo: null,
-      })
-
-      // 打开登录页面，并传递重定向地址
-      await Browser.tabs.create({
-        url: Browser.runtime.getURL(
-          `/options.html?redirect=${encodeURIComponent(currentUrl)}#user`,
-        ),
-      })
+      // 带上重定向地址，并打开登录页
+      const loginUrl = `${API_CONFIG.BASE_URL}/web/login?redirect=${encodeURIComponent(currentUrl)}`
+      await Browser.tabs.create({ url: loginUrl, active: true })
 
       return { success: true }
     } catch (error) {
@@ -70,12 +61,12 @@ export class AuthBackgroundHandlers {
 /**
  * 认证API - 内容脚本使用
  */
-export class AuthContentAPI {
+class AuthContentAPI {
   /**
    * 发送需要登录消息
    * @returns {Promise<void>}
    */
-  static async needLogin() {
+  async needLogin() {
     console.log('发送需要登录请求')
 
     try {

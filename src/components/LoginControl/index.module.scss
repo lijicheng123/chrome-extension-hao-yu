@@ -1,0 +1,38 @@
+.login-prompt-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+
+  :global {
+    .ant-card-body {
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+  }
+}
+
+.user-info-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+
+  :global {
+    .ant-card-body {
+      padding: 12px;
+    }
+  }
+}
+
+.user-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.logout-button {
+  margin-left: 8px;
+
+  &:hover {
+    background-color: rgba(245, 34, 45, 0.05);
+  }
+}

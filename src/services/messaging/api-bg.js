@@ -1,5 +1,6 @@
 import Browser from 'webextension-polyfill'
-import { API_CONFIG } from '../api/config.js'
+import { API_CONFIG } from '../../constants/api.js'
+import { USER_SESSION_KEY, SESSION_ERROR_CODES, SESSION_ERROR_NAMES } from '../../constants/session.js'
 
 /**
  * Background API处理器
@@ -85,6 +86,23 @@ export class ApiBackgroundHandlers {
 
       const responseData = await response.json()
       console.log(`响应数据 [ID:${requestId}]:`, responseData)
+
+      // 处理Odoo会话过期情况
+      if (responseData.error) {
+        console.error('Odoo API返回错误:', responseData.error);
+        
+        // 检查是否是会话过期错误
+        if (
+          responseData.error.code === SESSION_ERROR_CODES.SESSION_EXPIRED || 
+          (responseData.error.data && 
+           responseData.error.data.name === SESSION_ERROR_NAMES.SESSION_EXPIRED)
+        ) {
+          console.log('检测到Odoo会话过期，正在清除会话信息...');
+          // 清除会话信息
+          await Browser.storage.local.remove(USER_SESSION_KEY);
+          console.log('会话信息已清除');
+        }
+      }
 
       // 特殊处理401未授权状态
       if (response.status === 401) {
@@ -262,7 +280,7 @@ export class ApiBackgroundHandlers {
       }
       
       const responseData = await response.json();
-      
+      console.error('Odoo API返回:', responseData);
       // 检查Odoo错误
       if (responseData.error) {
         console.error('Odoo API返回错误:', responseData.error);

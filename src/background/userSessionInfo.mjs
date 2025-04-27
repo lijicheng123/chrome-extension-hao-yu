@@ -1,8 +1,8 @@
 import Browser from 'webextension-polyfill'
 import { ApiBackgroundHandlers } from '../services/messaging/api'
-
-// Storage key for user session info
-const USER_SESSION_KEY = 'odoo_user_session'
+import { clearCookies } from './syncCookies.mjs'
+import { API_CONFIG } from '../constants/api.js'
+import { USER_SESSION_KEY } from '../constants/session.js'
 
 /**
  * Fetches the current user session information from Odoo
@@ -14,7 +14,7 @@ export async function fetchOdooUserSessionInfo() {
 
     // 使用合并后的ApiBackgroundHandlers中的方法
     const sessionData = await ApiBackgroundHandlers.getOdooSessionInfo()
-
+    console.log('The Fetching Odoo user session info sessionData:', sessionData)
     if (!sessionData) {
       console.warn('No session data returned from Odoo')
       return null
@@ -65,10 +65,28 @@ export async function getStoredUserSessionInfo() {
  */
 export async function clearUserSessionInfo() {
   try {
+    // 打开Odoo登出页面，而不是使用API调用
+    console.log('打开Odoo登出页面...')
+    try {
+      // 使用Browser.tabs.create打开登出页面
+      const url = `${API_CONFIG.BASE_URL}/web/session/logout`
+      await Browser.tabs.create({ url, active: true })
+      console.log('已打开Odoo登出页面')
+    } catch (logoutError) {
+      console.error('打开Odoo登出页面失败:', logoutError)
+      // 即使打开页面失败，也继续进行本地清理操作
+    }
+
+    // 然后清除本地存储的会话信息
     await Browser.storage.local.remove(USER_SESSION_KEY)
+
+    // 清除cookie
+    await clearCookies()
     console.log('Odoo user session info cleared from storage')
+    return true
   } catch (error) {
     console.error('Error clearing Odoo user session info:', error)
+    return false
   }
 }
 

@@ -1,6 +1,6 @@
 import Browser from 'webextension-polyfill'
 import { requestManager } from '../api/request'
-import { API_CONFIG } from '../api/config'
+import { API_CONFIG } from '../../constants/api.js'
 import { MessagingService } from '../messaging/index'
 
 // 创建配置消息服务

@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react'
-import { Form, ConfigProvider, message, Select, Button, Space, Tooltip, Col, Row } from 'antd'
+import { Form, ConfigProvider, message, Select, Button, Col, Row } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 // 自定义Hooks
 import { useTaskManager } from './hooks/useTaskManager'
@@ -9,9 +9,10 @@ import { useSearchEngine } from './hooks/useSearchEngine'
 import { debounce } from './utils/searchEngineUtils'
 import { WINDOW_TYPE } from '../../constants'
 // UI组件
-import TaskStatus from './components/TaskStatus'
 import EmailList from './components/EmailList'
 import EmailEditModal from './components/EmailEditModal'
+import LoginControl from '../LoginControl'
+import PropTypes from 'prop-types'
 
 // 样式
 import style from './index.modules.scss'
@@ -26,6 +27,8 @@ function LeadsMining({ windowType }) {
   const [form] = Form.useForm()
   // 添加一个ref来跟踪是否已执行搜索
   const hasExecutedSearchRef = useRef(false)
+  // 添加登录状态
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   // 使用自定义Hooks
   const taskManager = useTaskManager()
@@ -260,76 +263,98 @@ function LeadsMining({ windowType }) {
     >
       {windowType === WINDOW_TYPE.LEADS_MINING && (
         <div className={style['email-list']}>
-          <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-            <Row align="top">
-              <Col span={22}>
-                <Form.Item
-                  label="挖掘任务"
-                  name="currentTask"
-                  tooltip="选择要执行的挖掘任务"
-                  rules={[{ required: true, message: '请选择挖掘任务' }]}
-                  style={{ marginBottom: 16 }}
-                  disabled={taskStatus === 'running'}
-                >
-                  <Select
-                    placeholder="请选择挖掘任务"
-                    onChange={handleTaskSelect}
-                    style={{ width: '100%' }}
-                  >
-                    {taskList?.map((task) => (
-                      <Select.Option key={task.id} value={task.id}>
-                        {task.name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={2}>
-                <Button
-                  style={{ marginTop: 4 }}
-                  size="small"
-                  type="link"
-                  onClick={fetchTaskList}
-                  icon={<ReloadOutlined />}
-                  title="刷新任务列表"
-                />
-              </Col>
-            </Row>
-          </Form>
-
-          {(taskStatus != 'running' && casualMiningStatus === 'cRunning') || isDetailPage ? (
-            <EmailList
-              isShowCurrentPageEmails={true}
-              emailList={currentPageEmails}
-              handleEditEmail={handleEditEmail}
-              handleDeleteCustomer={handleDeleteCustomer}
-              locateEmail={searchEngine.locateEmail}
-              style={style}
-            />
-          ) : (
-            <EmailList
-              isShowCurrentPageEmails={false}
-              emailList={emailList}
-              handleEditEmail={handleEditEmail}
-              handleDeleteCustomer={handleDeleteCustomer}
-              locateEmail={searchEngine.locateEmail}
-              style={style}
-            />
-          )}
-
-          <EmailEditModal
-            editingEmail={editingEmail}
-            newEmailValue={newEmailValue}
-            newNoteValue={newNoteValue}
-            setNewEmailValue={setNewEmailValue}
-            setNewNoteValue={setNewNoteValue}
-            handleUpdateEmail={handleUpdateEmail}
-            setEditingEmail={setEditingEmail}
+          <LoginControl
+            showUserInfo={true}
+            showLoginPrompt={true}
+            loginButtonText="登录 Odoo 账号"
+            loginPromptText="请先登录 Odoo 账号以使用挖掘功能"
+            onLoginStatusChange={(loggedIn) => {
+              setIsLoggedIn(loggedIn)
+              if (loggedIn) {
+                fetchTaskList()
+              }
+            }}
           />
+
+          {isLoggedIn && (
+            <>
+              <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+                <Row align="top">
+                  <Col span={22}>
+                    <Form.Item
+                      label="挖掘任务"
+                      name="currentTask"
+                      tooltip="选择要执行的挖掘任务"
+                      rules={[{ required: true, message: '请选择挖掘任务' }]}
+                      style={{ marginBottom: 16 }}
+                      disabled={taskStatus === 'running'}
+                    >
+                      <Select
+                        placeholder="请选择挖掘任务"
+                        onChange={handleTaskSelect}
+                        style={{ width: '100%' }}
+                      >
+                        {taskList?.map((task) => (
+                          <Select.Option key={task.id} value={task.id}>
+                            {task.name}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={2}>
+                    <Button
+                      style={{ marginTop: 4 }}
+                      size="small"
+                      type="link"
+                      onClick={fetchTaskList}
+                      icon={<ReloadOutlined />}
+                      title="刷新任务列表"
+                    />
+                  </Col>
+                </Row>
+              </Form>
+
+              {(taskStatus != 'running' && casualMiningStatus === 'cRunning') || isDetailPage ? (
+                <EmailList
+                  isShowCurrentPageEmails={true}
+                  emailList={currentPageEmails}
+                  handleEditEmail={handleEditEmail}
+                  handleDeleteCustomer={handleDeleteCustomer}
+                  locateEmail={searchEngine.locateEmail}
+                  style={style}
+                />
+              ) : (
+                <EmailList
+                  isShowCurrentPageEmails={false}
+                  emailList={emailList}
+                  handleEditEmail={handleEditEmail}
+                  handleDeleteCustomer={handleDeleteCustomer}
+                  locateEmail={searchEngine.locateEmail}
+                  style={style}
+                />
+              )}
+
+              <EmailEditModal
+                editingEmail={editingEmail}
+                newEmailValue={newEmailValue}
+                newNoteValue={newNoteValue}
+                setNewEmailValue={setNewEmailValue}
+                setNewNoteValue={setNewNoteValue}
+                handleUpdateEmail={handleUpdateEmail}
+                setEditingEmail={setEditingEmail}
+              />
+            </>
+          )}
         </div>
       )}
     </ConfigProvider>
   )
+}
+
+// 添加PropTypes验证
+LeadsMining.propTypes = {
+  windowType: PropTypes.string,
 }
 
 export default LeadsMining

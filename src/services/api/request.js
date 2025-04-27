@@ -1,8 +1,7 @@
 // import { message } from 'antd'
 import Browser from 'webextension-polyfill'
-import { API_CONFIG } from './config'
+import { API_CONFIG } from '../../constants/api.js'
 import { apiClient } from '../messaging/api'
-import { authClient } from '../messaging/auth'
 
 /**
  * API请求管理器
@@ -134,7 +133,7 @@ export class RequestManager {
     // 处理401未授权错误
     if (response && response.status === 401) {
       console.warn('API请求返回401未授权，触发登录流程')
-      authClient.needLogin()
+      // authClient.needLogin()
       throw new Error('用户未登录或登录已过期')
     }
 
