@@ -1,4 +1,5 @@
 import { requestManager } from './request'
+import { isUserLoggedIn } from '../../background/userSessionInfo.mjs'
 import { optimizeUrl } from '../../components/LeadsMining/utils/searchEngineUtils'
 /**
  * 客户开发 API 服务
@@ -128,6 +129,10 @@ class LeadsMiningService {
    * @returns {Promise<object>} 提交结果
    */
   async submitLead(leadData = []) {
+    const loggedIn = await isUserLoggedIn()
+    if (!loggedIn) {
+      throw new Error('用户未登录')
+    }
     try {
       const submitLeads = leadData.filter((lead) => {
         // 是否完整

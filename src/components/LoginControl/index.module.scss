@@ -1,5 +1,5 @@
 .login-prompt-card {
-  margin-bottom: 16px;
+  margin-bottom: 16px !important;
   border-radius: 8px;
 
   :global {
@@ -12,7 +12,7 @@
 }
 
 .user-info-card {
-  margin-bottom: 16px;
+  margin-bottom: 16px !important;
   border-radius: 8px;
 
   :global {

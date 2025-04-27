@@ -21,8 +21,6 @@ function FloatingToolbar(props) {
   const [virtualPosition, setVirtualPosition] = useState({ x: 0, y: 0 })
   const draggableRef = useRef(null)
 
-  console.log('props.containerprops.containerprops.container:', props)
-
   const config = useConfig(() => {
     if (!render) {
       setRender(true)

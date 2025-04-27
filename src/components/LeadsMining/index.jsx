@@ -276,76 +276,72 @@ function LeadsMining({ windowType }) {
             }}
           />
 
-          {isLoggedIn && (
-            <>
-              <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-                <Row align="top">
-                  <Col span={22}>
-                    <Form.Item
-                      label="挖掘任务"
-                      name="currentTask"
-                      tooltip="选择要执行的挖掘任务"
-                      rules={[{ required: true, message: '请选择挖掘任务' }]}
-                      style={{ marginBottom: 16 }}
-                      disabled={taskStatus === 'running'}
-                    >
-                      <Select
-                        placeholder="请选择挖掘任务"
-                        onChange={handleTaskSelect}
-                        style={{ width: '100%' }}
-                      >
-                        {taskList?.map((task) => (
-                          <Select.Option key={task.id} value={task.id}>
-                            {task.name}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={2}>
-                    <Button
-                      style={{ marginTop: 4 }}
-                      size="small"
-                      type="link"
-                      onClick={fetchTaskList}
-                      icon={<ReloadOutlined />}
-                      title="刷新任务列表"
-                    />
-                  </Col>
-                </Row>
-              </Form>
-
-              {(taskStatus != 'running' && casualMiningStatus === 'cRunning') || isDetailPage ? (
-                <EmailList
-                  isShowCurrentPageEmails={true}
-                  emailList={currentPageEmails}
-                  handleEditEmail={handleEditEmail}
-                  handleDeleteCustomer={handleDeleteCustomer}
-                  locateEmail={searchEngine.locateEmail}
-                  style={style}
+          <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+            <Row align="top">
+              <Col span={22}>
+                <Form.Item
+                  label="挖掘任务"
+                  name="currentTask"
+                  tooltip="选择要执行的挖掘任务"
+                  rules={[{ required: true, message: '请选择挖掘任务' }]}
+                  style={{ marginBottom: 16 }}
+                  disabled={taskStatus === 'running'}
+                >
+                  <Select
+                    placeholder="请选择挖掘任务"
+                    onChange={handleTaskSelect}
+                    style={{ width: '100%' }}
+                  >
+                    {taskList?.map((task) => (
+                      <Select.Option key={task.id} value={task.id}>
+                        {task.name}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={2}>
+                <Button
+                  style={{ marginTop: 4 }}
+                  size="small"
+                  type="link"
+                  onClick={fetchTaskList}
+                  icon={<ReloadOutlined />}
+                  title="刷新任务列表"
                 />
-              ) : (
-                <EmailList
-                  isShowCurrentPageEmails={false}
-                  emailList={emailList}
-                  handleEditEmail={handleEditEmail}
-                  handleDeleteCustomer={handleDeleteCustomer}
-                  locateEmail={searchEngine.locateEmail}
-                  style={style}
-                />
-              )}
+              </Col>
+            </Row>
+          </Form>
 
-              <EmailEditModal
-                editingEmail={editingEmail}
-                newEmailValue={newEmailValue}
-                newNoteValue={newNoteValue}
-                setNewEmailValue={setNewEmailValue}
-                setNewNoteValue={setNewNoteValue}
-                handleUpdateEmail={handleUpdateEmail}
-                setEditingEmail={setEditingEmail}
-              />
-            </>
+          {(taskStatus != 'running' && casualMiningStatus === 'cRunning') || isDetailPage ? (
+            <EmailList
+              isShowCurrentPageEmails={true}
+              emailList={currentPageEmails}
+              handleEditEmail={handleEditEmail}
+              handleDeleteCustomer={handleDeleteCustomer}
+              locateEmail={searchEngine.locateEmail}
+              style={style}
+            />
+          ) : (
+            <EmailList
+              isShowCurrentPageEmails={false}
+              emailList={emailList}
+              handleEditEmail={handleEditEmail}
+              handleDeleteCustomer={handleDeleteCustomer}
+              locateEmail={searchEngine.locateEmail}
+              style={style}
+            />
           )}
+
+          <EmailEditModal
+            editingEmail={editingEmail}
+            newEmailValue={newEmailValue}
+            newNoteValue={newNoteValue}
+            setNewEmailValue={setNewEmailValue}
+            setNewNoteValue={setNewNoteValue}
+            handleUpdateEmail={handleUpdateEmail}
+            setEditingEmail={setEditingEmail}
+          />
         </div>
       )}
     </ConfigProvider>
