@@ -89,21 +89,11 @@ function LoginControl({
     return (
       <Card className={styles['login-prompt-card']} loading={loading}>
         <Space direction="vertical" align="center" style={{ width: '100%' }}>
-          <LoginOutlined style={{ fontSize: 24 }} />
-          <Text>{loginPromptText}</Text>
           <Button type="primary" onClick={handleLogin}>
             {loginButtonText}
           </Button>
+          <Text>{loginPromptText}</Text>
         </Space>
-        <Tooltip title="退出登录">
-          <Button
-            type="text"
-            danger
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-            className={styles['logout-button']}
-          />
-        </Tooltip>
       </Card>
     )
   }

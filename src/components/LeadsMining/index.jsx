@@ -264,10 +264,10 @@ function LeadsMining({ windowType }) {
       {windowType === WINDOW_TYPE.LEADS_MINING && (
         <div className={style['email-list']}>
           <LoginControl
-            showUserInfo={true}
+            showUserInfo={false}
             showLoginPrompt={true}
-            loginButtonText="登录 Odoo 账号"
-            loginPromptText="请先登录 Odoo 账号以使用挖掘功能"
+            loginButtonText="登录"
+            loginPromptText="登录以后才能使用挖掘功能"
             onLoginStatusChange={(loggedIn) => {
               setIsLoggedIn(loggedIn)
               if (loggedIn) {
