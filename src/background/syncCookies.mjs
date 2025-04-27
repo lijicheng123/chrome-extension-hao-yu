@@ -41,7 +41,7 @@ async function syncCookie(changeInfo) {
 
 // 监听cookie变化
 function setupCookieListener() {
-  Browser.cookies.onChanged.addListener(syncCookie)
+  // Browser.cookies.onChanged.addListener(syncCookie)
 }
 
 // 初始化时同步所有已存在的cookies
