@@ -343,7 +343,8 @@ leadsMiningService
 registerPortListener(async (session, port, config) => await executeApi(session, port, config))
 registerCommands()
 refreshMenu()
-registerCookieListener()
+// TODO: 貌似关闭也能正常运行，观察一下是否靠谱
+// registerCookieListener()
 
 // 注册认证处理器
 AuthBackgroundHandlers.registerHandlers()
