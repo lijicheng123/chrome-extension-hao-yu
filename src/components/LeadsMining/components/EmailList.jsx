@@ -1,6 +1,7 @@
 import React from 'react'
-import { Card, Typography, Space, Empty, Divider, Tag } from 'antd'
-const { Paragraph, Text } = Typography
+import { Card, Typography, Space, Empty, Divider, Tag, Button, Badge } from 'antd'
+import { API_CONFIG } from '../../../constants/api'
+const { Paragraph, Text, Link } = Typography
 
 /**
  * 邮箱列表组件
@@ -17,8 +18,17 @@ const EmailList = ({
   return (
     <>
       <Divider orientation="left">
-        {isShowCurrentPageEmails ? '当前页面邮箱' : '发现的邮箱'}
-        <Tag color="blue">{emailList.length}</Tag>
+        <Badge count={emailList.length} offset={[2, -2]} size="small">
+          {isShowCurrentPageEmails ? '当前页面邮箱' : '发现的邮箱'}
+        </Badge>
+        <Link
+          size="small"
+          href={`${API_CONFIG.BASE_URL}/web#action=crm.crm_lead_all_leads`}
+          target="_blank"
+          style={{ marginLeft: 8 }}
+        >
+          查看全部
+        </Link>
       </Divider>
 
       {emailList.length > 0 ? (
