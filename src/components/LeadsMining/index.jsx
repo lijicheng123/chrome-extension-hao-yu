@@ -1,5 +1,16 @@
 import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react'
-import { Form, ConfigProvider, message, Select, Button, Col, Row, Switch } from 'antd'
+import {
+  Form,
+  ConfigProvider,
+  message,
+  Select,
+  Button,
+  Col,
+  Row,
+  Switch,
+  Typography,
+  Alert,
+} from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 // 自定义Hooks
 import { useTaskManager } from './hooks/useTaskManager'
@@ -8,6 +19,7 @@ import { useEmailProcessor } from './hooks/useEmailProcessor'
 import { useSearchEngine } from './hooks/useSearchEngine'
 import { debounce } from './utils/searchEngineUtils'
 import { WINDOW_TYPE } from '../../constants'
+import { API_CONFIG } from '../../constants/api'
 // UI组件
 import EmailList from './components/EmailList'
 import EmailEditModal from './components/EmailEditModal'
@@ -21,6 +33,8 @@ import style from './index.modules.scss'
 import { setStorage } from './utils/leadsMiningStorage'
 
 const showDebugger = false
+
+const { Link } = Typography
 
 /**
  * 线索挖掘组件
@@ -285,40 +299,69 @@ function LeadsMining({ windowType }) {
           />
 
           <Form form={form} name="prompt" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-            <Row align="top">
-              <Col span={22}>
-                <Form.Item
-                  label="挖掘任务"
-                  name="currentTask"
-                  tooltip="选择要执行的挖掘任务"
-                  rules={[{ required: true, message: '请选择挖掘任务' }]}
-                  style={{ marginBottom: 16 }}
-                  disabled={taskStatus === 'running'}
-                >
-                  <Select
-                    placeholder="请选择挖掘任务"
-                    onChange={handleTaskSelect}
-                    style={{ width: '100%' }}
+            {taskList?.length > 0 && (
+              <Row align="top">
+                <Col span={22}>
+                  <Form.Item
+                    label="挖掘任务"
+                    name="currentTask"
+                    tooltip="选择要执行的挖掘任务"
+                    rules={[{ required: true, message: '请选择挖掘任务' }]}
+                    style={{ marginBottom: 16 }}
+                    disabled={taskStatus === 'running'}
                   >
-                    {taskList?.map((task) => (
-                      <Select.Option key={task.id} value={task.id}>
-                        {task.name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={2}>
-                <Button
-                  style={{ marginTop: 4 }}
-                  size="small"
-                  type="link"
-                  onClick={fetchTaskList}
-                  icon={<ReloadOutlined />}
-                  title="刷新任务列表"
-                />
-              </Col>
-            </Row>
+                    <Select
+                      placeholder="请选择挖掘任务"
+                      onChange={handleTaskSelect}
+                      style={{ width: '100%' }}
+                    >
+                      {taskList?.map((task) => (
+                        <Select.Option key={task.id} value={task.id}>
+                          {task.name}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={2}>
+                  <Button
+                    style={{ marginTop: 4 }}
+                    size="small"
+                    type="link"
+                    onClick={fetchTaskList}
+                    icon={<ReloadOutlined />}
+                    title="刷新任务列表"
+                  />
+                </Col>
+              </Row>
+            )}
+            {taskList?.length < 1 && (
+              <Row>
+                <Col span={24}>
+                  <Alert
+                    message={
+                      <>
+                        当前没有可用任务
+                        <Link
+                          href={`${API_CONFIG.BASE_URL}/web#action=leads.action_mining_task`}
+                          target="_blank"
+                        >
+                          前往创建
+                        </Link>
+                        或者
+                        <Button type="link" onClick={fetchTaskList}>
+                          刷新
+                        </Button>
+                        任务列表
+                      </>
+                    }
+                    type="warning"
+                    showIcon
+                  />
+                </Col>
+              </Row>
+            )}
+
             {/* 是否总是打开挖掘面板 headless为false就是一直打开挖掘面板，用Switch组件 */}
             <Row>
               <Col span={24}>
