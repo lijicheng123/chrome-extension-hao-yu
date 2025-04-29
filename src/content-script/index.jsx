@@ -602,9 +602,14 @@ function Sidebar({ close }) {
     }
   }, [])
   async function init() {
-    const { casualMiningStatus, headless } = await getStorage(['casualMiningStatus', 'headless'])
-    if (casualMiningStatus === 'cRunning' && headless != 'false') {
-      renderLeadsMining(WINDOW_TYPE.LEADS_MINING_MINI_SIDE_WINDOW)
+    const { casualMiningStatus } = await getStorage(['casualMiningStatus'])
+    const { headless } = await getUserConfig('headless')
+    if (casualMiningStatus === 'cRunning') {
+      if (headless === true) {
+        renderLeadsMining(WINDOW_TYPE.LEADS_MINING_MINI_SIDE_WINDOW)
+      } else {
+        renderLeadsMining(WINDOW_TYPE.LEADS_MINING)
+      }
       setActiveTaskList((prev) => [
         ...prev,
         {

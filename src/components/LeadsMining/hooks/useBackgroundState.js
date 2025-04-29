@@ -4,6 +4,10 @@ import { LeadsMiningContentAPI } from '../../../services/messaging/leadsMining'
 import Browser from 'webextension-polyfill'
 import { cleanupLinkMarkers } from '../utils/searchEngineUtils'
 import { getStorage, setStorage } from '../utils/leadsMiningStorage'
+import {
+  getUserConfig,
+  setUserConfig,
+} from '../../../config/index.mjs'
 /**
  * 与background脚本通信的Hook
  * 用于管理任务状态
@@ -19,6 +23,7 @@ export const useBackgroundState = (selectedTask) => {
   const [discoveredEmails, setDiscoveredEmails] = useState(0)
   const [captchaDetected, setCaptchaDetected] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
+  const [headless, setHeadless] = useState(false)
   const [emailList, setEmailList] = useState([])
 
   useEffect(() => {
@@ -32,8 +37,10 @@ export const useBackgroundState = (selectedTask) => {
 
 
   const init = async () => {
-    const status = await getStorage('casualMiningStatus')
-    originalSetCasualMiningStatus(status)
+    const { casualMiningStatus  } = await getStorage(['casualMiningStatus'])
+    originalSetCasualMiningStatus(casualMiningStatus)
+    const { headless } = await getUserConfig()
+    setHeadless(headless)
   }
 
   // 初始化：从background获取任务状态
@@ -309,5 +316,7 @@ export const useBackgroundState = (selectedTask) => {
 
     casualMiningStatus,
     onCasualMiningClick,
+    headless,
+    setHeadless,
   }
 }

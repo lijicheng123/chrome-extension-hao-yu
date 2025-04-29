@@ -287,6 +287,7 @@ export const defaultConfig = {
   // general
 
   alwaysShowToolSidebar: true,
+  headless: false,
 
   /** @type {keyof TriggerMode}*/
   triggerMode: 'manually',

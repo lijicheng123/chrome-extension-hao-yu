@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useMemo, useState, useRef } from 'react'
-import { Form, ConfigProvider, message, Select, Button, Col, Row } from 'antd'
+import { Form, ConfigProvider, message, Select, Button, Col, Row, Switch } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 // 自定义Hooks
 import { useTaskManager } from './hooks/useTaskManager'
@@ -14,8 +14,11 @@ import EmailEditModal from './components/EmailEditModal'
 import LoginControl from '../LoginControl'
 import PropTypes from 'prop-types'
 
+import { getUserConfig, setUserConfig } from '../../config/index.mjs'
+
 // 样式
 import style from './index.modules.scss'
+import { setStorage } from './utils/leadsMiningStorage'
 
 const showDebugger = false
 
@@ -50,6 +53,8 @@ function LeadsMining({ windowType }) {
     stopTask,
     casualMiningStatus,
     onCasualMiningClick,
+    headless,
+    setHeadless,
   } = backgroundState
 
   const emailProcessor = useEmailProcessor(selectedTask, backgroundState)
@@ -258,6 +263,9 @@ function LeadsMining({ windowType }) {
           Select: {
             zIndexPopup: 2147483647,
           },
+          Tooltip: {
+            zIndexPopup: 2147483647,
+          },
         },
       }}
     >
@@ -309,6 +317,26 @@ function LeadsMining({ windowType }) {
                   icon={<ReloadOutlined />}
                   title="刷新任务列表"
                 />
+              </Col>
+            </Row>
+            {/* 是否总是打开挖掘面板 headless为false就是一直打开挖掘面板，用Switch组件 */}
+            <Row>
+              <Col span={24}>
+                <Form.Item
+                  label={`总是展开`}
+                  name="headless"
+                  valuePropName="checked"
+                  wrapperCol={{ span: 24 }}
+                  tooltip="是否总是展开此面板"
+                >
+                  <Switch
+                    value={!headless}
+                    onChange={(checked) => {
+                      setUserConfig({ headless: !headless })
+                      setHeadless(!headless)
+                    }}
+                  />
+                </Form.Item>
               </Col>
             </Row>
           </Form>
