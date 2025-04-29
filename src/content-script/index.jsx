@@ -1,5 +1,6 @@
 import './styles.scss'
-import { unmountComponentAtNode } from 'react-dom'
+// 移除过时的 API 导入
+// import { unmountComponentAtNode } from 'react-dom'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Space, Spin, Typography } from 'antd'
@@ -83,17 +84,11 @@ async function mountComponent(siteConfig) {
       }
     }
   }
+  // 替换旧的卸载方式
   document.querySelectorAll('.chatgptbox-container,#chatgptbox-container').forEach((e) => {
-    unmountComponentAtNode(e)
-    e.remove()
-  })
-
-  let question
-  if (userConfig.inputQuery) question = await getInput([userConfig.inputQuery])
-  if (!question && siteConfig) question = await getInput(siteConfig.inputQuery)
-
-  document.querySelectorAll('.chatgptbox-container,#chatgptbox-container').forEach((e) => {
-    unmountComponentAtNode(e)
+    if (e._reactRootContainer) {
+      e._reactRootContainer.unmount()
+    }
     e.remove()
   })
 
