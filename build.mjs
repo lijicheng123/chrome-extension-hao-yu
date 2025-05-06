@@ -14,6 +14,11 @@ const __dirname = path.resolve()
 const isProduction = process.argv[2] !== '--development' // --production and --analyze are both production
 const isAnalyzing = process.argv[2] === '--analyze'
 
+// 添加环境变量配置
+const ENV_CONFIG = {
+  BASE_URL: process.env.BASE_URL || 'http://localhost:8069',
+}
+
 async function deleteOldDir() {
   await fs.rm(outdir, { recursive: true, force: true })
 }
@@ -111,6 +116,7 @@ async function runWebpack(isWithoutKatex, isWithoutTiktoken, minimal, callback) 
         : []),
       new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development'),
+        'process.env.BASE_URL': JSON.stringify(ENV_CONFIG.BASE_URL),
       }),
     ],
     resolve: {

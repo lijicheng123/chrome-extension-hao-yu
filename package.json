@@ -2,8 +2,10 @@
   "name": "haoyu",
   "scripts": {
     "build": "node build.mjs --production",
+    "build:dev": "BASE_URL=http://localhost:8069 node build.mjs --development",
+    "build:prod": "BASE_URL=https://your-production-url.com node build.mjs --production",
     "build:safari": "bash ./safari/build.sh",
-    "dev": "node build.mjs --development",
+    "dev": "BASE_URL=http://localhost:8069 node build.mjs --development",
     "analyze": "node build.mjs --analyze",
     "lint": "eslint --ext .js,.mjs,.jsx .",
     "lint:fix": "eslint --ext .js,.mjs,.jsx . --fix",
