@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { message } from 'antd'
 import { extractPageEmails, submitEmails } from '../utils/emailService'
+import { scrollToEmail, highlightEmail } from '../utils/emailExtractor'
 
 /**
  * 邮箱处理Hook
@@ -12,7 +13,7 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   const [newNoteValue, setNewNoteValue] = useState('')
   const [currentPageEmails, setCurrentPageEmails] = useState([])
 
-  const { currentSearchTerm, handleCaptchaDetected, taskStatus, emailList, registerEmail } =
+  const { currentSearchTerm, handleCaptchaDetected, emailList, setEmailList } =
     backgroundState
 
   /**
@@ -22,12 +23,15 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   const extractCurrentPageEmails = useCallback(
     async ({ forceSubmit = false } = {}) => {
       try {
+        // 提取邮箱，返回的是已经去重了的
         const emails = await extractPageEmails({
           onCaptchaDetected: handleCaptchaDetected,
           onExtracted: (foundEmails) => {
             setCurrentPageEmails(foundEmails)
           }
         })
+        // 更新邮箱列表，里边会存储的
+        setEmailList((prev = []) => [...prev, ...emails])
         
         if (emails?.length > 0 && (selectedTask?.id || forceSubmit)) {
           await submitEmailLead(emails, { forceSubmit })
@@ -93,6 +97,17 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
     [emailList],
   )
 
+  // 定位到邮箱
+  const locateEmail = useCallback((email) => {
+    const emailElement = document.querySelector(`[data-email='${email}']`)
+    if (emailElement) {
+      scrollToEmail(emailElement)
+      highlightEmail(emailElement)
+    } else {
+      message.error('这个我不好找，你自己 Ctrl+F 找吧')
+    }
+  }, [])
+
   console.log('currentPageEmails=====>1:', currentPageEmails)
   return {
     extractCurrentPageEmails,
@@ -107,5 +122,6 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
     handleDeleteCustomer,
     setEditingEmail,
     submitEmailLead,
+    locateEmail,
   }
 }
