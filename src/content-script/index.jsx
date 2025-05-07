@@ -1,6 +1,4 @@
 import './styles.scss'
-// 移除过时的 API 导入
-// import { unmountComponentAtNode } from 'react-dom'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Space, Spin, Typography } from 'antd'
@@ -9,7 +7,6 @@ import DecisionCard from '../components/DecisionCard'
 import { config as siteConfig } from './site-adapters'
 import { config as toolsConfig } from './selection-tools'
 import { config as menuConfig } from './menu-tools'
-import { isDetailPage } from '../components/LeadsMining/utils/searchEngineUtils'
 import {
   chatgptWebModelKeys,
   getPreferredLanguageKey,
@@ -43,14 +40,14 @@ import { UI_API } from '../services/messaging/ui'
 import uiService from '../services/messaging/ui'
 import i18nService, { I18N_API } from '../services/messaging/i18n'
 import { isShowSidebar } from '../config/index.mjs'
+import { getStorage } from './../components/LeadsMining/utils/leadsMiningStorage'
+
+const { Text, Link } = Typography
+
 const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
 const sideBarContainer = document.createElement('div')
 sideBarContainer.id = 'chatgptbox-sidebar-container'
 document.body.appendChild(sideBarContainer)
-
-import { getStorage } from './../components/LeadsMining/utils/leadsMiningStorage'
-
-const { Text, Link } = Typography
 
 /**
  * @param {SiteConfig} siteConfig
@@ -307,6 +304,7 @@ async function prepareForRightClickMenu() {
   // 注册UI消息处理器
   uiService.registerHandlers({
     [UI_API.CREATE_CHAT]: async (data) => {
+      debugger
       console.log('接收到CREATE_CHAT消息', data)
       let prompt = ''
       if (data.itemId in toolsConfig) {
@@ -341,6 +339,7 @@ async function prepareForRightClickMenu() {
       return { success: true }
     },
     [UI_API.CLOSE_TOOLBAR]: () => {
+      debugger
       deleteToolbar()
       return { success: true }
     },
@@ -721,6 +720,27 @@ async function run() {
 
   // 顶部通知返回条
   prepareForJumpBackNotification()
+
+  // 添加双击Ctrl/Command键检测
+  let lastKeyDownTime = 0
+  const DOUBLE_PRESS_DELAY = 300 // 双击间隔时间(毫秒)
+
+  document.addEventListener('keydown', (e) => {
+    // 检测是否按下的是单独的Ctrl键或Command键
+    if ((e.key === 'Control' || e.key === 'Meta') && !e.shiftKey && !e.altKey) {
+      const currentTime = new Date().getTime()
+
+      if (currentTime - lastKeyDownTime < DOUBLE_PRESS_DELAY) {
+        e.preventDefault()
+        renderLeadsMining(WINDOW_TYPE.LEADS_MINING)
+        // 重置计时器，防止连续多次触发
+        lastKeyDownTime = 0
+      } else {
+        // 记录第一次按键时间
+        lastKeyDownTime = currentTime
+      }
+    }
+  })
 }
 
 run()

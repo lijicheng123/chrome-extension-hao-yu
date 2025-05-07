@@ -9,24 +9,27 @@ class MessageBus {
   }
 
   _initListener() {
+    const _this = this
     // 只注册一个全局监听器
     Browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.log('全局消息总线收到消息:', message)
+      
       // 特殊处理 action: 'apiRequest' 和 action: 'apiFetch'
       if (message.action === 'apiRequest' || message.action === 'apiFetch') {
         // 这些消息由专门的处理器处理，不经过总线
         return false
       }
 
+
       const namespace = message.namespace
-      if (!namespace || !this.handlers.has(namespace)) {
+      if (!namespace || !_this.handlers.has(namespace)) {
         console.log(`未找到namespace处理器: ${namespace || '未指定'}`)
         return false
       }
 
       // 将消息转发给对应的处理函数
       console.log(`转发消息到${namespace}处理器`)
-      return this.handlers.get(namespace)(message, sender, sendResponse)
+      return _this.handlers.get(namespace)(message, sender, sendResponse)
     })
   }
 
