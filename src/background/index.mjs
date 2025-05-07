@@ -51,7 +51,6 @@ import { generateAnswersWithMoonshotCompletionApi } from '../services/apis/moons
 import { generateAnswersWithMoonshotWebApi } from '../services/apis/moonshot-web.mjs'
 import { isUsingModelName } from '../utils/model-name-convert.mjs'
 import { registerCookieListener } from './syncCookies.mjs'
-import { initLeadsMiningManager } from './leadsMiningManager.mjs'
 import leadsMiningService from '../services/messaging/leadsMining'
 import { ApiBackgroundHandlers } from '../services/messaging/api'
 import { UiBackgroundHandlers } from '../services/messaging/ui'
@@ -336,8 +335,8 @@ i18nService.registerHandlers({
 })
 
 // 确保在初始化leadsMiningManager之前正确加载leadsMiningService
-console.log('初始化LeadsMining消息服务...')
-leadsMiningService
+// console.log('初始化LeadsMining消息服务...')
+// leadsMiningService
 
 // 继续正常初始化
 registerPortListener(async (session, port, config) => await executeApi(session, port, config))
@@ -348,11 +347,6 @@ refreshMenu()
 
 // 注册认证处理器
 AuthBackgroundHandlers.registerHandlers()
-
-// 初始化线索挖掘管理器
-initLeadsMiningManager().catch((error) => {
-  console.error('初始化线索挖掘管理器失败:', error)
-})
 
 // 初始化Odoo用户会话跟踪
 fetchOdooUserSessionInfo().catch((error) => {
