@@ -304,7 +304,6 @@ async function prepareForRightClickMenu() {
   // 注册UI消息处理器
   uiService.registerHandlers({
     [UI_API.CREATE_CHAT]: async (data) => {
-      debugger
       console.log('接收到CREATE_CHAT消息', data)
       let prompt = ''
       if (data.itemId in toolsConfig) {
@@ -339,7 +338,6 @@ async function prepareForRightClickMenu() {
       return { success: true }
     },
     [UI_API.CLOSE_TOOLBAR]: () => {
-      debugger
       deleteToolbar()
       return { success: true }
     },
@@ -728,16 +726,19 @@ async function run() {
   document.addEventListener('keydown', (e) => {
     // 检测是否按下的是单独的Ctrl键或Command键
     if ((e.key === 'Control' || e.key === 'Meta') && !e.shiftKey && !e.altKey) {
-      const currentTime = new Date().getTime()
+      // 检查当前标签页是否激活 visible hidden prerender
+      if (document.visibilityState === 'visible') {
+        const currentTime = new Date().getTime()
 
-      if (currentTime - lastKeyDownTime < DOUBLE_PRESS_DELAY) {
-        e.preventDefault()
-        renderLeadsMining(WINDOW_TYPE.LEADS_MINING)
-        // 重置计时器，防止连续多次触发
-        lastKeyDownTime = 0
-      } else {
-        // 记录第一次按键时间
-        lastKeyDownTime = currentTime
+        if (currentTime - lastKeyDownTime < DOUBLE_PRESS_DELAY) {
+          e.preventDefault()
+          renderLeadsMining(WINDOW_TYPE.LEADS_MINING)
+          // 重置计时器，防止连续多次触发
+          lastKeyDownTime = 0
+        } else {
+          // 记录第一次按键时间
+          lastKeyDownTime = currentTime
+        }
       }
     }
   })
