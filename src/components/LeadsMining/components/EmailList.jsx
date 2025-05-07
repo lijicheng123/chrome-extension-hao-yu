@@ -2,7 +2,7 @@ import React from 'react'
 import { Card, Typography, Space, Empty, Divider, Tag, Button, Badge } from 'antd'
 import { API_CONFIG } from '../../../constants/api'
 const { Paragraph, Text, Link } = Typography
-
+import { ReloadOutlined } from '@ant-design/icons'
 /**
  * 邮箱列表组件
  * 显示发现的邮箱列表
@@ -14,21 +14,28 @@ const EmailList = ({
   handleDeleteCustomer,
   locateEmail,
   style,
+  extractCurrentPageEmails,
 }) => {
   return (
     <>
       <Divider orientation="left">
         <Badge count={emailList.length} offset={[2, -2]} size="small">
-          {isShowCurrentPageEmails ? '当前页面邮箱' : '发现的邮箱'}
+          {isShowCurrentPageEmails ? '当页邮箱' : '发现的邮箱'}
         </Badge>
         <Link
           size="small"
           href={`${API_CONFIG.BASE_URL}/web#action=crm.crm_lead_all_leads`}
           target="_blank"
-          style={{ marginLeft: 8 }}
+          style={{ marginLeft: 16 }}
         >
           查看全部
         </Link>
+        <Button
+          title="重新抓取"
+          type="link"
+          icon={<ReloadOutlined />}
+          onClick={extractCurrentPageEmails}
+        />
       </Divider>
 
       {emailList.length > 0 ? (

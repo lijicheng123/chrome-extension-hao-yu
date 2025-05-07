@@ -83,6 +83,7 @@ function LeadsMining({ windowType }) {
     handleDeleteCustomer,
     setEditingEmail,
     currentPageEmails,
+    extractCurrentPageEmails,
   } = emailProcessor
 
   const searchEngine = useSearchEngine(taskManager, backgroundState, emailProcessor)
@@ -392,6 +393,7 @@ function LeadsMining({ windowType }) {
               handleDeleteCustomer={handleDeleteCustomer}
               locateEmail={searchEngine.locateEmail}
               style={style}
+              extractCurrentPageEmails={extractCurrentPageEmails}
             />
           ) : (
             <EmailList
