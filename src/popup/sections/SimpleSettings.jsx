@@ -37,13 +37,15 @@ import {
   TriggerMode,
   isUsingMoonshotApiModel,
   Models,
+  getUserConfig,
+  setUserConfig,
 } from '../../config/index.mjs'
 import Browser from 'webextension-polyfill'
 import { languageList } from '../../config/language.mjs'
 import PropTypes from 'prop-types'
 import { config as menuConfig } from '../../content-script/menu-tools'
 import { Select, Input, Button, Form, Checkbox, Badge, message } from 'antd'
-import { getStorage, setStorage } from '../../components/LeadsMining/utils/leadsMiningStorage'
+
 SimpleSettings.propTypes = {
   config: PropTypes.object.isRequired,
   updateConfig: PropTypes.func.isRequired,
@@ -119,8 +121,8 @@ export function SimpleSettings({ config, updateConfig, moreSettingsHref }) {
   }, [])
 
   async function initStatus() {
-    const storage = await getStorage('casualMiningStatus')
-    setCasualMiningStatus(storage)
+    const config = await getUserConfig()
+    setCasualMiningStatus(config.casualMiningStatus)
   }
 
   // TODO: 添加背景权限?这里有用吗？
@@ -157,7 +159,7 @@ export function SimpleSettings({ config, updateConfig, moreSettingsHref }) {
 
   const toggleLeadsMining = () => {
     const newStatus = casualMiningStatus === 'cRunning' ? 'cStopped' : 'cRunning'
-    setStorage('casualMiningStatus', newStatus)
+    setUserConfig({ casualMiningStatus: newStatus })
     setCasualMiningStatus(newStatus)
   }
 

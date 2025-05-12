@@ -6,7 +6,9 @@ import { getClientPosition, isMobile, setElementPositionInViewport } from '../..
 import Draggable from 'react-draggable'
 import { useTranslation } from 'react-i18next'
 import { useConfig } from '../../hooks/use-config.mjs'
-
+import { setUserConfig } from '../../config/index.mjs'
+import { WINDOW_TYPE } from '../../constants'
+import { message } from 'antd'
 // const logo = Browser.runtime.getURL('logo.png')
 
 function FloatingToolbar(props) {
@@ -42,9 +44,23 @@ function FloatingToolbar(props) {
     if (position.x !== newPosition.x || position.y !== newPosition.y) setPosition(newPosition) // clear extra virtual position offset
   }, [props.container, position.x, position.y])
 
-  const onClose = useCallback(() => {
+  const handleClose = useCallback(() => {
     props.container.remove()
+    if (windowType === WINDOW_TYPE.LEADS_MINING) {
+      setUserConfig({
+        casualMiningStatus: 'cStopped',
+      })
+      message.info('已停止挖掘')
+    }
   }, [props.container])
+
+  const handleMiniWindow = () => {
+    setUserConfig({
+      headless: true,
+    })
+    props.container.remove()
+    message.info('已最小化窗口')
+  }
 
   const onDock = useCallback(() => {
     props.container.className = 'chatgptbox-toolbar-container-not-queryable'
@@ -108,7 +124,8 @@ function FloatingToolbar(props) {
                 question={prompt}
                 draggable={true}
                 closeable={closeable}
-                onClose={onClose}
+                onClose={handleClose}
+                onMiniWindow={handleMiniWindow}
                 dockable={props.dockable}
                 onDock={onDock}
                 onUpdate={onUpdate}

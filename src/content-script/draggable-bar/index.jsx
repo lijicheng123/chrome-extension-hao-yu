@@ -5,6 +5,7 @@ import PropTypes from 'prop-types'
 import { ToolOutlined } from '@ant-design/icons'
 import './index.scss'
 import { WINDOW_TYPE } from '../../constants'
+import { setUserConfig } from '../../config/index.mjs'
 
 export const DraggableBar = ({ openToolBar, foldedIcon, setLiving, activeTasks }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -96,6 +97,10 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving, activeTasks }
             <a
               className="tool-item"
               onClick={() => {
+                setUserConfig({
+                  casualMiningStatus: 'cRunning',
+                  headless: false,
+                })
                 openToolBar({ windowType: WINDOW_TYPE.LEADS_MINING })
               }}
             >

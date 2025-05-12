@@ -1,7 +1,7 @@
 import './styles.scss'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Space, Spin, Typography } from 'antd'
+import { Space, Typography } from 'antd'
 import { RadarChartOutlined } from '@ant-design/icons'
 import DecisionCard from '../components/DecisionCard'
 import { config as siteConfig } from './site-adapters'
@@ -25,7 +25,7 @@ import {
 } from '../utils'
 import FloatingToolbar from '../components/FloatingToolbar'
 import Browser from 'webextension-polyfill'
-import { LEADS_MINING_KEY } from './../components/LeadsMining/utils/leadsMiningStorage'
+import PropTypes from 'prop-types'
 
 import { getPreferredLanguage } from '../config/language.mjs'
 import '../_locales/i18n-react'
@@ -40,9 +40,8 @@ import { UI_API } from '../services/messaging/ui'
 import uiService from '../services/messaging/ui'
 import i18nService, { I18N_API } from '../services/messaging/i18n'
 import { isShowSidebar } from '../config/index.mjs'
-import { getStorage } from './../components/LeadsMining/utils/leadsMiningStorage'
 
-const { Text, Link } = Typography
+const { Link } = Typography
 
 const sideLogo = Browser.runtime.getURL('imgs/sider-logo.png')
 const sideBarContainer = document.createElement('div')
@@ -576,15 +575,44 @@ function Sidebar({ close }) {
   useEffect(() => {
     init()
     const handleStorageChange = (changes, area) => {
-      if (area === 'local' && changes[LEADS_MINING_KEY]) {
-        const newTaskStates = changes[LEADS_MINING_KEY].newValue
-        if (newTaskStates.casualMiningStatus != '') {
+      if (area === 'local') {
+        const config = changes
+        if (config.casualMiningStatus) {
           const container = document.getElementById(ELEMENT_ID.FLOATING_TOOL_CONTAINER)
-          if (container && newTaskStates.casualMiningStatus === 'cStopped') {
-            container.remove()
-          } else if (newTaskStates.casualMiningStatus === 'cRunning') {
+          if (config.casualMiningStatus.newValue === 'cStopped') {
+            container?.remove()
+            setActiveTaskList((prev) => {
+              return prev.filter((task) => task.id !== 'casualMining')
+            })
+          } else if (config.casualMiningStatus.newValue === 'cRunning') {
             renderLeadsMining()
           }
+        }
+        if (config.headless?.newValue === true) {
+          // 如果prev里没有 挖掘中 则添加
+          setActiveTaskList((prev = []) => {
+            if (!prev.some((task) => task.id === 'casualMining')) {
+              return [
+                ...prev,
+                {
+                  id: 'casualMining',
+                  name: '挖掘中',
+                  icon: <RadarChartOutlined />,
+                  onClick: () => {
+                    setUserConfig({
+                      headless: false,
+                    })
+                    renderLeadsMining(WINDOW_TYPE.LEADS_MINING)
+                  },
+                },
+              ]
+            }
+            return prev
+          })
+        } else if (config.headless?.newValue === false) {
+          setActiveTaskList((prev) => {
+            return prev.filter((task) => task.id !== 'casualMining')
+          })
         }
       }
     }
@@ -594,10 +622,9 @@ function Sidebar({ close }) {
     }
   }, [])
   async function init() {
-    const { casualMiningStatus } = await getStorage(['casualMiningStatus'])
-    const { headless } = await getUserConfig('headless')
-    if (casualMiningStatus === 'cRunning') {
-      if (headless === true) {
+    const config = await getUserConfig()
+    if (config.casualMiningStatus === 'cRunning') {
+      if (config.headless === true) {
         renderLeadsMining(WINDOW_TYPE.LEADS_MINING_MINI_SIDE_WINDOW)
       } else {
         renderLeadsMining(WINDOW_TYPE.LEADS_MINING)
@@ -609,6 +636,9 @@ function Sidebar({ close }) {
           name: '挖掘中',
           icon: <RadarChartOutlined />,
           onClick: () => {
+            setUserConfig({
+              headless: false,
+            })
             renderLeadsMining(WINDOW_TYPE.LEADS_MINING)
           },
         },
@@ -681,6 +711,17 @@ function RenderActiveTasks({ activeTaskList = [] }) {
       })}
     </Space>
   )
+}
+
+RenderActiveTasks.propTypes = {
+  activeTaskList: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      icon: PropTypes.node.isRequired,
+      onClick: PropTypes.func.isRequired,
+    }),
+  ),
 }
 
 async function run() {
@@ -800,4 +841,8 @@ function MonitConfigForView() {
   }, [userConfig?.alwaysShowToolSidebar])
 
   return null
+}
+
+Sidebar.propTypes = {
+  close: PropTypes.func.isRequired,
 }

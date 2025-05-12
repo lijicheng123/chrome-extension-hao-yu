@@ -16,7 +16,8 @@ import { generateAnswersWithBingWebApi } from '../../services/apis/bing-web.mjs'
 import { handlePortError } from '../../services/wrappers.mjs'
 import LeadsMining from '../LeadsMining'
 import { WINDOW_TYPE } from '../../constants/index.jsx'
-import { FullscreenOutlined } from '@ant-design/icons'
+import { API_CONFIG } from '../../constants/api.js'
+import { FullscreenOutlined, MinusSquareOutlined } from '@ant-design/icons'
 const logo = Browser.runtime.getURL('logo.png')
 class ConversationItemData extends Object {
   /**
@@ -342,7 +343,9 @@ function ConversationCard(props = {}) {
           }}
         >
           <img src={logo} style={{ userSelect: 'none', width: '20px', height: '20px' }} />
-          <span className="slogan">好雨AI-更懂外贸的AI</span>
+          <a href={API_CONFIG.BASE_URL} target="_blank" className="slogan" rel="noreferrer">
+            好雨AI-更懂外贸的AI
+          </a>
           {props.dockable ? (
             <span
               className="gpt-util-icon"
@@ -461,7 +464,7 @@ function ConversationCard(props = {}) {
               setSession(newSession)
             }}
           /> */}
-          {!props.pageMode && (
+          {!props.pageMode && windowType !== WINDOW_TYPE.LEADS_MINING && (
             <span
               title={t('Open Conversation Page')}
               className="gpt-util-icon"
@@ -475,6 +478,20 @@ function ConversationCard(props = {}) {
               }}
             >
               <FullscreenOutlined size={16} />
+            </span>
+          )}
+          {windowType === WINDOW_TYPE.LEADS_MINING && (
+            <span
+              className="gpt-util-icon"
+              title="最小化窗口"
+              onClick={() => {
+                // 最小化窗口
+                if (props.onMiniWindow) {
+                  props.onMiniWindow()
+                }
+              }}
+            >
+              <MinusSquareOutlined size={16} />
             </span>
           )}
           {props.closeable && (
@@ -602,6 +619,7 @@ ConversationCard.propTypes = {
   draggable: PropTypes.bool,
   closeable: PropTypes.bool,
   onClose: PropTypes.func,
+  onMiniWindow: PropTypes.func,
   dockable: PropTypes.bool,
   onDock: PropTypes.func,
   notClampSize: PropTypes.bool,
