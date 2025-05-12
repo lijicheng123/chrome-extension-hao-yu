@@ -285,7 +285,7 @@ export class ApiBackgroundHandlers {
       }
       
       const responseData = await response.json();
-      console.error('Odoo API返回:', responseData);
+      console.log('Odoo API返回:', responseData);
       // 检查Odoo错误
       if (responseData.error) {
         console.error('Odoo API返回错误:', responseData.error);
