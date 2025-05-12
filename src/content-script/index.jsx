@@ -54,7 +54,7 @@ document.body.appendChild(sideBarContainer)
  */
 async function mountComponent(siteConfig) {
   const userConfig = await getUserConfig()
-
+  const question = siteConfig.question || ''
   if (!userConfig.alwaysFloatingSidebar) {
     const retry = 10
     let oldUrl = location.href

@@ -20,7 +20,7 @@ export const useBackgroundState = (selectedTask) => {
   const init = async () => {
     const { casualMiningStatus  } = await getStorage(['casualMiningStatus'])
     originalSetCasualMiningStatus(casualMiningStatus)
-    const { headless, emailList } = await getUserConfig()
+    const { headless, emailList = [] } = await getUserConfig()
     setHeadless(headless)
     originalSetEmailList(emailList)
   }

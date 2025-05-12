@@ -58,7 +58,7 @@ export const extractPageEmails = async ({ onCaptchaDetected, onExtracted } = {})
  * @param {Function} options.onError - 提交失败的回调
  * @returns {Promise<boolean>} 是否提交成功
  */
-export const submitEmails = async (emails, { taskId = 2, searchTerm = '', onSuccess, onError } = {}) => {
+export const submitEmails = async (emails, { taskId = 1, searchTerm = '', onSuccess, onError } = {}) => {
   if (!emails || (Array.isArray(emails) && emails.length === 0)) {
     return false
   }

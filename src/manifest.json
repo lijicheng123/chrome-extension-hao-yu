@@ -1,7 +1,7 @@
 {
-  "name": "ChatGPTBox",
-  "description": "Integrating ChatGPT into your browser deeply, everything you need is here",
-  "version": "2.5.8",
+  "name": "好雨AI",
+  "description": "外贸软件的拼多多-AI获客神器&独立站&客户管理一条龙服务",
+  "version": "0.0.1",
   "manifest_version": 3,
   "icons": {
     "16": "logo.png",
