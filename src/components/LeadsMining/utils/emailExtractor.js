@@ -1,10 +1,19 @@
+import { getCleanedPageText } from './htmlCleaner'
 /**
  * 提取页面文本
  * @returns {string} 页面文本内容
  */
 export function getPageText() {
   const bodyText = document.body.innerText
+  const bodyHtml = getCleanedPageText()
+  console.log('bodyHtml===>', bodyHtml)
+
   return bodyText
+}
+
+export function getPageHtml() {
+  const bodyHtml = getCleanedPageText()
+  return bodyHtml
 }
 
 /**
