@@ -1,4 +1,3 @@
-import { getCleanedPageText } from './htmlCleaner'
 import { matchEmailsInText, removeDuplicates, markEmails } from './emailUtils'
 import Browser from 'webextension-polyfill'
 import { getUserConfig, isUsingBingWebModel } from '../../../config/index.mjs'
@@ -11,25 +10,37 @@ import { message } from 'antd'
 message.config({
   zIndex: 2147483647,
 });
-export function getPageText({ ai = false }) {
-  // 发现纯文本似乎更靠谱，一般关键信息有标签的文本情况直接连接了，所以暂时关闭AI
-  // if (ai === true) {
-  //   const bodyHtml = getCleanedPageText()
-  //   return bodyHtml
-  // }
+
+export function getPageText() {
   const bodyText = document.body.innerText
   return bodyText
 }
 
+/**
+ * 提取所有邮箱
+ * @param {Object} options - 配置选项
+ * @param {boolean} options.ai - 是否使用AI提取
+ * @returns {Promise<Array<{user_email: string, user_name?: string, user_function?: string, user_phone?: string, user_mobile?: string, company_name?: string, company_phone?: string, company_email?: string, company_website?: string, linkin_site?: string, tag_names?: string[]}>>} 邮箱对象数组
+ */
 export const extractAllEmails = async (options) => {
-  const pageText = getPageText(options)
+  const pageText = getPageText()
   if (options?.ai !== true) {
     const emails = matchEmailsInText(pageText)
     const uniqueEmails = await removeDuplicates(emails)
+    
+    // 先将邮箱字符串转为对象
+    const emailObjects = uniqueEmails.map(email => ({
+      user_email: email,
+      user_name: email
+    }))
+    
+    // 标记邮箱
     setTimeout(() => {
+      // 这里传递原始的邮箱字符串数组，因为 markEmails 函数需要字符串来匹配页面内容
       markEmails(uniqueEmails)
     }, 1000)
-    return uniqueEmails
+    
+    return emailObjects
   } else {
     // 获取页面描述和URL
     const pageDescription = document.querySelector('meta[name="description"]')?.content || ''
@@ -122,11 +133,19 @@ export const extractAllEmails = async (options) => {
     })
 
     try {
-      console.log('response===》：', response)
-
       const result = JSON.parse(response)
+      console.log('result response===》：', result)
       message.destroy()
       message.success('AI提取线索信息成功')
+      
+      // 从结果中提取邮箱字符串用于标记
+      const emailStrings = result.map(item => item.user_email).filter(Boolean)
+      if (emailStrings.length > 0) {
+        setTimeout(() => {
+          markEmails(emailStrings)
+        }, 1000)
+      }
+      
       return result
     } catch (e) {
       message.destroy()

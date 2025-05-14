@@ -56,21 +56,23 @@ export const removeDuplicates = (array) => {
 
 /**
  * 标记页面中的邮箱地址
- * @param {string[]} emails - 邮箱地址数组
+ * @param {Array<string|{user_email: string}>} emails - 邮箱地址数组或邮箱对象数组
  * @returns {Element[]} 标记的邮箱元素数组
  */
 export const markEmails = (emails) => {
   const markedEmails = []
-
   // 检查是否已经运行过标记操作
   if (document.querySelector('.marked-email-container')) {
     console.log('页面已经包含标记的邮箱，跳过重复标记')
     return markedEmails
   }
 
-  emails.forEach((email) => {
-    if (markedEmailsSet.has(email)) {
-      console.log(`邮箱 ${email} 已被标记，跳过`)
+  emails.forEach((emailItem) => {
+    // 处理字符串或对象类型的邮箱
+    const email = typeof emailItem === 'string' ? emailItem : emailItem.user_email
+    
+    if (!email || markedEmailsSet.has(email)) {
+      console.log(`邮箱 ${email} 已被标记或无效，跳过`)
       return
     }
 
