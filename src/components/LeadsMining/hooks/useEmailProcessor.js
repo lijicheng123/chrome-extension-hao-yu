@@ -21,14 +21,15 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
    * @returns {Array} 邮箱列表
    */
   const extractCurrentPageEmails = useCallback(
-    async ({ forceSubmit = false } = {}) => {
+    async ({ forceSubmit = false, ai } = {}) => {
       try {
         // 提取邮箱，返回的是已经去重了的
         const emails = await extractPageEmails({
           onCaptchaDetected: handleCaptchaDetected,
           onExtracted: (foundEmails) => {
             setCurrentPageEmails(foundEmails)
-          }
+          },
+          ai
         })
         // 更新邮箱列表，里边会存储的
         setEmailList((prev = []) => [...prev, ...emails])

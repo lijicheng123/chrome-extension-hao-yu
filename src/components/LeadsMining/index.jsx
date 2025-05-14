@@ -182,7 +182,9 @@ function LeadsMining({ windowType }) {
               handleDeleteCustomer={handleDeleteCustomer}
               locateEmail={locateEmail}
               style={style}
-              extractCurrentPageEmails={extractCurrentPageEmails}
+              extractCurrentPageEmails={() => {
+                extractCurrentPageEmails({ ai: true })
+              }}
             />
           ) : (
             <EmailList

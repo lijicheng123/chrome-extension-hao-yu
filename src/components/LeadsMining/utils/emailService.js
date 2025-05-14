@@ -19,9 +19,7 @@ export const extractPageEmails = async ({ onCaptchaDetected, onExtracted, ai } =
       }
       return []
     }
-
-    const emails = extractAllEmails({ ai })
-    
+    const emails = await extractAllEmails({ ai })
     if (onExtracted && typeof onExtracted === 'function') {
       onExtracted(emails)
     }
@@ -35,50 +33,45 @@ export const extractPageEmails = async ({ onCaptchaDetected, onExtracted, ai } =
 
 /**
  * 构建提交数据
- * @param {string} email - 邮箱地址
+ * @param {string | Object} email - 邮箱地址
  * @param {Object} options - 提交选项
  * @returns {Object} 提交数据对象
  */
 const buildSubmitData = (email, { taskId, searchTerm }) => {
   const hostname = window.location.hostname
   const currentUrl = optimizeUrl(window.location.href)
-  
-  return {
+
+  // 基础数据模板
+  const baseData = {
     // 联系人信息
-    user_email: email,
-    user_name: email,
-    user_function: '销售总监',
-    user_phone: '13800138000',
-    user_mobile: '13900139000',
-    user_website: 'https://personal.example.com',
-    user_street: '朝阳区建国路88号',
-    user_street2: '2号楼3层',
-    user_city: '北京',
-    user_country_id: 233,
-    user_state_id: 13,
-    user_title_id: 3,
+    // user_function: '销售总监',
+    // user_phone: '13800138000',
+    // user_mobile: '13900139000',
+    // user_website: 'https://personal.example.com',
+    // user_street: '朝阳区建国路88号',
+    // user_street2: '2号楼3层',
+    // user_city: '北京',
+    // user_country_id: 233,
+    // user_state_id: 13,
+    // user_title_id: 3,
     
     // 公司信息
-    company_name: `${hostname}公司`,
-    company_street: '朝阳区建国路88号',
-    company_street2: '2号楼整栋',
-    company_city: '北京',
-    company_country_id: 233,
-    company_state_id: 13,
-    company_phone: '010-12345678',
-    company_email: email,
-    company_website: 'https://www.example.com',
+    // company_street: '朝阳区建国路88号',
+    // company_street2: '2号楼整栋',
+    // company_city: '北京',
+    // company_country_id: 233,
+    // company_state_id: 13,
+    // company_phone: '010-12345678',
+    // company_website: 'https://www.example.com',
     
     // 线索信息
-    thread_name: `${hostname}-${email}`,
     thread_type: 'lead',
-    linkin_site: 'https://linkedin.com/in/zhangsan',
-    city: '北京',
-    country_id: 233,
-    state_id: 13,
-    street: '朝阳区建国路88号',
-    street2: '2号楼',
-    tag_names: ['潜在客户', '高价值', '科技行业'],
+    linkin_site: '',
+    // city: '北京',
+    // country_id: 233,
+    // state_id: 13,
+    // street: '朝阳区建国路88号',
+    // street2: '2号楼',
     priority: '2',
     
     // 来源信息
@@ -86,6 +79,37 @@ const buildSubmitData = (email, { taskId, searchTerm }) => {
     leads_target_url: currentUrl,
     task_id: taskId,
     leads_keywords: searchTerm || window.location.pathname,
+  }
+
+  // 处理 email 参数
+  if (typeof email === 'object') {
+    const userEmail = email.user_email || email.email || ''
+    return {
+      ...baseData,
+      // 联系人信息
+      user_email: userEmail,
+      user_name: email.user_name || userEmail,
+      // 公司信息
+      company_name: email.company_name || hostname,
+      company_email: userEmail,
+      // 线索信息
+      thread_name: `${hostname}-${userEmail}`,
+      // 合并传入的 email 对象中的其他字段
+      ...email
+    }
+  }
+
+  // 处理 email 为字符串的情况
+  return {
+    ...baseData,
+    // 联系人信息
+    user_email: email,
+    user_name: email,
+    // 公司信息
+    company_name: hostname,
+    company_email: email,
+    // 线索信息
+    thread_name: `${hostname}-${email}`,
   }
 }
 
@@ -107,7 +131,6 @@ export const submitEmails = async (emails, { taskId = 1, searchTerm = '', onSucc
   try {
     const emailArray = Array.isArray(emails) ? emails : [emails]
     const submitData = emailArray.map(email => buildSubmitData(email, { taskId, searchTerm }))
-    
     await customerDevService.submitLead(submitData)
     
     if (onSuccess && typeof onSuccess === 'function') {
