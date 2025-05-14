@@ -39,6 +39,8 @@ export const extractAllEmails = async (options) => {
       // 这里传递原始的邮箱字符串数组，因为 markEmails 函数需要字符串来匹配页面内容
       markEmails(uniqueEmails)
     }, 1000)
+
+    console.log('字符串方式获取到了线索信息:', emailObjects)
     
     return emailObjects
   } else {
@@ -134,7 +136,7 @@ export const extractAllEmails = async (options) => {
 
     try {
       const result = JSON.parse(response)
-      console.log('result response===》：', result)
+      console.log('AI方式获取到了线索信息:', result)
       message.destroy()
       message.success('AI提取线索信息成功')
       

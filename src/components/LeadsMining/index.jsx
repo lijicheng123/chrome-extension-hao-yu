@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo, useState } from 'react'
+import React, { useEffect } from 'react'
 import { Form, ConfigProvider, Select, Button, Col, Row, Switch, Typography, Alert } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 // 自定义Hooks
@@ -33,8 +33,9 @@ function LeadsMining({ windowType }) {
   const { selectedTask, handleTaskSelect, fetchTaskList, taskList } = taskManager
 
   // 使用background状态管理
-  const backgroundState = useBackgroundState(selectedTask)
-  const { casualMiningStatus, headless, setHeadless, emailList } = backgroundState
+  const backgroundState = useBackgroundState()
+  const { casualMiningStatus, headless, setHeadless, emailList, aiFirst, setAiFirst } =
+    backgroundState
 
   const emailProcessor = useEmailProcessor(selectedTask, backgroundState)
   const {
@@ -55,12 +56,19 @@ function LeadsMining({ windowType }) {
   // 决策引擎
   useDecisionEngine(backgroundState, emailProcessor)
 
+  console.log('aiFirst headless', aiFirst, headless)
+
   // 初始化表单
   useEffect(() => {
     if (selectedTask?.id) {
       form.setFieldsValue({ currentTask: selectedTask.id })
     }
   }, [selectedTask?.id, form])
+
+  // 提取邮箱时使用AI
+  const handleExtractWithAI = () => {
+    extractCurrentPageEmails({ ai: true })
+  }
 
   return (
     <ConfigProvider
@@ -154,12 +162,13 @@ function LeadsMining({ windowType }) {
 
             {/* 是否总是打开挖掘面板 headless为false就是一直打开挖掘面板，用Switch组件 */}
             <Row>
-              <Col span={24}>
+              <Col span={12}>
                 <Form.Item
                   label={`总是展开`}
                   name="headless"
                   valuePropName="checked"
-                  wrapperCol={{ span: 24 }}
+                  wrapperCol={{ span: 12 }}
+                  labelCol={{ span: 12 }}
                   tooltip="是否总是展开此面板"
                 >
                   <Switch
@@ -167,6 +176,24 @@ function LeadsMining({ windowType }) {
                     onChange={() => {
                       setUserConfig({ headless: !headless })
                       setHeadless(!headless)
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={`AI优先`}
+                  name="aiFirst"
+                  valuePropName="checked"
+                  wrapperCol={{ span: 12 }}
+                  labelCol={{ span: 12 }}
+                  tooltip="如果打开默认使用AI提取联系人信息，否则用正则匹配网页内容"
+                >
+                  <Switch
+                    value={aiFirst}
+                    onChange={(checked) => {
+                      setUserConfig({ aiFirst: checked })
+                      setAiFirst(checked)
                     }}
                   />
                 </Form.Item>
@@ -182,9 +209,7 @@ function LeadsMining({ windowType }) {
               handleDeleteCustomer={handleDeleteCustomer}
               locateEmail={locateEmail}
               style={style}
-              extractCurrentPageEmails={() => {
-                extractCurrentPageEmails({ ai: true })
-              }}
+              extractCurrentPageEmails={handleExtractWithAI}
             />
           ) : (
             <EmailList

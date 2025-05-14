@@ -288,6 +288,7 @@ export const defaultConfig = {
 
   alwaysShowToolSidebar: true,
   headless: false,
+  aiFirst: false,
   casualMiningStatus: 'cRunning',
 
   /** @type {keyof TriggerMode}*/
