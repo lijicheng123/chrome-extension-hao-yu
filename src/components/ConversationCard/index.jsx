@@ -4,7 +4,6 @@ import Browser from 'webextension-polyfill'
 import InputBox from '../InputBox'
 import ConversationItem from '../ConversationItem'
 import { getApiModesFromConfig, isFirefox, isMobile, isSafari, isUsingModelName } from '../../utils'
-import { LinkExternalIcon, SidebarExpandIcon, SearchIcon } from '@primer/octicons-react'
 import { Pin, XLg } from 'react-bootstrap-icons'
 import { useClampWindowSize } from '../../hooks/use-clamp-window-size'
 import { getUserConfig, isUsingBingWebModel } from '../../config/index.mjs'
@@ -18,6 +17,14 @@ import LeadsMining from '../LeadsMining'
 import { WINDOW_TYPE } from '../../constants/index.jsx'
 import { API_CONFIG } from '../../constants/api.js'
 import { FullscreenOutlined, MinusSquareOutlined } from '@ant-design/icons'
+import {
+  apiModeToModelName,
+  modelNameToDesc,
+  isApiModeSelected,
+} from '../../utils/model-name-convert.mjs'
+import { Models } from '../../config/index.mjs'
+import styles from './ConversationCard.module.css'
+import { SearchIcon } from '@primer/octicons-react'
 const logo = Browser.runtime.getURL('logo.png')
 class ConversationItemData extends Object {
   /**
@@ -327,10 +334,12 @@ function ConversationCard(props = {}) {
   }
 
   return (
-    <div className="gpt-inner">
+    <div className={styles.gptInner}>
       <div
         className={
-          props.draggable ? `gpt-header${completeDraggable ? ' draggable' : ''}` : 'gpt-header'
+          props.draggable
+            ? `${styles.gptHeader}${completeDraggable ? ' draggable' : ''}`
+            : styles.gptHeader
         }
         style={{ userSelect: 'none' }}
       >
@@ -357,7 +366,7 @@ function ConversationCard(props = {}) {
               <Pin size={16} />
             </span>
           ) : null}
-          {/* <select
+          <select
             style={props.notClampSize ? {} : { width: 0, flexGrow: 1 }}
             className="normal-button"
             required
@@ -397,7 +406,7 @@ function ConversationCard(props = {}) {
             <option value={-1} selected={!session.apiMode && session.modelName === 'customModel'}>
               {t(Models.customModel.desc)}
             </option>
-          </select> */}
+          </select>
         </div>
         {props.draggable && !completeDraggable && (
           <div className="draggable" style={{ flexGrow: 2, cursor: 'move', height: '55px' }} />
@@ -422,48 +431,6 @@ function ConversationCard(props = {}) {
               <FullscreenOutlined size={16} />
             </a>
           )}
-          {/* <span
-            className="gpt-util-icon"
-            title={t('Float the Window')}
-            onClick={() => {
-              const position = { x: window.innerWidth / 2 - 300, y: window.innerHeight / 2 - 200 }
-              const toolbarContainer = createElementAtPosition(position.x, position.y)
-              toolbarContainer.className = 'chatgptbox-toolbar-container-not-queryable'
-              render(
-                <FloatingToolbar
-                  session={session}
-                  selection=""
-                  container={toolbarContainer}
-                  closeable={true}
-                  triggered={true}
-                />,
-                toolbarContainer,
-              )
-            }}
-          >
-            <WindowDesktop size={16} />
-          </span> */}
-          {/* <DeleteButton
-            size={16}
-            text={t('Clear Conversation')}
-            onConfirm={async () => {
-              await postMessage({ stop: true })
-              Browser.runtime.sendMessage({
-                type: 'DELETE_CONVERSATION',
-                data: {
-                  conversationId: session.conversationId,
-                },
-              })
-              setConversationItemData([])
-              const newSession = initSession({
-                ...session,
-                question: null,
-                conversationRecords: [],
-              })
-              newSession.sessionId = session.sessionId
-              setSession(newSession)
-            }}
-          /> */}
           {!props.pageMode && windowType !== WINDOW_TYPE.LEADS_MINING && (
             <span
               title={t('Open Conversation Page')}
@@ -542,7 +509,7 @@ function ConversationCard(props = {}) {
       <hr />
       <div
         ref={bodyRef}
-        className="markdown-body"
+        className={styles.markdownBody}
         style={
           props.notClampSize
             ? { flexGrow: 1 }
@@ -556,6 +523,7 @@ function ConversationCard(props = {}) {
             type={data.type}
             descName={data.type === 'answer' ? `${session.aiName}` : ''}
             onRetry={idx === conversationItemData.length - 1 ? retryFn : null}
+            className={`${styles.conversationItem} ${styles[data.type]}`}
           />
         ))}
       </div>
