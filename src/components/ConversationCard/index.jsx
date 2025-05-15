@@ -23,7 +23,6 @@ import {
   isApiModeSelected,
 } from '../../utils/model-name-convert.mjs'
 import { Models } from '../../config/index.mjs'
-import styles from './ConversationCard.module.css'
 import { SearchIcon } from '@primer/octicons-react'
 const logo = Browser.runtime.getURL('logo.png')
 class ConversationItemData extends Object {
@@ -334,19 +333,17 @@ function ConversationCard(props = {}) {
   }
 
   return (
-    <div className={styles.gptInner}>
+    <div className="gpt-inner">
       <div
         className={
-          props.draggable
-            ? `${styles.gptHeader}${completeDraggable ? ' draggable' : ''}`
-            : styles.gptHeader
+          props.draggable ? `gpt-header${completeDraggable ? ' draggable' : ''}` : 'gpt-header'
         }
-        style={{ userSelect: 'none' }}
+        style={{ userSelect: 'none', padding: '4px 0 4px 16px' }}
       >
         <div
           className="gpt-util-group"
           style={{
-            padding: '14px 0 14px 16px',
+            padding: '4px 0 4px 16px',
             ...(props.notClampSize ? {} : { flexGrow: isSafari() ? 0 : 1 }),
             ...(isSafari() ? { maxWidth: '200px' } : {}),
           }}
@@ -414,7 +411,7 @@ function ConversationCard(props = {}) {
         <span
           className="gpt-util-group"
           style={{
-            padding: '15px 15px 15px 0',
+            padding: '4px 15px 4px 0',
             justifyContent: 'flex-end',
             flexGrow: props.draggable && !completeDraggable ? 0 : 1,
           }}
@@ -509,7 +506,7 @@ function ConversationCard(props = {}) {
       <hr />
       <div
         ref={bodyRef}
-        className={styles.markdownBody}
+        className="markdown-body"
         style={
           props.notClampSize
             ? { flexGrow: 1 }
@@ -523,7 +520,7 @@ function ConversationCard(props = {}) {
             type={data.type}
             descName={data.type === 'answer' ? `${session.aiName}` : ''}
             onRetry={idx === conversationItemData.length - 1 ? retryFn : null}
-            className={`${styles.conversationItem} ${styles[data.type]}`}
+            className={`conversation-item ${data.type}`}
           />
         ))}
       </div>
