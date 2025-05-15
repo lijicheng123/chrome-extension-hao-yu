@@ -215,8 +215,19 @@ async function prepareForSelectionTools(userConfig) {
         let position
 
         const config = userConfig || (await getUserConfig())
-        if (!config.selectionToolsNextToInputBox) position = { x: e.pageX + 20, y: e.pageY + 20 }
-        else {
+
+        // 获取选中文本的位置和尺寸
+        const selectionRange = window.getSelection().getRangeAt(0)
+        const selectionRect = selectionRange.getBoundingClientRect()
+
+        // 将浮条放在选中文本的底部5px处
+        position = {
+          x: selectionRect.left + window.scrollX,
+          y: selectionRect.bottom + window.scrollY + 5, // 底部加5px
+        }
+
+        // 如果配置了在输入框旁边显示，保持原有逻辑
+        if (config.selectionToolsNextToInputBox) {
           const inputElement = selectionElement.querySelector('input, textarea')
           if (inputElement) {
             position = getClientPosition(inputElement)
@@ -224,10 +235,9 @@ async function prepareForSelectionTools(userConfig) {
               x: position.x + window.scrollX + inputElement.offsetWidth + 50,
               y: e.pageY + 30,
             }
-          } else {
-            position = { x: e.pageX + 20, y: e.pageY + 20 }
           }
         }
+
         toolbarContainer = createElementAtPosition(position.x, position.y)
         await createSelectionTools(toolbarContainer, selection)
       }

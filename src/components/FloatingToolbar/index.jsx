@@ -9,8 +9,9 @@ import { useConfig } from '../../hooks/use-config.mjs'
 import { setUserConfig } from '../../config/index.mjs'
 import { WINDOW_TYPE } from '../../constants'
 import { message } from 'antd'
-// const logo = Browser.runtime.getURL('logo.png')
+import Browser from 'webextension-polyfill'
 
+const dropLogo = Browser.runtime.getURL('logo.png')
 function FloatingToolbar(props) {
   const { t } = useTranslation()
   const { windowType } = props
@@ -147,19 +148,22 @@ function FloatingToolbar(props) {
     const tools = []
     const pushTool = (iconKey, name, genPrompt) => {
       tools.push(
-        cloneElement(<div>{toolsConfig[iconKey].icon}</div>, {
-          size: 18,
-          className: 'chatgptbox-selection-toolbar-button',
-          title: name,
-          key: name,
-          onClick: async () => {
+        <div
+          className="chatgptbox-selection-toolbar-button"
+          key={name}
+          onClick={async () => {
             const p = getClientPosition(props.container)
             props.container.style.position = 'fixed'
             setPosition(p)
             setPrompt(await genPrompt(selection))
             setTriggered(true)
-          },
-        }),
+          }}
+        >
+          <span className="chatgptbox-selection-toolbar-icon">
+            {cloneElement(toolsConfig[iconKey].icon, { size: 14 })}
+          </span>
+          <span className="chatgptbox-selection-toolbar-text">{t(toolsConfig[iconKey].label)}</span>
+        </div>,
       )
     }
 
@@ -179,7 +183,12 @@ function FloatingToolbar(props) {
 
     return (
       <div data-theme={config.themeMode}>
-        <div className="chatgptbox-selection-toolbar">{tools}</div>
+        <div className="chatgptbox-selection-toolbar">
+          <div className="chatgptbox-selection-toolbar-logo">
+            <img src={dropLogo} alt="Logo" />
+          </div>
+          <div className="chatgptbox-selection-toolbar-buttons">{tools}</div>
+        </div>
       </div>
     )
   }
