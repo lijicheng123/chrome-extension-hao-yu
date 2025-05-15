@@ -59,19 +59,12 @@ function LoginControl({
     }
   }
 
-  // 前往登录
-  const handleLogin = async () => {
-    await authClient.needLogin()
-  }
-
   // 退出登录
   const handleLogout = async () => {
     setLoading(true)
     try {
       // 清除本地存储的会话信息
-      Browser.runtime.sendMessage({
-        type: 'LOGOUT',
-      })
+      await toLogout()
       setIsLoggedIn(false)
       setUserInfo(null)
       onLoginStatusChange(false)
@@ -89,7 +82,7 @@ function LoginControl({
     return (
       <Card className={styles['login-prompt-card']} loading={loading}>
         <Space direction="vertical" align="center" style={{ width: '100%' }}>
-          <Button type="primary" onClick={handleLogin}>
+          <Button type="primary" onClick={toLogin}>
             {loginButtonText}
           </Button>
           <Text>{loginPromptText}</Text>
@@ -142,3 +135,15 @@ LoginControl.propTypes = {
 }
 
 export default LoginControl
+
+// export 一个退出登录方法出去，供其他地方使用
+export const toLogout = async () => {
+  await Browser.runtime.sendMessage({
+    type: 'LOGOUT',
+  })
+}
+
+// 前往登录
+export const toLogin = async () => {
+  await authClient.needLogin()
+}

@@ -70,7 +70,6 @@ class AuthContentAPI {
    */
   async needLogin() {
     console.log('发送需要登录请求')
-
     try {
       // 使用消息总线方式
       const requestId = authService.sendMessage(AUTH_ACTIONS.NEED_LOGIN, {})
