@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Form, Input, Button, Tabs, message, Switch } from 'antd'
 import { configManager } from '../../../services/config/config-manager'
 import { authService } from '../../../services/auth/auth-service'
+import '../config-panel.scss'
 
 function ConfigPanel() {
   const [form] = Form.useForm()

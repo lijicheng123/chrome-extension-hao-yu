@@ -41,14 +41,16 @@ function options() {
     },
   ]
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <Tabs
-        tabPosition="left"
-        items={tabItems}
-        defaultActiveKey={hash}
-        style={{ flex: 1 }}
-        tabBarStyle={{ width: '100px', height: '100%' }}
-      />
+    <div className="options-page-wrapper">
+      <div className="options-page">
+        <Tabs
+          tabPosition="left"
+          items={tabItems}
+          defaultActiveKey={hash}
+          style={{ flex: 1 }}
+          tabBarStyle={{ width: '100px', height: '100%' }}
+        />
+      </div>
     </div>
   )
 }

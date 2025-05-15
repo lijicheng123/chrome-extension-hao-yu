@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import '../../_locales/i18n-react'
+import '../../pages/styles.scss'
 import App from './App'
 import { changeLanguage } from 'i18next'
 import { getPreferredLanguageKey } from '../../config/index.mjs'

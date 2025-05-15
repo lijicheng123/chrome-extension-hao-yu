@@ -326,6 +326,7 @@ async function finishOutput(outputDirSuffix) {
     { src: 'src/pages/AIPic/index.html', dst: 'AIPic.html' },
 
     { src: 'build/options.js', dst: 'options.js' },
+    { src: 'build/options.css', dst: 'options.css' },
     { src: 'src/pages/options/index.html', dst: 'options.html' },
   ]
 
