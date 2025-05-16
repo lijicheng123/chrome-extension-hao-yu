@@ -1,0 +1,149 @@
+.inputBox {
+  display: flex;
+  position: relative;
+  border-top: 1px solid var(--theme-border-color);
+  background-color: var(--theme-color);
+  transition: all 0.3s;
+
+  &.inputFocused {
+    border-color: #1677ff;
+    box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+  }
+
+  > div {
+    width: 100%;
+    display: flex;
+  }
+}
+
+.inputContainer {
+  width: 100%;
+  position: relative;
+}
+
+.textAreaWrapper {
+  width: 100%;
+  display: flex;
+  position: relative;
+}
+
+.interactInput {
+  box-sizing: border-box;
+  padding: 8px 12px;
+  padding-right: 60px;
+  border: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 70px;
+  background-color: var(--theme-color);
+  color: var(--font-color);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: all 0.3s;
+
+  &.ant-input {
+    resize: vertical;
+    border: none;
+    box-shadow: none;
+    padding-right: 60px !important;
+
+    &:focus,
+    &:hover {
+      box-shadow: none !important;
+      border: none !important;
+      outline: none !important;
+    }
+
+    &::-webkit-scrollbar {
+      background-color: var(--theme-color);
+      height: 9px;
+      width: 9px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--theme-border-color);
+      border-radius: 20px;
+      border: transparent;
+    }
+
+    &::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+  }
+
+  &::placeholder {
+    color: rgba(0, 0, 0, 0.45);
+    [data-theme='dark'] & {
+      color: rgba(255, 255, 255, 0.3);
+    }
+  }
+}
+
+.submitButton {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 4px 15px;
+  cursor: pointer;
+  color: white;
+  border: 0;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.05);
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    opacity: 0.85;
+  }
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.buttonText {
+  display: flex;
+  align-items: center;
+}
+
+.clearButton {
+  position: absolute;
+  right: 80px;
+  bottom: 18px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.45);
+  border-radius: 50%;
+  transition: all 0.3s;
+
+  [data-theme='dark'] & {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  &:hover {
+    color: rgba(0, 0, 0, 0.65);
+    background-color: rgba(0, 0, 0, 0.05);
+
+    [data-theme='dark'] & {
+      color: rgba(255, 255, 255, 0.65);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
