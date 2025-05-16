@@ -145,3 +145,22 @@
     margin: 15px 0;
   }
 }
+.chatgptbox-container {
+  max-width: 'auto';
+  .gpt-inner {
+    max-width: 100%;
+    .gpt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      .slogan {
+        // 不换行
+        white-space: nowrap;
+      }
+    }
+    .markdown-body {
+      padding: 15px;
+    }
+  }
+}

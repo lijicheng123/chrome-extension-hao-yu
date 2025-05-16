@@ -320,6 +320,7 @@ async function finishOutput(outputDirSuffix) {
     { src: 'src/popup/index.html', dst: 'popup.html' },
 
     { src: 'build/IndependentPanel.js', dst: 'IndependentPanel.js' },
+    { src: 'build/IndependentPanel.css', dst: 'IndependentPanel.css' },
     { src: 'src/pages/IndependentPanel/index.html', dst: 'IndependentPanel.html' },
 
     { src: 'build/AIPic.js', dst: 'AIPic.js' },
