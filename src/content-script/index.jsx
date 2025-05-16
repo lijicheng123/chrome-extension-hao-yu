@@ -660,7 +660,9 @@ function Sidebar({ close }) {
     <DraggableBar
       activeTasks={<RenderActiveTasks activeTaskList={activeTaskList} />}
       openToolBar={async ({ windowType }) => {
-        renderFloatingToolbar({ x: 0, y: 0, windowType })
+        // 这个容器的宽度是450px，x的值应该是屏幕宽度减去450px
+        const x = window.innerWidth - 450
+        renderFloatingToolbar({ x, y: 0, windowType })
       }}
       foldedIcon={sideLogo}
       setLiving={(bool) => {
