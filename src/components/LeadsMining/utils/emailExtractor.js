@@ -1,10 +1,6 @@
 import { matchEmailsInText, removeDuplicates, markEmails } from './emailUtils'
 import Browser from 'webextension-polyfill'
-import { getUserConfig, isUsingBingWebModel } from '../../../config/index.mjs'
-import { generateAnswersWithBingWebApi } from '../../../services/apis/bing-web.mjs'
-import { handlePortError } from '../../../services/wrappers.mjs'
 import { initSession } from '../../../services/init-session.mjs'
-import { isUsingModelName } from '../../../utils'
 import { message } from 'antd'
 // zindex 最大
 message.config({
@@ -24,6 +20,10 @@ export function getPageText() {
  */
 export const extractAllEmails = async (options) => {
   const pageText = getPageText()
+  if (!/@/.test(pageText) && options?.isManual !== true) {
+    message.info('页面中没有邮箱，不提取~')
+    return []
+  }
   if (options?.ai !== true) {
     const emails = matchEmailsInText(pageText)
     const uniqueEmails = await removeDuplicates(emails)
@@ -64,17 +64,24 @@ export const extractAllEmails = async (options) => {
   "user_phone": "",
   "user_mobile": "",
   "company_name": "",
-  "company_phone": "",
-  "company_email": "",
   "company_website": "",
   "linkin_site": "",
-  "tag_names": []
+  "tag_names": [],
+  "user_street": "",
+  "user_street2": "",
+  "user_city": "",
+  "user_state": "",
+  "user_zip": "",
+  "user_country": "",
+  "user_website": "",
+  "user_linkedin": "",
+  "user_facebook": "",
 }]
 
 规则：
 1. 数据提取：
-   - 邮箱：公司邮箱作为company_email，其他作为user_email
-   - 电话：座机作为company_phone，手机作为user_mobile
+   - 邮箱：能联系到用户的邮箱就是user_email，必须真实存在，切勿捏造
+   - 电话：座机作为user_phone，手机作为user_mobile
    - 公司：从URL和页面描述提取公司名称
    - 网站：优先使用页面中的网站地址，其次使用URL域名
 
@@ -91,7 +98,7 @@ export const extractAllEmails = async (options) => {
 
 4. 输出要求：
    - 只返回JSON数组，不需要任何解释或者其他内容
-   - 无信息则返回空数组[]`
+   - 如果没有获取到联系用户的邮箱则返回空数组[]`
 
     const port = Browser.runtime.connect()
     message.loading('AI正在提取线索信息...')
@@ -109,26 +116,14 @@ export const extractAllEmails = async (options) => {
 
       const session = initSession({
         question: prompt + "\n\n页面信息：\n" + JSON.stringify(pageInfo, null, 2),
-        conversationRecords: []
+        conversationRecords: [],
+        modelName: 'doubao-1-5-lite-32k-250115', // 使用豆包模型
+        stream: false // 使用非流式响应
       })
 
       const postMessage = async ({ session, stop }) => {
-        const useForegroundFetch = isUsingBingWebModel(session)
-        if (useForegroundFetch) {
-          try {
-            const bingToken = (await getUserConfig()).bingAccessToken
-            if (isUsingModelName('bingFreeSydney', session)) {
-              await generateAnswersWithBingWebApi(port, session.question, session, bingToken, true)
-            } else {
-              await generateAnswersWithBingWebApi(port, session.question, session, bingToken)
-            }
-          } catch (err) {
-            handlePortError(session, port, err)
-            reject(err)
-          }
-        } else {
-          port.postMessage({ session, stop })
-        }
+        // 直接使用background执行API请求
+        port.postMessage({ session, stop })
       }
 
       postMessage({ session })

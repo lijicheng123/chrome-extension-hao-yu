@@ -20,7 +20,8 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
    * @returns {Array<{user_email: string, user_name?: string, user_function?: string, user_phone?: string, user_mobile?: string, company_name?: string, company_phone?: string, company_email?: string, company_website?: string, linkin_site?: string, tag_names?: string[]}>} 邮箱对象列表
    */
   const extractCurrentPageEmails = useCallback(
-    async ({ forceSubmit = false, ai } = {}) => {
+    async (options) => {
+      const { forceSubmit = false, ai, isManual } = options
       try {
         // 提取邮箱，返回的是已经去重了的邮箱对象数组
         const emails = await extractPageEmails({
@@ -28,11 +29,13 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
           onExtracted: (foundEmails) => {
             setCurrentPageEmails(foundEmails)
           },
-          ai
+          ai,
+          isManual
         })
+
         
         // 更新邮箱列表
-        setEmailList((prev = []) => [...prev, ...emails])
+        setEmailList(emails || [])
         
         if (emails?.length > 0 && (selectedTask?.id || forceSubmit)) {
           await submitEmailLead(emails, { forceSubmit })
@@ -59,7 +62,7 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
       
       try {
         return await submitEmails(emailData, {
-          taskId: selectedTask?.id || 2,
+          taskId: selectedTask?.id,
           searchTerm: forceSubmit ? '' : currentSearchTerm || window.location.pathname
         })
       } catch (error) {

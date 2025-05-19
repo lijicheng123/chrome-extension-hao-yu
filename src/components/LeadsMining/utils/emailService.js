@@ -10,7 +10,8 @@ import { optimizeUrl } from './searchEngineUtils'
  * @param {Function} options.onExtracted - 提取完成时的回调，参数为找到的邮箱对象数组
  * @returns {Array<{user_email: string, user_name?: string, user_function?: string, user_phone?: string, user_mobile?: string, company_name?: string, company_phone?: string, company_email?: string, company_website?: string, linkin_site?: string, tag_names?: string[]}>} 提取的邮箱对象列表
  */
-export const extractPageEmails = async ({ onCaptchaDetected, onExtracted, ai } = {}) => {
+export const extractPageEmails = async (options) => {
+  const { onCaptchaDetected, onExtracted } = options
   try {
     if (detectCaptcha()) {
       console.warn('检测到验证码，请手动处理')
@@ -19,10 +20,12 @@ export const extractPageEmails = async ({ onCaptchaDetected, onExtracted, ai } =
       }
       return []
     }
-    const emails = await extractAllEmails({ ai })
+    const emails = await extractAllEmails(options)
     if (onExtracted && typeof onExtracted === 'function') {
       onExtracted(emails)
     }
+
+    console.log('extractPageEmails:::', emails)
     
     return emails
   } catch (error) {
@@ -144,7 +147,7 @@ export const extractAndSubmitEmails = async (options = {}) => {
     onExtracted: options.onExtracted,
     ai: options.ai
   })
-  
+
   if (emails.length > 0) {
     await submitEmails(emails, {
       taskId: options.taskId,

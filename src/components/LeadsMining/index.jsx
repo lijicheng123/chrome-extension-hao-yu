@@ -67,7 +67,7 @@ function LeadsMining({ windowType }) {
 
   // 提取邮箱时使用AI
   const handleExtractWithAI = () => {
-    extractCurrentPageEmails({ ai: true })
+    extractCurrentPageEmails({ ai: true, isManual: true })
   }
 
   return (

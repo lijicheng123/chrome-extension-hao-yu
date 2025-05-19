@@ -15,6 +15,7 @@ import { generateAnswersWithAzureOpenaiApi } from '../services/apis/azure-openai
 import { generateAnswersWithClaudeApi } from '../services/apis/claude-api.mjs'
 import { generateAnswersWithChatGLMApi } from '../services/apis/chatglm-api.mjs'
 import { generateAnswersWithWaylaidwandererApi } from '../services/apis/waylaidwanderer-api.mjs'
+import { generateAnswersWithDoubaoApi } from '../services/apis/doubao-api.mjs'
 import {
   defaultConfig,
   getUserConfig,
@@ -33,6 +34,7 @@ import {
   isUsingClaudeWebModel,
   isUsingMoonshotApiModel,
   isUsingMoonshotWebModel,
+  isUsingDoubaoApiModel,
 } from '../config/index.mjs'
 import '../_locales/i18n'
 import { openUrl } from '../utils/open-url'
@@ -84,7 +86,11 @@ function setPortProxy(port, proxyTabId) {
 async function executeApi(session, port, config) {
   console.debug('modelName', session.modelName)
   console.debug('apiMode', session.apiMode)
-  if (isUsingCustomModel(session)) {
+  if (isUsingDoubaoApiModel(session)) {
+    // 判断是否使用流式响应
+    const useStream = session.stream === true
+    await generateAnswersWithDoubaoApi(port, session.question, session, { stream: useStream })
+  } else if (isUsingCustomModel(session)) {
     if (!session.apiMode)
       await generateAnswersWithCustomApi(
         port,
