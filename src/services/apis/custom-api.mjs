@@ -42,7 +42,7 @@ export async function generateAnswersWithCustomApi(
     finished = true
     pushRecord(session, question, answer)
     console.debug('conversation history', { content: session.conversationRecords })
-    port.postMessage({ answer: null, done: true, session: session })
+    port.postMessage({ answer, done: true, session: session })
   }
   await fetchSSE(apiUrl, {
     method: 'POST',
@@ -95,7 +95,7 @@ export async function generateAnswersWithCustomApi(
     },
     async onStart() {},
     async onEnd() {
-      port.postMessage({ done: true })
+      port.postMessage({ done: true, answer })
       port.onMessage.removeListener(messageListener)
       port.onDisconnect.removeListener(disconnectListener)
     },
