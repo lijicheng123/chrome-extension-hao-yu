@@ -16,7 +16,7 @@ const apiKey = API_CONFIG.DOUBAO_API_KEY
  */
 export async function generateAnswersWithDoubaoApi(port, question, session, options = {}) {
   const { stream = true } = options
-  debugger
+
   if (stream) {
     return generateAnswersWithDoubaoStreamApi(port, question, session)
   } else {
@@ -49,7 +49,7 @@ async function generateAnswersWithDoubaoNonStreamApi(port, question, session) {
       model: 'doubao-1-5-lite-32k-250115', // 默认使用豆包模型
       messages: prompt,
     }
-    debugger
+
     // 发送到后台执行API请求
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -67,7 +67,7 @@ async function generateAnswersWithDoubaoNonStreamApi(port, question, session) {
     const responseData = await response.json()
     console.log('responseData:::', responseData)
     // 提取AI回答
-    const answer = `[${responseData.result.choices[0].message.content}`
+    const answer = `[${responseData?.choices?.[0]?.message?.content}`
 
     // 更新会话并发送响应
     pushRecord(session, question, answer)
@@ -106,7 +106,7 @@ async function generateAnswersWithDoubaoStreamApi(port, question, session) {
     finished = true
     pushRecord(session, question, answer)
     console.debug('conversation history', { content: session.conversationRecords })
-    debugger
+
     port.postMessage({ answer, done: true, session: session })
   }
 

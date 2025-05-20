@@ -49,7 +49,6 @@ async function initializeCookies() {
   try {
     const baseUrl = API_CONFIG.ODOO_BASE_URL
     const urlObj = new URL(baseUrl)
-    debugger
 
     // 使用完整URL（包括域名和端口）
     const cookies = await Browser.cookies.getAll({
