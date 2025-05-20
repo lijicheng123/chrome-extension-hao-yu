@@ -56,49 +56,49 @@ export const extractAllEmails = async (options) => {
     }
 
     // 调用AI的能力提取邮箱、电话号码、WhatsApp等信息
-    const prompt = `分析网站内容提取联系人信息，返回JSON数组。格式：
-[{
-  "user_email": "",
-  "user_name": "",
-  "user_function": "",
-  "user_phone": "",
-  "user_mobile": "",
-  "company_name": "",
-  "company_website": "",
-  "linkin_site": "",
-  "tag_names": [],
-  "user_street": "",
-  "user_street2": "",
-  "user_city": "",
-  "user_state": "",
-  "user_zip": "",
-  "user_country": "",
-  "user_website": "",
-  "user_linkedin": "",
-  "user_facebook": "",
-}]
+    const prompt = `你是外贸业务员，从网页提取联系人信息用于商业开发。目标：返回标准化JSON数组，无有效邮箱则返回[]。
+
+字段说明：
+user_email: 必填真实邮箱
+user_name: 优先取姓名，否则用邮箱前缀
+user_function: 优先根据页面内容提取，否则合理推测，如果不确定则置空
+user_phone: 座机，国际格式
+user_mobile: 手机，国际格式
+company_name: 从URL/meta/内容中提取
+company_website: 优先官网链接，其次页脚/搜索推断，否则用当前页面域名地址，url格式
+linkedin_site: LinkedIn主页，url格式
+tag_names: 根据内容生成1-3标签，无法确定则空
+user_street/user_street2/user_city/user_state/user_zip/user_country: 提取地址信息
+user_website: 用户个人网站,url格式
+user_linkedin: LinkedIn个人资料，url格式
+user_facebook: Facebook个人资料，url格式
 
 规则：
-1. 数据提取：
-   - 邮箱：能联系到用户的邮箱就是user_email，必须真实存在，切勿捏造
-   - 电话：座机作为user_phone，手机作为user_mobile
-   - 公司：从URL和页面描述提取公司名称
-   - 网站：优先使用页面中的网站地址，其次使用URL域名
+- 不确定的字段留空，不填“未知”
+- 合并重复联系人，不同公司分开
+- 无有效邮箱返回[]
 
-2. 信息补充：
-   - 职位：根据内容推测职位，不确定则不返回
-   - 标签：根据行业、业务、产品等推测生成1-3个标签，推测不出来则不返回
-   - 姓名：优先从内容提取，其次使用邮箱前缀
-
-3. 数据要求：
-   - 邮箱为必填，无邮箱则返回空数组
-   - 不确定的信息不返回，不写"未知"
-   - 移除特殊字符，统一格式
-   - 相同联系人合并信息，不同公司分开创建
-
-4. 输出要求：
-   - 只返回JSON数组，不需要任何解释或者其他内容
-   - 如果没有获取到联系用户的邮箱则返回空数组[]`
+示例输出：
+[{
+  "user_email": "john.doe@example.com",
+  "user_name": "John Doe",
+  "user_function": "Marketing Director",
+  "user_phone": "+1 555 123 4567",
+  "user_mobile": "",
+  "company_name": "Example Inc.",
+  "company_website": "https://www.example.com",
+  "linkedin_site": "https://www.linkedin.com/in/johndoe",
+  "tag_names": ["Marketing", "SaaS"],
+  "user_street": "123 Main St",
+  "user_street2": "Suite 400",
+  "user_city": "New York",
+  "user_state": "NY",
+  "user_zip": "10001",
+  "user_country": "United States",
+  "user_website": "https://www.website.com",
+  "user_linkedin": "https://www.linkedin.com/in/johndoe",
+  "user_facebook": ""
+}]`
 
     const port = Browser.runtime.connect()
     message.loading('AI正在提取线索信息...')
@@ -115,10 +115,12 @@ export const extractAllEmails = async (options) => {
       port.onMessage.addListener(messageListener)
 
       const session = initSession({
-        question: prompt + "\n\n页面信息：\n" + JSON.stringify(pageInfo, null, 2),
+        question: prompt + "\n\n网页信息：\n" + JSON.stringify(pageInfo, null, 2),
         conversationRecords: [],
         modelName: 'doubao-1-5-lite-32k-250115', // 使用豆包模型
-        stream: false // 使用非流式响应
+        stream: false, // 使用非流式响应
+        temperature: 0.01,
+        top_k: 0.9,
       })
 
       const postMessage = async ({ session, stop }) => {
