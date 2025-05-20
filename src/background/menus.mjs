@@ -25,9 +25,6 @@ const onClickMenu = (info, tab) => {
       }
 
       if (menuConfig[message.itemId].genPrompt) {
-        if (message.itemId === 'openSidePanel') {
-          message.containerType = 'sideWindow'
-        }
         Browser.tabs.sendMessage(currentTab.id, {
           type: 'CREATE_CHAT',
           data: message,

@@ -57,12 +57,6 @@ export const config = {
       }
     },
   },
-  openSidePanel: {
-    label: 'Open Side Panel',
-    genPrompt: async () => {
-      return ''
-    },
-  },
   closeAllChats: {
     label: 'Close All Chats In This Page',
     action: async (fromBackground) => {
