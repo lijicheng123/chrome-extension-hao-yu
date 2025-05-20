@@ -1,7 +1,7 @@
 {
   "name": "好雨AI",
   "description": "AI获客神器&独立站&客户管理一条龙服务-外贸软件的拼多多",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "manifest_version": 3,
   "icons": {
     "16": "logo.png",
@@ -26,9 +26,7 @@
     "contextMenus",
     "unlimitedStorage",
     "tabs",
-    "webRequest",
-    "declarativeNetRequestWithHostAccess",
-    "sidePanel"
+    "webRequest"
   ],
   "optional_permissions": [
     "background"
@@ -38,18 +36,6 @@
   },
   "action": {
     "default_popup": "popup.html"
-  },
-  "side_panel": {
-    "default_path": "IndependentPanel.html"
-  },
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "ruleset",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
   },
   "options_ui": {
     "page": "options.html",
@@ -106,9 +92,6 @@
     },
     "openConversationWindow": {
       "description": "Open the independent conversation window"
-    },
-    "openSidePanel": {
-      "description": "Open the independent conversation side panel"
     },
     "closeAllChats": {
       "description": "Close all chats in this page"

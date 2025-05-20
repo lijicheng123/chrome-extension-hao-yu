@@ -306,8 +306,6 @@ async function copyFiles(entryPoints, targetDir) {
 async function finishOutput(outputDirSuffix) {
   const commonFiles = [
     { src: 'src/logo.png', dst: 'logo.png' },
-    { src: 'src/rules.json', dst: 'rules.json' },
-
     { src: 'build/shared.js', dst: 'shared.js' },
     { src: 'build/content-script.css', dst: 'content-script.css' }, // shared
 
