@@ -1,18 +1,10 @@
-import FingerprintJS from '@fingerprintjs/fingerprintjs'
 import { requestManager } from '../api/request'
 import { API_CONFIG } from '../../constants/api.js'
 import Browser from 'webextension-polyfill'
 
 class AuthService {
   constructor() {
-    this.deviceId = null
-    this.initFingerprint()
-  }
-
-  async initFingerprint() {
-    const fp = await FingerprintJS.load()
-    const result = await fp.get()
-    this.deviceId = result.visitorId
+    this.deviceId = '12345'
   }
 
   async getToken() {

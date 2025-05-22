@@ -1,7 +1,7 @@
 {
   "name": "好雨AI",
-  "description": "AI获客神器&独立站&客户管理一条龙服务-外贸软件的拼多多",
-  "version": "0.0.3",
+  "description": "AI获客神器&独立站&客户管理一条龙服务，强大的功能极低的价格，超高性价比-外贸软件的拼多多",
+  "version": "0.0.4",
   "manifest_version": 3,
   "icons": {
     "16": "logo.png",
