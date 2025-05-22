@@ -159,5 +159,15 @@
   "Gemini (Web)": "Gemini (Web)",
   "Type": "Type",
   "Mode": "Mode",
-  "Custom": "Custom"
+  "Custom": "Custom",
+  
+  "黑名单设置": "Blacklist Settings",
+  "侧边栏黑名单": "Sidebar Blacklist",
+  "在以下域名中不显示侧边栏，每行一个域名或URL片段": "Don't show sidebar in these domains, one domain or URL fragment per line",
+  "例如: hoayuai.cn\nhaoyu.ai\nlocalhost": "Example: hoayuai.cn\nhaoyu.ai\nlocalhost",
+  "恢复默认": "Reset to Default",
+  "挖掘面板黑名单": "Mining Blacklist",
+  "在以下域名中不显示挖掘面板，每行一个域名或URL片段": "Don't show mining panel in these domains, one domain or URL fragment per line",
+  "更新侧边栏黑名单失败:": "Failed to update sidebar blacklist:",
+  "更新挖掘面板黑名单失败:": "Failed to update mining blacklist:"
 }

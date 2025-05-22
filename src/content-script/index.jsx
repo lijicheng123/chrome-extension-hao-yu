@@ -39,7 +39,7 @@ import { WINDOW_TYPE, ELEMENT_ID } from '../constants'
 import { UI_API } from '../services/messaging/ui'
 import uiService from '../services/messaging/ui'
 import i18nService, { I18N_API } from '../services/messaging/i18n'
-import { isShowSidebar } from '../config/index.mjs'
+import { isShowSidebar, isShowMiningPanel } from '../config/index.mjs'
 
 const { Link } = Typography
 
@@ -534,13 +534,23 @@ async function renderFloatingToolbar({ x = 0, y = 0, windowType }) {
     }
     container.remove()
   }
+  const userConfig = await getUserConfig()
+
+  // 处理特殊条件的渲染情况
+  // 如果是挖掘面板类型并且不应该显示，返回null
+  if (
+    (windowType === WINDOW_TYPE.LEADS_MINING ||
+      windowType === WINDOW_TYPE.LEADS_MINING_MINI_SIDE_WINDOW) &&
+    !isShowMiningPanel(userConfig)
+  ) {
+    return null
+  }
 
   // 创建新容器
   container = createElementAtPosition(x, y, windowType)
   container.id = ELEMENT_ID.FLOATING_TOOL_CONTAINER
   container.className = 'chatgptbox-toolbar-container-not-queryable'
 
-  const userConfig = await getUserConfig()
   const session = initSession({
     modelName: userConfig.modelName,
     apiMode: userConfig.apiMode,
@@ -580,7 +590,6 @@ async function renderLeadsMining(windowType) {
  */
 function Sidebar({ close }) {
   const [activeTaskList, setActiveTaskList] = useState([])
-  if (!isShowSidebar()) return null
 
   useEffect(() => {
     init()
@@ -598,7 +607,7 @@ function Sidebar({ close }) {
             renderLeadsMining()
           }
         }
-        if (config.headless?.newValue === true) {
+        if (config.headless?.newValue === true && isShowMiningPanel(config)) {
           // 如果prev里没有 挖掘中 则添加
           setActiveTaskList((prev = []) => {
             if (!prev.some((task) => task.id === 'casualMining')) {
@@ -633,7 +642,7 @@ function Sidebar({ close }) {
   }, [])
   async function init() {
     const config = await getUserConfig()
-    if (config.casualMiningStatus === 'cRunning') {
+    if (config.casualMiningStatus === 'cRunning' && isShowMiningPanel(config)) {
       if (config.headless === true) {
         renderLeadsMining(WINDOW_TYPE.LEADS_MINING_MINI_SIDE_WINDOW)
       } else {
@@ -672,7 +681,8 @@ function Sidebar({ close }) {
   )
 }
 
-function renderSidebar() {
+function renderSidebar(userConfig) {
+  if (!isShowSidebar(userConfig)) return null
   // 检查是否已存在root实例
   if (sideBarContainer._reactRoot) {
     try {
@@ -680,6 +690,10 @@ function renderSidebar() {
     } catch (e) {
       console.error('Error unmounting sidebar:', e)
     }
+  }
+
+  if (userConfig?.alwaysShowToolSidebar === false) {
+    return null
   }
 
   // 确保容器可见
@@ -803,17 +817,7 @@ run()
 const root = createRoot(document.createElement('div'))
 root.render(<MonitConfigForView />)
 function MonitConfigForView() {
-  const [userConfig, setUserConfig] = useState(null)
-
-  // 初始化配置并监听storage变更
   useEffect(() => {
-    // 初始加载配置
-    const initConfig = async () => {
-      const config = await getUserConfig()
-      setUserConfig(config)
-    }
-    initConfig()
-
     // 监听storage变更
     const handleStorageChange = (changes, area) => {
       if (area === 'local') {
@@ -827,7 +831,7 @@ function MonitConfigForView() {
         // 如果有相关变更，重新获取完整的userConfig
         if (relevantChanges.length > 0) {
           getUserConfig().then((newConfig) => {
-            setUserConfig(newConfig)
+            renderSidebar(newConfig)
           })
         }
       }
@@ -843,14 +847,12 @@ function MonitConfigForView() {
   }, [])
 
   useEffect(() => {
-    // Use setTimeout to defer the sidebar rendering to the next tick
-    // This prevents synchronous unmounting during React rendering
-    if (userConfig?.alwaysShowToolSidebar !== false) {
-      setTimeout(() => {
-        renderSidebar()
-      }, 0)
-    }
-  }, [userConfig?.alwaysShowToolSidebar])
+    getUserConfig().then((newConfig) => {
+      if (newConfig?.alwaysShowToolSidebar !== false) {
+        renderSidebar(newConfig)
+      }
+    })
+  }, [])
 
   return null
 }

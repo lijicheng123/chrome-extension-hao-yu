@@ -290,6 +290,8 @@ export const defaultConfig = {
   headless: false,
   aiFirst: false,
   casualMiningStatus: 'cRunning',
+  miningBlacklist: ['hoayuai.cn', 'haoyu.ai', 'localhost'],
+  sidebarBlacklist: ['hoayuai.cn', 'haoyu.ai', 'localhost'],
 
   /** @type {keyof TriggerMode}*/
   triggerMode: 'manually',
@@ -583,22 +585,38 @@ export async function clearOldAccessToken() {
 }
 
 /**
- * 挖掘黑名单
- * 指定规则的域名地址不挖掘邮箱
- * http://localhost:8069/
+ * 是否显示侧边栏
+ * 控制整体侧边栏是否展示
  */
-const miningBlacklist = ['localhost:8069']
-/**
- * 是否显示邮箱挖掘面板
- * 通过当前页面地址判断是否显示邮箱挖掘面板
- */
-export const isShowSidebar = () => {
+export const isShowSidebar = (config) => {
   const currentUrl = window.location.href
   // 必须是http或者https开头
   if (!currentUrl.startsWith('http') && !currentUrl.startsWith('https')) {
     return false
   }
-  return !miningBlacklist.some((blacklist) => currentUrl.includes(blacklist))
+
+  // 获取用户配置的侧边栏黑名单
+  const blacklist = config.sidebarBlacklist || []
+  const result = blacklist.some((domain) => currentUrl.includes(domain))
+  return !result
+}
+
+/**
+ * 是否显示邮箱挖掘面板
+ * 通过当前页面地址判断是否显示邮箱挖掘面板
+ */
+export const isShowMiningPanel = (config) => {
+  const currentUrl = window.location.href
+  // 必须是http或者https开头
+  if (!currentUrl.startsWith('http') && !currentUrl.startsWith('https')) {
+    return false
+  }
+
+  // 获取用户配置的挖掘面板黑名单
+  // const config = inputConfig || await getUserConfig()
+  const blacklist = config.miningBlacklist || []
+
+  return !blacklist.some((domain) => currentUrl.includes(domain))
 }
 
 export function isUsingDoubaoApiModel(configOrSession) {

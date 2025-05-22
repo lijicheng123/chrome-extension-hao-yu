@@ -5,8 +5,8 @@ import PropTypes from 'prop-types'
 import { ToolOutlined } from '@ant-design/icons'
 import './index.scss'
 import { WINDOW_TYPE } from '../../constants'
-import { setUserConfig } from '../../config/index.mjs'
-
+import { setUserConfig, getUserConfig, isShowMiningPanel } from '../../config/index.mjs'
+import { message } from 'antd'
 export const DraggableBar = ({ openToolBar, foldedIcon, setLiving, activeTasks }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [bounds, setBounds] = useState({ top: 0, bottom: 0 })
@@ -96,7 +96,12 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving, activeTasks }
             <a className="tool-item">处理图片</a>
             <a
               className="tool-item"
-              onClick={() => {
+              onClick={async () => {
+                const userConfig = await getUserConfig()
+                if (!isShowMiningPanel(userConfig)) {
+                  message.warning('当前页面在挖掘面板黑名单中，如需使用请去设置页面删除黑名单', 10)
+                  return
+                }
                 setUserConfig({
                   casualMiningStatus: 'cRunning',
                   headless: false,

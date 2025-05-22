@@ -9,9 +9,10 @@ import {
 } from '../../../config/index.mjs'
 import { useTranslation } from 'react-i18next'
 import { GeneralPart } from '../../../popup/sections/GeneralPart'
-import { FeaturePages } from '../../../popup/sections/FeaturePages'
 import { AdvancedPart } from '../../../popup/sections/AdvancedPart'
 import { ModulesPart } from '../../../popup/sections/ModulesPart'
+import { BlacklistSettingsPart } from '../../../popup/sections/BlacklistSettingsPart'
+
 function Setting() {
   const { t, i18n } = useTranslation()
   const [config, setConfig] = useState(defaultConfig)
@@ -53,6 +54,11 @@ function Setting() {
       key: '3',
       label: t('Advanced'),
       children: <AdvancedPart config={config} updateConfig={updateConfig} />,
+    },
+    {
+      key: '4',
+      label: t('黑名单设置'),
+      children: <BlacklistSettingsPart config={config} updateConfig={updateConfig} />,
     },
   ]
 
