@@ -16,6 +16,29 @@ export const config = {
       return `The following is the text content of a web page, analyze the core content and summarize:\n${getCoreContentText()}`
     },
   },
+  batchDownloadImages: {
+    label: 'Batch Download Images',
+    action: async (fromBackground, tab) => {
+      console.debug('batch download images action', fromBackground)
+      if (fromBackground) {
+        // 从后台脚本调用时，发送消息到内容脚本
+        Browser.tabs.sendMessage(tab.id, {
+          namespace: 'UI',
+          type: 'request',
+          action: 'OPEN_BATCH_IMAGE_DOWNLOADER',
+          data: {},
+        })
+      } else {
+        // 从内容脚本调用时，直接发送消息
+        Browser.runtime.sendMessage({
+          namespace: 'UI',
+          type: 'request',
+          action: 'OPEN_BATCH_IMAGE_DOWNLOADER',
+          data: {},
+        })
+      }
+    },
+  },
   openConversationPage: {
     label: 'Open Conversation Page',
     action: async (fromBackground) => {

@@ -7,6 +7,7 @@ import DecisionCard from '../components/DecisionCard'
 import { config as siteConfig } from './site-adapters'
 import { config as toolsConfig } from './selection-tools'
 import { config as menuConfig } from './menu-tools'
+import BatchImageDownloader from '../components/BatchImageDownloader'
 import {
   chatgptWebModelKeys,
   getPreferredLanguageKey,
@@ -348,6 +349,11 @@ async function prepareForRightClickMenu() {
     },
     [UI_API.CLOSE_TOOLBAR]: () => {
       deleteToolbar()
+      return { success: true }
+    },
+    [UI_API.OPEN_BATCH_IMAGE_DOWNLOADER]: () => {
+      console.log('接收到OPEN_BATCH_IMAGE_DOWNLOADER消息')
+      renderBatchImageDownloader()
       return { success: true }
     },
   })
@@ -859,4 +865,44 @@ function MonitConfigForView() {
 
 Sidebar.propTypes = {
   close: PropTypes.func.isRequired,
+}
+
+/**
+ * 渲染批量下载图片组件
+ */
+function renderBatchImageDownloader() {
+  // 创建容器
+  const container = document.createElement('div')
+  container.id = 'batch-image-downloader-container'
+  container.style.position = 'fixed'
+  container.style.top = '0'
+  container.style.left = '0'
+  container.style.width = '100%'
+  container.style.height = '100%'
+  container.style.zIndex = '999999'
+  container.style.pointerEvents = 'none'
+
+  // 关闭函数
+  const handleClose = () => {
+    if (container.parentNode) {
+      const root = container._reactRoot
+      if (root) {
+        root.unmount()
+      }
+      container.remove()
+    }
+  }
+
+  // 添加到页面
+  document.body.appendChild(container)
+
+  // 创建React根并渲染
+  const root = createRoot(container)
+  container._reactRoot = root
+
+  root.render(
+    <div style={{ pointerEvents: 'auto' }}>
+      <BatchImageDownloader visible={true} onClose={handleClose} />
+    </div>,
+  )
 }

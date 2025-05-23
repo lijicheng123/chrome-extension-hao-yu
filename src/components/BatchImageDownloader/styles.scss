@@ -1,0 +1,136 @@
+.batch-image-downloader {
+  .batch-image-downloader-content {
+    .batch-image-downloader-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0f0f0;
+
+      .image-count {
+        font-size: 14px;
+        color: #666;
+      }
+    }
+
+    .download-progress {
+      margin-bottom: 16px;
+      text-align: center;
+
+      .ant-progress {
+        margin-bottom: 8px;
+      }
+
+      div {
+        font-size: 14px;
+        color: #666;
+      }
+    }
+
+    .batch-image-downloader-list {
+      max-height: 500px;
+      overflow-y: auto;
+
+      .image-item {
+        position: relative;
+        border: 1px solid #f0f0f0;
+        border-radius: 8px;
+        padding: 8px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          border-color: #1890ff;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-checkbox {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          z-index: 2;
+          background: rgba(255, 255, 255, 0.9);
+          border-radius: 4px;
+          padding: 2px;
+        }
+
+        .image-preview {
+          margin-bottom: 8px;
+          border-radius: 4px;
+          overflow: hidden;
+
+          .ant-image {
+            width: 100%;
+
+            .ant-image-img {
+              border-radius: 4px;
+            }
+          }
+        }
+
+        .image-info {
+          .image-filename {
+            font-size: 12px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .image-dimensions {
+            font-size: 11px;
+            color: #999;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 暗色主题适配
+[data-theme='dark'] {
+  .batch-image-downloader {
+    .batch-image-downloader-content {
+      .batch-image-downloader-header {
+        border-bottom-color: #303030;
+
+        .image-count {
+          color: #aaa;
+        }
+      }
+
+      .download-progress {
+        div {
+          color: #aaa;
+        }
+      }
+
+      .batch-image-downloader-list {
+        .image-item {
+          border-color: #303030;
+          background: #1f1f1f;
+
+          &:hover {
+            border-color: #1890ff;
+          }
+
+          .image-checkbox {
+            background: rgba(31, 31, 31, 0.9);
+          }
+
+          .image-info {
+            .image-filename {
+              color: #fff;
+            }
+
+            .image-dimensions {
+              color: #666;
+            }
+          }
+        }
+      }
+    }
+  }
+}

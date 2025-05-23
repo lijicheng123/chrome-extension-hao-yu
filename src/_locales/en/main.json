@@ -169,5 +169,6 @@
   "挖掘面板黑名单": "Mining Blacklist",
   "在以下域名中不显示挖掘面板，每行一个域名或URL片段": "Don't show mining panel in these domains, one domain or URL fragment per line",
   "更新侧边栏黑名单失败:": "Failed to update sidebar blacklist:",
-  "更新挖掘面板黑名单失败:": "Failed to update mining blacklist:"
+  "更新挖掘面板黑名单失败:": "Failed to update mining blacklist:",
+  "Batch Download Images": "Batch Download Images"
 }
