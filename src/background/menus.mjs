@@ -16,7 +16,9 @@ const onClickMenu = (info, tab) => {
 
     if (defaultConfig.selectionTools.includes(message.itemId)) {
       Browser.tabs.sendMessage(currentTab.id, {
-        type: 'CREATE_CHAT',
+        namespace: 'UI',
+        type: 'request',
+        action: 'CREATE_CHAT',
         data: message,
       })
     } else if (message.itemId in menuConfig) {
@@ -26,7 +28,9 @@ const onClickMenu = (info, tab) => {
 
       if (menuConfig[message.itemId].genPrompt) {
         Browser.tabs.sendMessage(currentTab.id, {
-          type: 'CREATE_CHAT',
+          namespace: 'UI',
+          type: 'request',
+          action: 'CREATE_CHAT',
           data: message,
         })
       }

@@ -18,7 +18,9 @@ export function registerCommands() {
       if (menuConfig[command].genPrompt) {
         const currentTab = (await Browser.tabs.query({ active: true, currentWindow: true }))[0]
         Browser.tabs.sendMessage(currentTab.id, {
-          type: 'CREATE_CHAT',
+          namespace: 'UI',
+          type: 'request',
+          action: 'CREATE_CHAT',
           data: message,
         })
       }

@@ -26,7 +26,9 @@ getUserConfig().then(async (config) => {
 
       if (menuConfig[config.clickIconAction].genPrompt) {
         Browser.tabs.sendMessage(currentTab.id, {
-          type: 'CREATE_CHAT',
+          namespace: 'UI',
+          type: 'request',
+          action: 'CREATE_CHAT',
           data: message,
         })
       }
