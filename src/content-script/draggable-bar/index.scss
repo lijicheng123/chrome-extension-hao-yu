@@ -6,7 +6,7 @@
   position: fixed;
   right: 0;
   top: 50vh;
-  z-index: 2147483647;
+  z-index: var(--haoyu-max-z-index);
   max-height: calc(100vh - 92px);
   min-height: 32px;
   pointer-events: auto;

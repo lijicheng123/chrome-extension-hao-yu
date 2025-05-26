@@ -156,7 +156,7 @@
     background-color: var(--active-color, #ffffff);
     border-radius: 5px;
     padding: 12px;
-    z-index: 2147483647;
+    z-index: var(--haoyu-max-z-index);
     font-size: 12px;
   }
 }

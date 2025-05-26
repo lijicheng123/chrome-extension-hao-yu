@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react'
-import { Form, ConfigProvider, Select, Button, Col, Row, Switch, Typography, Alert } from 'antd'
+import { Form, Select, Button, Row, Col, Alert, Switch, ConfigProvider, Typography } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
-// 自定义Hooks
+import PropTypes from 'prop-types'
+import { HIGH_Z_INDEX_CONFIG } from '../../config/ui-config.mjs'
 import { useTaskManager } from './hooks/useTaskManager'
 import { useBackgroundState } from './hooks/useBackgroundState'
 import { useEmailProcessor } from './hooks/useEmailProcessor'
@@ -12,14 +13,13 @@ import { API_CONFIG } from '../../constants/api'
 import EmailList from './components/EmailList'
 import EmailEditModal from './components/EmailEditModal'
 import LoginControl from '../LoginControl'
-import PropTypes from 'prop-types'
 
 import { setUserConfig } from '../../config/index.mjs'
 
 // 样式
 import style from './index.modules.scss'
 
-const { Link } = Typography
+const { Link: TypographyLink } = Typography
 
 /**
  * 线索挖掘组件
@@ -71,18 +71,7 @@ function LeadsMining({ windowType }) {
   }
 
   return (
-    <ConfigProvider
-      theme={{
-        components: {
-          Select: {
-            zIndexPopup: 2147483647,
-          },
-          Tooltip: {
-            zIndexPopup: 2147483647,
-          },
-        },
-      }}
-    >
+    <ConfigProvider {...HIGH_Z_INDEX_CONFIG}>
       {windowType === WINDOW_TYPE.LEADS_MINING && (
         <div className={style['email-list']}>
           <LoginControl
@@ -140,12 +129,12 @@ function LeadsMining({ windowType }) {
                     message={
                       <>
                         当前没有可用任务
-                        <Link
+                        <TypographyLink
                           href={`${API_CONFIG.BASE_URL}/web#action=leads.action_mining_task`}
                           target="_blank"
                         >
                           前往创建
-                        </Link>
+                        </TypographyLink>
                         或者
                         <Button type="link" onClick={fetchTaskList}>
                           刷新
