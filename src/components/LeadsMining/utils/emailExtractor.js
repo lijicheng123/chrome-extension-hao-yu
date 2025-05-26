@@ -74,7 +74,7 @@ user_linkedin: LinkedIn个人资料，url格式
 user_facebook: Facebook个人资料，url格式
 
 规则：
-- 不确定的字段留空，不填“未知”
+- 不确定的字段留空，不填"未知"
 - 合并重复联系人，不同公司分开
 - 无有效邮箱返回[]
 
@@ -118,9 +118,14 @@ user_facebook: Facebook个人资料，url格式
         question: prompt + "\n\n网页信息：\n" + JSON.stringify(pageInfo, null, 2),
         conversationRecords: [],
         modelName: 'doubao-1-5-lite-32k-250115', // 使用豆包模型
-        stream: false, // 使用非流式响应
-        temperature: 0.01,
-        top_k: 0.9,
+        aiConfig: {
+          responseFormat: 'json_array', // 指定返回JSON数组格式
+          temperature: 0.01, // 低温度确保结果稳定
+          top_k: 0.9,
+          top_p: 0.9,
+          stream: false, // 使用非流式响应
+          assistantPrefix: '[', // 添加数组前缀引导AI返回数组
+        }
       })
 
       const postMessage = async ({ session, stop }) => {

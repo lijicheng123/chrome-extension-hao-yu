@@ -41,6 +41,8 @@ import { UI_API } from '../services/messaging/ui'
 import uiService from '../services/messaging/ui'
 import i18nService, { I18N_API } from '../services/messaging/i18n'
 import { isShowSidebar, isShowMiningPanel } from '../config/index.mjs'
+import { initImmersiveTranslate, renderTranslatePanel } from './immersive-translate'
+import { injectCSSVariables } from '../config/ui-config.mjs'
 
 const { Link } = Typography
 
@@ -759,6 +761,9 @@ RenderActiveTasks.propTypes = {
 }
 
 async function run() {
+  // 注入CSS变量
+  injectCSSVariables()
+
   const userConfig = await getUserConfig()
 
   await getPreferredLanguageKey(userConfig).then((lang) => {
@@ -794,6 +799,9 @@ async function run() {
   // 顶部通知返回条
   prepareForJumpBackNotification()
 
+  // 初始化沉浸式翻译
+  initImmersiveTranslate()
+
   // 添加双击Ctrl/Command键检测
   let lastKeyDownTime = 0
   const DOUBLE_PRESS_DELAY = 300 // 双击间隔时间(毫秒)
@@ -815,6 +823,12 @@ async function run() {
           lastKeyDownTime = currentTime
         }
       }
+    }
+
+    // 添加沉浸式翻译快捷键
+    if (e.altKey && e.key === 'i') {
+      e.preventDefault()
+      renderTranslatePanel()
     }
   })
 }

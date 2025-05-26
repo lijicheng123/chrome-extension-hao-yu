@@ -76,6 +76,15 @@ export const config = {
       enableBidirectional: true,
     }),
   },
+  immersiveTranslate: {
+    icon: <Globe />,
+    label: 'Immersive Translate',
+    genPrompt: async (selection) => {
+      const { translateSelectedText } = await import('../immersive-translate')
+      await translateSelectedText(selection)
+      return ''
+    },
+  },
   summary: {
     icon: <CardHeading />,
     label: 'Summary',

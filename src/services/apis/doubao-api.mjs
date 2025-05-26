@@ -15,9 +15,15 @@ const apiKey = API_CONFIG.DOUBAO_API_KEY
  * @param {boolean} options.stream - 是否使用流式响应，默认为true
  */
 export async function generateAnswersWithDoubaoApi(port, question, session, options = {}) {
-  const { stream = true } = options
+  // 优先使用session.aiConfig.stream，其次使用options.stream，最后默认为true
+  const useStream =
+    session.aiConfig?.stream !== undefined
+      ? session.aiConfig.stream
+      : options.stream !== undefined
+      ? options.stream
+      : true
 
-  if (stream) {
+  if (useStream) {
     return generateAnswersWithDoubaoStreamApi(port, question, session)
   } else {
     return generateAnswersWithDoubaoNonStreamApi(port, question, session)
@@ -31,7 +37,7 @@ export async function generateAnswersWithDoubaoApi(port, question, session, opti
  * @param {Session} session - 会话信息
  */
 async function generateAnswersWithDoubaoNonStreamApi(port, question, session) {
-  const { controller, messageListener, disconnectListener } = setAbortController(port)
+  const { messageListener, disconnectListener } = setAbortController(port)
   const config = await getUserConfig()
 
   try {
@@ -40,10 +46,15 @@ async function generateAnswersWithDoubaoNonStreamApi(port, question, session) {
       false,
     )
     prompt.push({ role: 'user', content: question })
-    prompt.push({ role: 'assistant', content: '[' })
+
+    // 使用aiConfig配置来决定是否添加助手前缀
+    const aiConfig = session.aiConfig || {}
+    if (aiConfig.assistantPrefix) {
+      prompt.push({ role: 'assistant', content: aiConfig.assistantPrefix })
+    }
 
     const apiUrl = `${baseUrl}/api/v3/chat/completions`
-    // 构建请求体
+    // 构建请求体，使用aiConfig中的参数
     const requestBody = {
       provider_id: 1,
       model: 'doubao-1-5-lite-32k-250115', // 默认使用豆包模型
@@ -66,8 +77,19 @@ async function generateAnswersWithDoubaoNonStreamApi(port, question, session) {
 
     const responseData = await response.json()
     console.log('responseData:::', responseData)
-    // 提取AI回答
-    const answer = `[${responseData?.choices?.[0]?.message?.content}`
+
+    // 根据responseFormat配置来处理回答
+    let answer
+    const responseFormat = aiConfig.responseFormat || 'text'
+    const rawContent = responseData?.choices?.[0]?.message?.content || ''
+
+    if (responseFormat === 'json_array' && aiConfig.assistantPrefix) {
+      // JSON数组格式：添加前缀
+      answer = `${aiConfig.assistantPrefix}${rawContent}`
+    } else {
+      // 文本格式：直接返回内容
+      answer = rawContent
+    }
 
     // 更新会话并发送响应
     pushRecord(session, question, answer)
@@ -99,6 +121,12 @@ async function generateAnswersWithDoubaoStreamApi(port, question, session) {
   )
   prompt.push({ role: 'user', content: question })
 
+  // 使用aiConfig配置来决定是否添加助手前缀
+  const aiConfig = session.aiConfig || {}
+  if (aiConfig.assistantPrefix) {
+    prompt.push({ role: 'assistant', content: aiConfig.assistantPrefix })
+  }
+
   let answer = ''
   let finished = false
 
@@ -124,6 +152,10 @@ async function generateAnswersWithDoubaoStreamApi(port, question, session) {
       model: 'doubao-1-5-lite-32k-250115',
       messages: prompt,
       stream: true,
+      // 使用aiConfig中的参数
+      temperature: aiConfig.temperature || 0.7,
+      top_k: aiConfig.top_k || 0.9,
+      top_p: aiConfig.top_p || 0.9,
     }),
     onMessage(message) {
       console.debug('sse message', message)

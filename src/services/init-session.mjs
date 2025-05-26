@@ -29,6 +29,7 @@ import { t } from 'i18next'
  * @property {object|null} bard_conversationObj
  * @property {object|null} claude_conversation
  * @property {object|null} moonshot_conversation
+ * @property {Object|null} aiConfig - AI配置参数
  */
 /**
  * @param {string|null} question
@@ -38,6 +39,7 @@ import { t } from 'i18next'
  * @param {boolean|null} autoClean
  * @param {Object|null} apiMode
  * @param {string} extraCustomModelName
+ * @param {Object|null} aiConfig - AI配置参数
  * @returns {Session}
  */
 export function initSession({
@@ -48,6 +50,7 @@ export function initSession({
   autoClean = false,
   apiMode = null,
   extraCustomModelName = '',
+  aiConfig = null,
 } = {}) {
   return {
     // common
@@ -72,6 +75,16 @@ export function initSession({
 
     autoClean,
     isRetry: false,
+
+    // AI配置参数
+    aiConfig: aiConfig || {
+      responseFormat: 'text', // 'text' | 'json_array' | 'json_object'
+      temperature: 0.7,
+      top_k: 0.9,
+      top_p: 0.9,
+      stream: true,
+      assistantPrefix: null, // 助手回复前缀，如 '[' 用于JSON数组
+    },
 
     // chatgpt-web
     conversationId: null,
