@@ -106,7 +106,7 @@ const ContactForm = () => {
 
       <div style={{ marginTop: 60, textAlign: 'left' }}>
         <Paragraph>您也可以通过电子邮件和我们进行联系</Paragraph>
-        <Link href="mailto:contact@haoyuai.cn">contact@haoyuai.cn</Link>
+        <Link href="mailto:info@haoyu.ai">info@haoyu.ai</Link>
       </div>
       <FeedbackHistory />
     </div>
