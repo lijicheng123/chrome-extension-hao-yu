@@ -9,6 +9,7 @@ import { setUserConfig, getUserConfig, isShowMiningPanel } from '../../config/in
 import { message } from 'antd'
 import { renderTranslatePanel } from '../immersive-translate'
 import { TranslationStatusIndicator } from '../immersive-translate/TranslationStatusIndicator.jsx'
+import { renderBatchImageDownloader } from '../index.jsx'
 
 export const DraggableBar = ({ openToolBar, foldedIcon, setLiving, activeTasks }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -94,18 +95,6 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving, activeTasks }
             <ToolOutlined />
           </a>
           <div className="tool-item-wrapper">
-            <a onClick={openAIPic} className="tool-item">
-              生成图片
-            </a>
-            <a className="tool-item">处理图片</a>
-            <a
-              className="tool-item"
-              onClick={() => {
-                renderTranslatePanel()
-              }}
-            >
-              沉浸式翻译
-            </a>
             <a
               className="tool-item"
               onClick={async () => {
@@ -122,6 +111,15 @@ export const DraggableBar = ({ openToolBar, foldedIcon, setLiving, activeTasks }
               }}
             >
               客户开发
+            </a>
+            <a onClick={renderBatchImageDownloader} className="tool-item">
+              批量下图
+            </a>
+            <a className="tool-item" onClick={renderTranslatePanel}>
+              沉浸式翻译
+            </a>
+            <a onClick={openAIPic} className="tool-item">
+              生成图片
             </a>
           </div>
         </div>

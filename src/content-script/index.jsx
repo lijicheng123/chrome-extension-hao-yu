@@ -886,7 +886,7 @@ Sidebar.propTypes = {
 /**
  * 渲染批量下载图片组件
  */
-function renderBatchImageDownloader() {
+export function renderBatchImageDownloader() {
   // 创建容器
   const container = document.createElement('div')
   container.id = 'batch-image-downloader-container'
