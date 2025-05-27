@@ -136,9 +136,10 @@ class LeadsMiningService {
     try {
       const submitLeads = leadData.filter((lead) => {
         // 是否完整
-        const isFullLead = lead.user_name && lead.company_name && lead.thread_name && lead.task_id
+        const isFullLead = lead.thread_name && lead.task_id
         if (!isFullLead) {
           console.error('线索数据不完整:', lead)
+          return
         }
         return isFullLead
       })

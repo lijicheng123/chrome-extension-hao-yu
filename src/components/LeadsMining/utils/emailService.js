@@ -81,7 +81,7 @@ const buildSubmitData = (emailData, { taskId, searchTerm }) => {
     leads_source_url: currentUrl,
     leads_target_url: currentUrl,
     task_id: taskId,
-    leads_keywords: searchTerm || window.location.pathname,
+    leads_keywords: searchTerm,
   }
 
   const userEmail = emailData.user_email || ''
@@ -91,10 +91,10 @@ const buildSubmitData = (emailData, { taskId, searchTerm }) => {
     user_email: userEmail,
     user_name: emailData.user_name || userEmail,
     // 公司信息
-    company_name: emailData.company_name || hostname,
-    company_email: userEmail,
+    // company_name: emailData.company_name || hostname,
+    // company_email: userEmail,
     // 线索信息
-    thread_name: `${hostname}-${userEmail}`,
+    thread_name: `${hostname}-${userEmail || emailData.user_name}`,
     // 合并传入的 email 对象中的其他字段
     ...emailData
   }

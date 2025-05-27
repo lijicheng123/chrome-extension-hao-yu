@@ -2,6 +2,7 @@ import { matchEmailsInText, removeDuplicates, markEmails } from './emailUtils'
 import Browser from 'webextension-polyfill'
 import { initSession } from '../../../services/init-session.mjs'
 import { message } from 'antd'
+import { isGoogleMapsPage, extractGoogleMapsContacts } from './googleMapsExtractor'
 // zindex 最大
 message.config({
   zIndex: 2147483647,
@@ -16,9 +17,16 @@ export function getPageText() {
  * 提取所有邮箱
  * @param {Object} options - 配置选项
  * @param {boolean} options.ai - 是否使用AI提取
+ * @param {boolean} options.isManual - 是否手动提取
  * @returns {Promise<Array<{user_email: string, user_name?: string, user_function?: string, user_phone?: string, user_mobile?: string, company_name?: string, company_phone?: string, company_email?: string, company_website?: string, linkin_site?: string, tag_names?: string[]}>>} 邮箱对象数组
  */
 export const extractAllEmails = async (options) => {
+  // 检查是否为谷歌地图页面，如果是则使用专门的提取器
+  if (isGoogleMapsPage()) {
+    console.log('检测到谷歌地图页面，使用地图专用提取器')
+    return extractGoogleMapsContacts()
+  }
+
   const pageText = getPageText()
   if (!/@/.test(pageText) && options?.isManual !== true) {
     message.info('页面中没有邮箱，不提取~')

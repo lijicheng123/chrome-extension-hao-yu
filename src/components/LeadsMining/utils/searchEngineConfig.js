@@ -8,31 +8,32 @@ export const SEARCH_ENGINES = {
   GOOGLE: {
     domains: [
       'google.com',
-      'mail.google.com',
       'google.co.jp',
       'google.co.uk',
       'google.de',
       'google.fr',
       'google.cn',
-      'google.com.hk',
-      'www.google.com.hk',
+      'google.com.hk'
     ],
     searchPath: '/search',
     searchParam: 'q',
   },
 
-  // 后续可以添加其他搜索引擎配置
-  BING: {
-    domains: ['bing.com'],
-    searchPath: '/search',
+  // Google Maps 配置
+  GOOGLE_MAPS: {
+    domains: [
+      'google.com',
+      'google.co.jp',
+      'google.co.uk',
+      'google.de',
+      'google.fr',
+      'google.cn',
+      'google.com.hk'
+    ],
+    searchPath: '/maps',
     searchParam: 'q',
-  },
-
-  BAIDU: {
-    domains: ['baidu.com'],
-    searchPath: '/s',
-    searchParam: 'wd',
-  },
+    type: 'maps'
+  }
 }
 
 /**
@@ -63,12 +64,4 @@ export function getMatchedSearchEngine() {
 
   // 如果没有匹配的搜索引擎，返回null
   return null
-}
-
-/**
- * 判断当前页面是否为搜索结果页
- * @returns {boolean} 是否为搜索结果页
- */
-export function isSearchResultPage() {
-  return getMatchedSearchEngine() !== null
 }
