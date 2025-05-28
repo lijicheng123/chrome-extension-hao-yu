@@ -816,6 +816,9 @@ async function run() {
         if (currentTime - lastKeyDownTime < DOUBLE_PRESS_DELAY) {
           e.preventDefault()
           renderLeadsMining(WINDOW_TYPE.LEADS_MINING)
+          setUserConfig({
+            casualMiningStatus: 'cRunning',
+          })
           // 重置计时器，防止连续多次触发
           lastKeyDownTime = 0
         } else {

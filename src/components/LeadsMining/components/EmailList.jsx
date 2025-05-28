@@ -39,16 +39,9 @@ const EmailList = ({
 
       {emailList.length > 0 ? (
         emailList.map((emailInfo = {}) => {
-          const {
-            user_email,
-            user_name,
-            user_function,
-            user_phone,
-            company_name,
-            company_website,
-          } = emailInfo
+          const { user_name, user_function, user_phone, company_name, company_website } = emailInfo
 
-          if (!user_email) return null
+          const user_email = emailInfo.user_email || user_name
 
           return (
             <Card key={user_email} style={{ marginBottom: 8 }} hoverable>
