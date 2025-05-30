@@ -239,28 +239,33 @@ const extractGoogleMapsData = () => {
 /**
  * 将谷歌地图数据转换为标准联系人格式
  * @param {Object} mapsData - 谷歌地图数据
+ * @param {string} keyword - 挖掘关键词
  * @returns {Array} 标准联系人对象数组
  */
-const convertToStandardFormat = (mapsData) => {
+const convertToStandardFormat = (mapsData, keyword = '') => {
   if (!mapsData) return []
 
   try {
+    const businessName = mapsData.businessName || ''
+    const currentUrl = window.location.href
+    
     const contactData = {
-      // 联系人信息（对于商家，可能没有具体的个人联系信息）
+      // 联系人信息
       user_email: '', // 谷歌地图通常没有邮箱信息
-      user_name: mapsData.businessName || '',
+      user_name: businessName,
       user_function: '商家联系人', // 默认职能
       user_phone: mapsData.phone || '',
       user_mobile: '', // 谷歌地图不区分座机和手机
       
       // 公司信息(company_name为空，服务器不会保存这个公司，但会保存这条线索)
-      company_name: '',
+      company_name: businessName, // 使用商家名称作为公司名
       company_phone: mapsData.phone || '',
       company_email: '', // 谷歌地图通常没有邮箱
       company_website: mapsData.website || '',
       
       // 地址信息
       street: mapsData.address || '',
+      user_street: mapsData.address || '',
       user_street2: '',
       user_city: '', // 需要从地址中解析
       user_state: '',
@@ -273,9 +278,20 @@ const convertToStandardFormat = (mapsData) => {
       user_facebook: '',
       user_website: mapsData.website || '',
       
+      // 线索信息 - 重要：添加必需字段
+      thread_type: 'lead',
+      thread_name: `${businessName}-GoogleMaps`, // 必需字段
+      priority: '2',
+      
+      // 来源信息
+      leads_source_url: currentUrl,
+      // leads_target_url: currentUrl,
+      leads_keywords: keyword, // 关键词信息
+      
       // 标签信息
       tag_names: [
-        mapsData.category || '谷歌地图获客',
+        '谷歌地图获客',
+        mapsData.category || '',
         ...(mapsData.rating ? [`评分${mapsData.rating}星`] : [])
       ].filter(Boolean)
     }
@@ -289,10 +305,11 @@ const convertToStandardFormat = (mapsData) => {
 
 /**
  * 一键提取谷歌地图联系人信息
+ * @param {string} keyword - 挖掘关键词
  * @returns {Array} 标准格式的联系人信息数组
  */
-export const extractGoogleMapsContacts = () => {
-  console.log('开始提取谷歌地图联系人信息...')
+export const extractGoogleMapsContacts = (keyword = '') => {
+  console.log('开始提取谷歌地图联系人信息...', keyword ? `关键词: ${keyword}` : '')
   
   const mapsData = extractGoogleMapsData()
   if (!mapsData) {
@@ -300,7 +317,7 @@ export const extractGoogleMapsContacts = () => {
     return []
   }
 
-  const contacts = convertToStandardFormat(mapsData)
+  const contacts = convertToStandardFormat(mapsData, keyword)
   
   if (contacts.length > 0) {
     message.success(`成功提取到 ${contacts.length} 个联系人信息`)

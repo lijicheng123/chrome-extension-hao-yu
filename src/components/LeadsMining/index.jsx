@@ -1,5 +1,16 @@
 import React, { useEffect } from 'react'
-import { Form, Select, Button, Row, Col, Alert, Switch, ConfigProvider, Typography } from 'antd'
+import {
+  Form,
+  Select,
+  Button,
+  Row,
+  Col,
+  Alert,
+  Switch,
+  ConfigProvider,
+  Typography,
+  message,
+} from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
 import PropTypes from 'prop-types'
 import { HIGH_Z_INDEX_CONFIG } from '../../config/ui-config.mjs'
@@ -9,10 +20,12 @@ import { useEmailProcessor } from './hooks/useEmailProcessor'
 import { useDecisionEngine } from './hooks/useDecisionEngine'
 import { WINDOW_TYPE } from '../../constants'
 import { API_CONFIG } from '../../constants/api'
+import { isGoogleMapsPage } from './utils/googleMapsExtractor'
 // UI组件
 import EmailList from './components/EmailList'
 import EmailEditModal from './components/EmailEditModal'
 import LoginControl from '../LoginControl'
+import GoogleMapsControl from './components/GoogleMapsControl'
 
 import { setUserConfig } from '../../config/index.mjs'
 
@@ -34,8 +47,15 @@ function LeadsMining({ windowType }) {
 
   // 使用background状态管理
   const backgroundState = useBackgroundState()
-  const { casualMiningStatus, headless, setHeadless, emailList, aiFirst, setAiFirst } =
-    backgroundState
+  const {
+    casualMiningStatus,
+    headless,
+    setHeadless,
+    emailList,
+    aiFirst,
+    setAiFirst,
+    setEmailList,
+  } = backgroundState
 
   const emailProcessor = useEmailProcessor(selectedTask, backgroundState)
   const {
@@ -53,10 +73,54 @@ function LeadsMining({ windowType }) {
     locateEmail,
   } = emailProcessor
 
+  useEffect(() => {
+    const [navigationEntry] = performance.getEntriesByType('navigation')
+    if (navigationEntry.type === 'reload') {
+      console.log('页面已刷新')
+    }
+  }, [])
+
   // 决策引擎
   useDecisionEngine(backgroundState, emailProcessor)
 
   console.log('aiFirst headless', aiFirst, headless)
+
+  // 检查是否为谷歌地图页面
+  const isGoogleMaps = isGoogleMapsPage()
+
+  // 处理从谷歌地图提取的数据
+  const handleGoogleMapsDataExtracted = async (extractedContacts) => {
+    if (extractedContacts && extractedContacts.length > 0) {
+      console.log('谷歌地图提取的数据:', extractedContacts)
+
+      try {
+        // 为每个联系人添加task_id
+        const contactsWithTaskId = extractedContacts.map((contact) => ({
+          ...contact,
+          task_id: selectedTask?.id || 1, // 确保有task_id
+        }))
+
+        // 提交到服务器
+        const success = await emailProcessor.submitEmailLead(contactsWithTaskId, {
+          forceSubmit: true,
+        })
+
+        if (success) {
+          console.log('谷歌地图线索提交成功')
+          message.success(`成功提交 ${extractedContacts.length} 条谷歌地图线索！`)
+
+          // 更新本地邮箱列表显示
+          setEmailList((prev) => [...prev, ...contactsWithTaskId])
+        } else {
+          console.error('谷歌地图线索提交失败')
+          message.error('线索提交失败，请重试')
+        }
+      } catch (error) {
+        console.error('提交谷歌地图线索时出错:', error)
+        message.error(`提交失败: ${error.message}`)
+      }
+    }
+  }
 
   // 初始化表单
   useEffect(() => {
@@ -190,10 +254,18 @@ function LeadsMining({ windowType }) {
             </Row>
           </Form>
 
+          {/* 谷歌地图获客操控面板 - 仅在谷歌地图页面显示 */}
+          {isGoogleMaps && (
+            <GoogleMapsControl
+              selectedTask={selectedTask}
+              onDataExtracted={handleGoogleMapsDataExtracted}
+            />
+          )}
+
           {casualMiningStatus === 'cRunning' ? (
             <EmailList
               isShowCurrentPageEmails={true}
-              emailList={currentPageEmails}
+              emailList={isGoogleMaps ? emailList : currentPageEmails}
               handleEditEmail={handleEditEmail}
               handleDeleteCustomer={handleDeleteCustomer}
               locateEmail={locateEmail}
