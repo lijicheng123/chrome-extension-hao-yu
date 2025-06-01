@@ -2,7 +2,8 @@ import { matchEmailsInText, removeDuplicates, markEmails } from './emailUtils'
 import Browser from 'webextension-polyfill'
 import { initSession } from '../../../services/init-session.mjs'
 import { message } from 'antd'
-import { isGoogleMapsPage, extractGoogleMapsContacts } from './googleMapsExtractor'
+import { isGoogleMapsPage } from '../../../utils/platformDetector'
+import { extractGoogleMapsContacts } from './googleMapsExtractor'
 // zindex 最大
 message.config({
   zIndex: 2147483647,

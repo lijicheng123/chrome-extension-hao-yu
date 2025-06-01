@@ -2,8 +2,10 @@ import React from 'react'
 import { Card, Typography, Space, Empty, Divider, Button, Badge, Tooltip } from 'antd'
 import { API_CONFIG } from '../../../constants/api'
 const { Paragraph, Text, Link } = Typography
-import { ReloadOutlined } from '@ant-design/icons'
+import { ReloadOutlined, DownloadOutlined } from '@ant-design/icons'
 import PropTypes from 'prop-types'
+import * as XLSX from 'xlsx'
+import { getPlatformDisplayName, isGoogleMapsPage } from '../../../utils/platformDetector'
 /**
  * 邮箱列表组件
  * 显示发现的邮箱列表
@@ -15,6 +17,109 @@ const EmailList = ({
   style,
   extractCurrentPageEmails,
 }) => {
+  // 导出Excel功能
+  const exportToExcel = () => {
+    if (emailList.length === 0) {
+      return
+    }
+
+    // 定义表头
+    const headers = [
+      '平台',
+      '邮箱',
+      '姓名',
+      '职位',
+      '电话',
+      '手机',
+      '公司名称',
+      '公司电话',
+      '公司邮箱',
+      '公司网站',
+      '国家',
+      '城市',
+      '街道地址',
+      'LinkedIn',
+      '标签',
+    ]
+
+    // 如果当前是谷歌地图页面，添加plusCode字段
+    if (isGoogleMapsPage()) {
+      headers.splice(-2, 0, 'Plus Code') // 在LinkedIn前插入Plus Code
+    }
+
+    // 转换数据格式
+    const data = emailList.map((emailInfo) => {
+      const rowData = [
+        getPlatformDisplayName(), // 平台字段：好雨AI-{平台}
+        emailInfo.user_email || '',
+        emailInfo.user_name || '',
+        emailInfo.user_function || '',
+        emailInfo.user_phone || '',
+        emailInfo.user_mobile || '',
+        emailInfo.company_name || '',
+        emailInfo.company_phone || '',
+        emailInfo.company_email || '',
+        emailInfo.company_website || '',
+        emailInfo.user_country || emailInfo.country || '', // 国家
+        emailInfo.user_city || emailInfo.city || '', // 城市
+        emailInfo.user_street || emailInfo.street || '', // 街道地址
+        emailInfo.linkin_site || '',
+        Array.isArray(emailInfo.tag_names) ? emailInfo.tag_names.join(', ') : '',
+      ]
+
+      // 如果当前是谷歌地图页面，添加plusCode数据
+      if (isGoogleMapsPage()) {
+        rowData.splice(-2, 0, emailInfo.user_zip || emailInfo.plusCode || '') // 在LinkedIn前插入Plus Code数据
+      }
+
+      return rowData
+    })
+
+    // 创建工作簿
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data])
+
+    // 设置列宽
+    const columnWidths = [
+      { wch: 20 }, // 平台
+      { wch: 30 }, // 邮箱
+      { wch: 15 }, // 姓名
+      { wch: 20 }, // 职位
+      { wch: 15 }, // 电话
+      { wch: 15 }, // 手机
+      { wch: 25 }, // 公司名称
+      { wch: 15 }, // 公司电话
+      { wch: 30 }, // 公司邮箱
+      { wch: 40 }, // 公司网站
+      { wch: 15 }, // 国家
+      { wch: 15 }, // 城市
+      { wch: 40 }, // 街道地址
+      { wch: 40 }, // LinkedIn
+      { wch: 80 }, // 标签
+    ]
+
+    // 如果当前是谷歌地图页面，为plusCode添加列宽
+    if (isGoogleMapsPage()) {
+      columnWidths.splice(-2, 0, { wch: 15 }) // 在LinkedIn前插入Plus Code列宽
+    }
+
+    worksheet['!cols'] = columnWidths
+
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, '线索联系方式')
+
+    // 生成文件名
+    const now = new Date()
+    const timeStr =
+      now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') +
+      String(now.getHours()).padStart(2, '0')
+    const fileName = `好雨AI-线索挖掘-${timeStr}.xlsx`
+
+    // 导出文件
+    XLSX.writeFile(workbook, fileName)
+  }
+
   return (
     <>
       <Divider orientation="left">
@@ -35,6 +140,13 @@ const EmailList = ({
           icon={<ReloadOutlined />}
           onClick={extractCurrentPageEmails}
         />
+        <Button
+          title="导出Excel"
+          type="link"
+          icon={<DownloadOutlined />}
+          onClick={exportToExcel}
+          disabled={emailList.length === 0}
+        />
       </Divider>
 
       {emailList.length > 0 ? (
@@ -50,6 +162,10 @@ const EmailList = ({
                   <Tooltip
                     title={
                       <div style={{ maxWidth: '300px' }}>
+                        <p>
+                          <strong>平台：</strong>
+                          {getPlatformDisplayName()}
+                        </p>
                         <p>
                           <strong>邮箱：</strong>
                           {user_email}
@@ -82,6 +198,30 @@ const EmailList = ({
                           <p>
                             <strong>网站：</strong>
                             {company_website}
+                          </p>
+                        )}
+                        {(emailInfo.user_country || emailInfo.country) && (
+                          <p>
+                            <strong>国家：</strong>
+                            {emailInfo.user_country || emailInfo.country}
+                          </p>
+                        )}
+                        {(emailInfo.user_city || emailInfo.city) && (
+                          <p>
+                            <strong>城市：</strong>
+                            {emailInfo.user_city || emailInfo.city}
+                          </p>
+                        )}
+                        {(emailInfo.user_street || emailInfo.street) && (
+                          <p>
+                            <strong>地址：</strong>
+                            {emailInfo.user_street || emailInfo.street}
+                          </p>
+                        )}
+                        {isGoogleMapsPage() && (emailInfo.user_zip || emailInfo.plusCode) && (
+                          <p>
+                            <strong>Plus Code：</strong>
+                            {emailInfo.user_zip || emailInfo.plusCode}
                           </p>
                         )}
                       </div>

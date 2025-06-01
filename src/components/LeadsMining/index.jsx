@@ -20,7 +20,7 @@ import { useEmailProcessor } from './hooks/useEmailProcessor'
 import { useDecisionEngine } from './hooks/useDecisionEngine'
 import { WINDOW_TYPE } from '../../constants'
 import { API_CONFIG } from '../../constants/api'
-import { isGoogleMapsPage } from './utils/googleMapsExtractor'
+import { isGoogleMapsPage, isLinkedInPage } from '../../utils/platformDetector'
 // UI组件
 import EmailList from './components/EmailList'
 import EmailEditModal from './components/EmailEditModal'
@@ -90,9 +90,6 @@ function LeadsMining({ windowType }) {
   const isGoogleMaps = isGoogleMapsPage()
 
   // 检查是否为LinkedIn页面
-  const isLinkedInPage = () => {
-    return window.location.hostname.includes('linkedin.com')
-  }
   const isLinkedIn = isLinkedInPage()
 
   // 处理从LinkedIn提取的数据

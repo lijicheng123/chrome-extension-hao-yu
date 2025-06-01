@@ -1,4 +1,5 @@
 import { message } from 'antd'
+import { isGoogleMapsPage } from '../../../utils/platformDetector'
 
 /**
  * 谷歌地图信息提取器
@@ -33,21 +34,6 @@ const findInContainer = (selector, container = null) => {
   return searchContainer ? searchContainer.querySelector(selector) : null
 }
 
-/**
- * 检测当前页面是否为谷歌地图页面
- * @returns {boolean} 是否为谷歌地图页面
- */
-export const isGoogleMapsPage = () => {
-  const hostname = window.location.hostname
-  const pathname = window.location.pathname
-  
-  // 检查域名和路径
-  return (hostname.includes('google.') && (
-    pathname.includes('/maps') ||
-    pathname.includes('/place') ||
-    window.location.href.includes('maps.google')
-  ))
-}
 
 /**
  * 提取商户基础信息
