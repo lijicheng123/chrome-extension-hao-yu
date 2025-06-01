@@ -1,7 +1,6 @@
 import { extractGoogleMapsContacts } from './googleMapsExtractor'
 import { mediumDelay, shortDelay, longDelay } from './delayUtils'
 import { message } from 'antd'
-import Browser from 'webextension-polyfill'
 
 /**
  * 谷歌地图自动化工具
@@ -91,11 +90,19 @@ export const clearSearchInput = () => {
 }
 
 /**
+ * 关闭谷歌地图搜索建议面板
+ * @returns {Promise<boolean>} 是否成功关闭
+ */
+const closeSuggestionPanel = async () => {
+  hideSearchBoxNextSibling()
+}
+
+/**
  * 在搜索框中输入关键词
  * @param {string} keyword - 要搜索的关键词
  * @returns {boolean} 是否成功输入
  */
-export const inputSearchKeyword = (keyword) => {
+export const inputSearchKeyword = async (keyword) => {
   const input = getGoogleMapsSearchInput()
   if (!input) return false
   
@@ -113,6 +120,11 @@ export const inputSearchKeyword = (keyword) => {
       const event = new Event(eventType, { bubbles: true })
       input.dispatchEvent(event)
     })
+
+    input.blur()
+    await shortDelay()
+    // 关闭搜索建议面板
+    await closeSuggestionPanel()
     
     console.log(`已输入关键词: ${keyword}`)
     return true
@@ -155,7 +167,7 @@ export const performGoogleMapsSearch = async (keyword) => {
     console.log(`开始搜索: ${keyword}`)
     
     // 输入关键词
-    if (!inputSearchKeyword(keyword)) {
+    if (!(await inputSearchKeyword(keyword))) {
       throw new Error('输入关键词失败')
     }
     
@@ -462,26 +474,31 @@ const waitForNewResults = async (previousCount, maxWaitTime = 5000) => {
  * @param {string} taskId - 任务ID，用于构建storage键
  * @returns {Promise<boolean>} 是否仍在挖掘中
  */
-const checkMiningState = async (taskId = 'default') => {
-  try {
-    const storageKey = `googleMaps_miningState_${taskId}`
-    const result = await Browser.storage.local.get([storageKey])
-    return result[storageKey] || false
-  } catch (error) {
-    console.error('检查挖掘状态失败:', error)
-    return false
-  }
-}
+// const checkMiningState = async (taskId = 'default') => { // 此函数将被传递的 getMiningStateFromHook 替换
+//   try {
+//     const storageKey = `googleMaps_miningState_${taskId}`;
+//     const result = await Browser.storage.local.get([storageKey]);
+//     return result[storageKey] || false;
+//   } catch (error) {
+//     console.error('检查挖掘状态失败:', error);
+//     return false;
+//   }
+// };
 
 /**
  * 处理当前关键词的所有搜索结果
  * @param {string} keyword - 当前关键词
- * @param {string} taskId - 任务ID，默认为'default'
+ * @param {string} taskId - 任务ID，默认为'default' (仍可用于其他目的或日志)
+ * @param {function} getMiningStateFromHook - 从 useLeadMiner Hook 传递的函数，用于检查是否应停止挖掘
  * @returns {Promise<Array>} 所有提取的联系人数据
  */
-export const processAllResultsForKeyword = async (keyword, taskId = 'default') => {
+export const processAllResultsForKeyword = async (keyword, taskId = 'default', getMiningStateFromHook) => { // eslint-disable-line no-unused-vars
   try {
     console.log(`开始处理关键词 "${keyword}" 的所有结果`)
+    
+    // 🔥 挖掘开始前：调用适配器准备方法
+    hideSearchBoxNextSibling()
+    console.log('已调用挖掘前适配器方法：隐藏搜索建议面板')
     
     let allContacts = []
     let processedCount = 0
@@ -489,11 +506,17 @@ export const processAllResultsForKeyword = async (keyword, taskId = 'default') =
     let hasMoreResults = true
     
     while (hasMoreResults) {
-      // 🔥 添加挖掘状态检查
-      const isMining = await checkMiningState(taskId)
-      if (!isMining) {
-        console.log('检测到挖掘已停止，中断处理')
-        break
+      // 🔥 使用从 Hook 传递的挖掘状态检查函数
+      if (typeof getMiningStateFromHook === 'function') {
+        const isMining = await getMiningStateFromHook()
+        if (!isMining) {
+          console.log('谷歌地图自动化: 检测到挖掘已停止 (来自Hook)，中断处理')
+          break
+        }
+      } else {
+        // 如果没有提供hook函数，可以考虑一个回退或警告，但正常情况下它应该总是被提供
+        console.warn('谷歌地图自动化: getMiningStateFromHook 未提供，无法检查停止信号。')
+        // 或者可以调用旧的 checkMiningState(taskId) 作为回退，但这会偏离预期设计
       }
       
       console.log(`=== 开始处理第 ${batchNumber} 批结果 ===`)
@@ -540,13 +563,15 @@ export const processAllResultsForKeyword = async (keyword, taskId = 'default') =
       
       // 处理新结果
       for (let i = 0; i < newResults.length; i++) {
-        // 🔥 在每个结果处理前也检查状态
-        const isMining = await checkMiningState(taskId)
-        if (!isMining) {
-          console.log('检测到挖掘已停止，中断结果处理')
-          hasMoreResults = false
-          break
-        }
+        // 🔥 在每个结果处理前也检查状态 (来自 Hook)
+        if (typeof getMiningStateFromHook === 'function') {
+          const isMining = await getMiningStateFromHook()
+          if (!isMining) {
+            console.log('谷歌地图自动化: 检测到挖掘已停止 (来自Hook)，中断结果处理')
+            hasMoreResults = false
+            break
+          }
+        } 
         
         const globalIndex = processedCount + i
         const resultElement = newResults[i]
@@ -603,5 +628,50 @@ export const processAllResultsForKeyword = async (keyword, taskId = 'default') =
   } catch (error) {
     console.error(`处理关键词 "${keyword}" 的结果时出错:`, error)
     return []
+  } finally {
+    // 🔥 挖掘结束后：调用适配器清理方法
+    removeInjectedStyle()
+    console.log('已调用挖掘后适配器方法：移除注入的样式')
+  }
+}
+
+function hideSearchBoxNextSibling() {
+  // 如果有了就不要创建了
+  if (document.getElementById('searchbox-next-sibling-hide')) {
+      return;
+  }
+  // 创建 <style> 元素
+  const style = document.createElement('style');
+  style.id = 'searchbox-next-sibling-hide'; // 给 style 标签一个 ID，便于后续删除
+  style.type = 'text/css';
+
+  // 设置 CSS 内容，使用 !important 确保高权重
+  const cssRule = `
+      #searchbox + * {
+          display: none !important;
+      }
+  `;
+
+  // 兼容性处理
+  if (style.styleSheet) {
+      // 针对 IE 浏览器
+      style.styleSheet.cssText = cssRule;
+  } else {
+      // 标准浏览器
+      style.appendChild(document.createTextNode(cssRule));
+  }
+
+  // 插入到 head 中
+  document.head.appendChild(style);
+}
+
+/**
+ * 移除注入的样式
+ * @returns {void}
+ */
+export const removeInjectedStyle = () => {
+  const existingStyle = document.getElementById('searchbox-next-sibling-hide');
+  if (existingStyle) {
+      existingStyle.remove();
   }
 }

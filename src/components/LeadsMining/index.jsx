@@ -26,6 +26,7 @@ import EmailList from './components/EmailList'
 import EmailEditModal from './components/EmailEditModal'
 import LoginControl from '../LoginControl'
 import GoogleMapsControl from './components/GoogleMapsControl'
+import LinkedInSearchControl from './components/LinkedInSearchControl'
 
 import { setUserConfig } from '../../config/index.mjs'
 
@@ -87,6 +88,46 @@ function LeadsMining({ windowType }) {
 
   // 检查是否为谷歌地图页面
   const isGoogleMaps = isGoogleMapsPage()
+
+  // 检查是否为LinkedIn页面
+  const isLinkedInPage = () => {
+    return window.location.hostname.includes('linkedin.com')
+  }
+  const isLinkedIn = isLinkedInPage()
+
+  // 处理从LinkedIn提取的数据
+  const handleLinkedInDataExtracted = async (extractedContacts) => {
+    if (extractedContacts && extractedContacts.length > 0) {
+      console.log('LinkedIn提取的数据:', extractedContacts)
+
+      try {
+        // 为每个联系人添加task_id
+        const contactsWithTaskId = extractedContacts.map((contact) => ({
+          ...contact,
+          task_id: selectedTask?.id || 1, // 确保有task_id
+        }))
+
+        // 提交到服务器
+        const success = await emailProcessor.submitEmailLead(contactsWithTaskId, {
+          forceSubmit: true,
+        })
+
+        if (success) {
+          console.log('LinkedIn线索提交成功')
+          message.success(`成功提交 ${extractedContacts.length} 条LinkedIn线索！`)
+
+          // 更新本地邮箱列表显示
+          setEmailList((prev) => [...prev, ...contactsWithTaskId])
+        } else {
+          console.error('LinkedIn线索提交失败')
+          message.error('线索提交失败，请重试')
+        }
+      } catch (error) {
+        console.error('提交LinkedIn线索时出错:', error)
+        message.error(`提交失败: ${error.message}`)
+      }
+    }
+  }
 
   // 处理从谷歌地图提取的数据
   const handleGoogleMapsDataExtracted = async (extractedContacts) => {
@@ -259,6 +300,14 @@ function LeadsMining({ windowType }) {
             <GoogleMapsControl
               selectedTask={selectedTask}
               onDataExtracted={handleGoogleMapsDataExtracted}
+            />
+          )}
+
+          {/* LinkedIn搜索操控面板 - 仅在LinkedIn页面显示 */}
+          {isLinkedIn && (
+            <LinkedInSearchControl
+              selectedTask={selectedTask}
+              onDataExtracted={handleLinkedInDataExtracted}
             />
           )}
 
