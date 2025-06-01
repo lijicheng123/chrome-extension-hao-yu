@@ -395,7 +395,7 @@ const KeywordManager = forwardRef(function KeywordManager(
 })
 
 KeywordManager.propTypes = {
-  title: PropTypes.string,
+  title: PropTypes.node,
   keywords: PropTypes.arrayOf(PropTypes.string).isRequired,
   selectedTask: PropTypes.object,
   storagePrefix: PropTypes.string,
