@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react'
+import React, { useRef, useEffect, useCallback, useMemo } from 'react'
 import { Button, Tag, Space, Row, Col } from 'antd'
 import { PlayCircleOutlined, PauseCircleOutlined } from '@ant-design/icons'
 import PropTypes from 'prop-types'
@@ -26,6 +26,10 @@ function GoogleMapsControl({ selectedTask, onDataExtracted }) {
       wrapperRef.current.style.zIndex = 2147483647
     }
   }, [])
+
+  const keywords = useMemo(() => {
+    return googleMapsAdapter.getKeywords(selectedTask)
+  }, [selectedTask])
 
   // handleKeywordSelect 现在简化了，因为 hook/adapter 处理关键词输入进行搜索
   const handleKeywordSelect = async (keyword) => {
@@ -94,11 +98,11 @@ function GoogleMapsControl({ selectedTask, onDataExtracted }) {
         ref={keywordManagerRef}
         title={
           <Space>
-            {googleMapsAdapter.platformName}获客操控
+            {googleMapsAdapter.platformName}
             <Tag color="blue">{googleMapsAdapter.description}</Tag>
           </Space>
         }
-        keywords={googleMapsAdapter.defaultKeywords}
+        keywords={keywords}
         selectedTask={selectedTask}
         storagePrefix={googleMapsAdapter.platformId}
         onKeywordSelect={handleKeywordSelect}

@@ -287,7 +287,7 @@ const KeywordManager = forwardRef(function KeywordManager(
             <Text type="success">已完成: {stats.completed}</Text>
           </Col>
           <Col span={6}>
-            <Text type="primary">已处理: {stats.totalProcessed}</Text>
+            <Text type="primary">已挖掘: {stats.totalProcessed}</Text>
           </Col>
         </Row>
       )}
