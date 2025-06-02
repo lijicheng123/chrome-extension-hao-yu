@@ -23,7 +23,7 @@ import { API_CONFIG } from '../../constants/api'
 import { isGoogleMapsPage, isLinkedInPage } from '../../utils/platformDetector'
 // UI组件
 import EmailList from './components/EmailList'
-import LoginControl from '../LoginControl'
+import LoginControl from '../../components/LoginControl'
 import GoogleMapsControl from './components/GoogleMapsControl'
 import LinkedInSearchControl from './components/LinkedInSearchControl'
 
