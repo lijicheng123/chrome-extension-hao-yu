@@ -12,7 +12,7 @@ export const PLATFORM_CONFIG = {
     domains: ['google.com', 'google.co.jp', 'google.co.uk', 'google.de', 'google.fr', 'google.cn', 'google.com.hk'],
     pathPatterns: ['/maps', '/place'],
     urlPatterns: ['maps.google'],
-    description: '谷歌地图平台'
+    description: '谷歌地图版'
   },
   googleSearch: {
     id: 'googleSearch',

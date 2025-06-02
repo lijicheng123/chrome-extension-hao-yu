@@ -5,6 +5,7 @@ import PropTypes from 'prop-types'
 import KeywordManager from './KeywordManager'
 import useLeadMiner from '../hooks/useLeadMiner'
 import googleMapsAdapter from '../adapters/googleMapsAdapter'
+import { API_CONFIG } from '../../../constants/api'
 
 /**
  * 谷歌地图获客操控面板 - 重构版本
@@ -98,8 +99,21 @@ function GoogleMapsControl({ selectedTask, onDataExtracted }) {
         ref={keywordManagerRef}
         title={
           <Space>
-            {googleMapsAdapter.platformName}
-            <Tag color="blue">{googleMapsAdapter.description}</Tag>
+            <Space>
+              <a
+                className="see-more"
+                href={
+                  selectedTask?.id
+                    ? `${API_CONFIG.BASE_URL}/web#action=leads.action_mining_task/${selectedTask?.id}`
+                    : `${API_CONFIG.BASE_URL}/web#action=leads.action_mining_task`
+                }
+                target="_blank"
+                rel="noreferrer"
+              >
+                关键词组合
+              </a>
+              <Tag color="blue">{googleMapsAdapter.description}</Tag>
+            </Space>
           </Space>
         }
         keywords={keywords}
