@@ -150,13 +150,13 @@ const EmailList = ({
       </Divider>
 
       {emailList.length > 0 ? (
-        emailList.map((emailInfo = {}) => {
+        emailList.map((emailInfo = {}, index) => {
           const { user_name, user_function, user_phone, company_name, company_website } = emailInfo
 
           const user_email = emailInfo.user_email || user_name
 
           return (
-            <Card key={user_email} style={{ marginBottom: 8 }} hoverable>
+            <Card key={`${user_email}-${index}`} style={{ marginBottom: 8 }} hoverable>
               <div className={style['email-list-card']}>
                 <Paragraph copyable={{ text: user_email }}>
                   <Tooltip
