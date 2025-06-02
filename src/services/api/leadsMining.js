@@ -1,6 +1,6 @@
 import { requestManager } from './request'
 import { isUserLoggedIn } from '../../background/userSessionInfo.mjs'
-import { optimizeUrl } from '../../content-script/LeadsMining/utils/searchEngineUtils'
+import { optimizeUrl } from '../../content-script/leads-mining/utils/searchEngineUtils'
 /**
  * 客户开发 API 服务
  */
