@@ -23,7 +23,6 @@ import { API_CONFIG } from '../../constants/api'
 import { isGoogleMapsPage, isLinkedInPage } from '../../utils/platformDetector'
 // UI组件
 import EmailList from './components/EmailList'
-import EmailEditModal from './components/EmailEditModal'
 import LoginControl from '../LoginControl'
 import GoogleMapsControl from './components/GoogleMapsControl'
 import LinkedInSearchControl from './components/LinkedInSearchControl'
@@ -59,20 +58,8 @@ function LeadsMining({ windowType }) {
   } = backgroundState
 
   const emailProcessor = useEmailProcessor(selectedTask, backgroundState)
-  const {
-    editingEmail,
-    newEmailValue,
-    newNoteValue,
-    setNewEmailValue,
-    setNewNoteValue,
-    handleEditEmail,
-    handleUpdateEmail,
-    handleDeleteCustomer,
-    setEditingEmail,
-    currentPageEmails,
-    extractCurrentPageEmails,
-    locateEmail,
-  } = emailProcessor
+  const { extractCurrentPageEmails, currentPageEmails, handleDeleteCustomer, locateEmail } =
+    emailProcessor
 
   useEffect(() => {
     const [navigationEntry] = performance.getEntriesByType('navigation')
@@ -312,7 +299,6 @@ function LeadsMining({ windowType }) {
             <EmailList
               isShowCurrentPageEmails={true}
               emailList={isGoogleMaps ? emailList : currentPageEmails}
-              handleEditEmail={handleEditEmail}
               handleDeleteCustomer={handleDeleteCustomer}
               locateEmail={locateEmail}
               style={style}
@@ -322,22 +308,11 @@ function LeadsMining({ windowType }) {
             <EmailList
               isShowCurrentPageEmails={false}
               emailList={emailList}
-              handleEditEmail={handleEditEmail}
               handleDeleteCustomer={handleDeleteCustomer}
               locateEmail={locateEmail}
               style={style}
             />
           )}
-
-          <EmailEditModal
-            editingEmail={editingEmail}
-            newEmailValue={newEmailValue}
-            newNoteValue={newNoteValue}
-            setNewEmailValue={setNewEmailValue}
-            setNewNoteValue={setNewNoteValue}
-            handleUpdateEmail={handleUpdateEmail}
-            setEditingEmail={setEditingEmail}
-          />
         </div>
       )}
     </ConfigProvider>

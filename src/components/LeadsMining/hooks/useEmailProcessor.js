@@ -8,8 +8,6 @@ import { scrollToEmail, highlightEmail, markEmails } from '../utils/emailUtils'
  * 负责邮箱的提取、处理和提交
  */
 export const useEmailProcessor = (selectedTask, backgroundState) => {
-  const [editingEmail, setEditingEmail] = useState(null)
-  const [newEmailValue, setNewEmailValue] = useState('')
   const [currentPageEmails, setCurrentPageEmails] = useState([])
 
   const { currentSearchTerm, handleCaptchaDetected, emailList, setEmailList } =
@@ -73,24 +71,6 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
     [selectedTask?.id, currentSearchTerm],
   )
 
-  // 打开编辑邮箱模态框
-  const handleEditEmail = useCallback((emailData) => {
-    setEditingEmail(emailData)
-    setNewEmailValue(emailData.user_email)
-  }, [])
-
-  // 更新邮箱
-  const handleUpdateEmail = useCallback(() => {
-    if (!editingEmail) return
-
-    setEmailList(prev => prev.map(item => 
-      item.user_email === editingEmail.user_email 
-        ? { ...item, user_email: newEmailValue }
-        : item
-    ))
-    setEditingEmail(null)
-  }, [editingEmail, newEmailValue, setEmailList])
-
   // 删除客户
   const handleDeleteCustomer = useCallback(
     (emailData) => {
@@ -153,13 +133,7 @@ export const useEmailProcessor = (selectedTask, backgroundState) => {
   return {
     extractCurrentPageEmails,
     currentPageEmails,
-    editingEmail,
-    newEmailValue,
-    setNewEmailValue,
-    handleEditEmail,
-    handleUpdateEmail,
     handleDeleteCustomer,
-    setEditingEmail,
     submitEmailLead,
     locateEmail,
   }
