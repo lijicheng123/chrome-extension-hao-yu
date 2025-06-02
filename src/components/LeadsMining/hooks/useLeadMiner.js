@@ -125,6 +125,12 @@ function useLeadMiner(platformAdapter, selectedTask, onDataExtracted, keywordMan
       return;
     }
     
+    // 检查 keywords 参数
+    if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
+      console.error('Keywords parameter is invalid or empty:', keywords);
+      return;
+    }
+    
     await setMiningStateInStorage(true);
     let currentExtractedData = [...allExtractedData]; // 从已加载的数据开始
 

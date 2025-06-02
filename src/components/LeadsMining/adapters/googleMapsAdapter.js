@@ -1,6 +1,7 @@
 import {
-  getPlatformConfig
-} from '../config/keywords';
+  getPlatformConfig,
+  getTaskKeywords
+} from '../../../utils/keywords';
 import {
   performGoogleMapsSearch,
   processAllResultsForKeyword,
@@ -15,7 +16,9 @@ const googleMapsAdapter = {
   platformId: 'googleMaps',
   platformName: GOOGLE_MAPS_CONFIG.name,
   description: GOOGLE_MAPS_CONFIG.description,
-  defaultKeywords: GOOGLE_MAPS_CONFIG.keywords,
+  
+  // 从任务中动态获取关键词
+  getKeywords: (selectedTask) => getTaskKeywords(selectedTask),
 
   getStorageKeys: (taskId) => ({
     extractedDataKey: `googleMaps_extractedData_${taskId}`,

@@ -29,7 +29,7 @@ function GoogleMapsControl({ selectedTask, onDataExtracted }) {
 
   const keywords = useMemo(() => {
     return googleMapsAdapter.getKeywords(selectedTask)
-  }, [selectedTask])
+  }, [selectedTask?.id])
 
   // handleKeywordSelect 现在简化了，因为 hook/adapter 处理关键词输入进行搜索
   const handleKeywordSelect = async (keyword) => {
@@ -53,7 +53,7 @@ function GoogleMapsControl({ selectedTask, onDataExtracted }) {
 
   // startAutoMining 和 stopAutoMining 现在简化为对 hook 方法的调用
   const handleStartMining = async () => {
-    await startMining(googleMapsAdapter.defaultKeywords)
+    await startMining(keywords)
   }
 
   const handleStopMining = async () => {

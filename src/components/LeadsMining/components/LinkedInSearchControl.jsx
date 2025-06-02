@@ -4,7 +4,7 @@ import { PlayCircleOutlined, PauseCircleOutlined } from '@ant-design/icons'
 import PropTypes from 'prop-types'
 import Browser from 'webextension-polyfill'
 import KeywordManager, { KEYWORD_STATUS } from './KeywordManager'
-import { getPlatformConfig } from '../config/keywords'
+import { getPlatformConfig, getTaskKeywords } from '../../../utils/keywords'
 
 // 配置message的zIndex
 message.config({
@@ -13,7 +13,6 @@ message.config({
 
 // 获取LinkedIn平台关键词配置
 const LINKEDIN_CONFIG = getPlatformConfig('linkedin')
-const LINKEDIN_KEYWORDS = LINKEDIN_CONFIG.keywords
 
 /**
  * LinkedIn搜索获客操控面板
@@ -24,6 +23,9 @@ function LinkedInSearchControl({ selectedTask, onDataExtracted }) {
   const [isSearchingDisplay, setIsSearchingDisplay] = useState(false)
   const keywordManagerRef = useRef(null)
   const wrapperRef = useRef(null)
+
+  // 从任务中动态获取关键词
+  const LINKEDIN_KEYWORDS = getTaskKeywords(selectedTask)
 
   useEffect(() => {
     if (wrapperRef.current) {

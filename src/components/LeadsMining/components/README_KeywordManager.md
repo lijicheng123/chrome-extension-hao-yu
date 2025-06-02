@@ -1,81 +1,46 @@
-# KeywordManager 通用关键词管理组件
+# KeywordManager 组件
 
-## 概述
+KeywordManager 是一个通用的关键词管理组件，支持多平台的关键词处理、状态追踪和操作管理。
 
-`KeywordManager` 是一个通用的关键词管理组件，从原来的 `GoogleMapsControl` 中提取出来，现在可以被多个搜索平台复用，包括：
+## 主要功能
 
-- 谷歌地图搜索 (Google Maps)
-- LinkedIn搜索
-- Facebook搜索  
-- Reddit搜索
-- 谷歌搜索
-- 等等...
+- 关键词列表展示
+- 关键词状态管理（待处理、处理中、已完成）
+- 进度追踪
+- 持久化存储
+- 自定义操作按钮支持
 
-## 主要特性
-
-### 📋 关键词状态管理
-- **待处理** (PENDING): 关键词尚未开始处理
-- **处理中** (PROCESSING): 关键词正在处理中
-- **已完成** (COMPLETED): 关键词处理完成
-
-### 💾 持久化存储
-- 支持将关键词状态存储到浏览器 `localStorage`
-- 按任务ID和平台前缀分别存储
-- 支持页面刷新后恢复状态
-
-### 🎨 可定制界面
-- 支持自定义标题和描述
-- 支持自定义操作按钮
-- 支持显示/隐藏统计信息和重置按钮
-- 支持启用/禁用关键词选择功能
-
-### 📊 统计信息
-- 显示总关键词数量
-- 显示各状态关键词数量
-- 显示已处理的数据总数
-
-## 使用方式
+## 基本用法
 
 ### 1. 配置关键词
 
-首先在 `src/components/LeadsMining/config/keywords.js` 中配置你的平台关键词：
+首先在 `src/utils/keywords.js` 中配置你的平台关键词和生成策略：
 
 ```javascript
-// 新增平台关键词
-export const YOUR_PLATFORM_KEYWORDS = [
-  '关键词1',
-  '关键词2',
-  // ...
-]
-
-// 添加到平台配置中
-export const PLATFORM_KEYWORDS = {
-  yourPlatform: {
-    name: '你的平台',
-    keywords: YOUR_PLATFORM_KEYWORDS,
-    description: '平台描述',
-  },
-  // ...
+// 定义平台特定的关键词生成逻辑
+export const generateYourPlatformKeywords = (task) => {
+  const baseKeywords = parseKeywords(task.keywords)
+  const extraKeywords = parseKeywords(task.extra_keywords)
+  
+  // 根据平台特点组装关键词
+  // ... 自定义逻辑
+  
+  return keywords
 }
 ```
 
-### 2. 创建平台控制器组件
-
-参考 `LinkedInSearchControl.jsx` 创建你的平台控制器：
+### 2. 在组件中使用
 
 ```jsx
-import React, { useState, useCallback, useRef } from 'react'
-import KeywordManager, { KEYWORD_STATUS } from './KeywordManager'
-import { getPlatformConfig } from '../config/keywords'
-
-// 获取平台配置
-const PLATFORM_CONFIG = getPlatformConfig('yourPlatform')
-const PLATFORM_KEYWORDS = PLATFORM_CONFIG.keywords
+import { getTaskKeywords, getPlatformConfig } from '../../../utils/keywords'
 
 function YourPlatformControl({ selectedTask, onDataExtracted }) {
   const [selectedKeyword, setSelectedKeyword] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const keywordManagerRef = useRef(null)
+
+  // 从任务动态获取关键词
+  const keywords = getTaskKeywords(selectedTask)
 
   // 关键词选择处理
   const handleKeywordSelect = useCallback(async (keyword) => {
@@ -102,6 +67,8 @@ function YourPlatformControl({ selectedTask, onDataExtracted }) {
     </Button>
   )
 
+  const PLATFORM_CONFIG = getPlatformConfig('yourPlatform')
+
   return (
     <KeywordManager
       ref={keywordManagerRef}
@@ -111,7 +78,7 @@ function YourPlatformControl({ selectedTask, onDataExtracted }) {
           <Tag color="blue">{PLATFORM_CONFIG.description}</Tag>
         </Space>
       }
-      keywords={PLATFORM_KEYWORDS}
+      keywords={keywords}
       selectedTask={selectedTask}
       storagePrefix="yourPlatform"
       onKeywordSelect={handleKeywordSelect}
@@ -130,14 +97,13 @@ function YourPlatformControl({ selectedTask, onDataExtracted }) {
 
 ```jsx
 import YourPlatformControl from './components/YourPlatformControl'
-
-// 页面检测
-const isYourPlatform = () => {
-  return window.location.hostname.includes('yourplatform.com')
-}
+import { isYourPlatform } from '../../utils/platformDetector'
 
 // 在组件中使用
-{isYourPlatform() && (
+const isYourPlatformPage = isYourPlatform()
+
+// 在render中
+{isYourPlatformPage && (
   <YourPlatformControl
     selectedTask={selectedTask}
     onDataExtracted={handleYourPlatformDataExtracted}
@@ -145,130 +111,53 @@ const isYourPlatform = () => {
 )}
 ```
 
-## API 文档
+## API 参考
 
-### KeywordManager Props
+### Props
 
 | 属性 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `title` | `string\|ReactNode` | `'关键词管理'` | 组件标题 |
-| `keywords` | `string[]` | `[]` | 关键词数组 |
-| `selectedTask` | `object` | - | 当前选中的任务对象 |
-| `storagePrefix` | `string` | `'keyword_manager'` | 存储前缀，用于区分不同平台 |
-| `onKeywordSelect` | `function` | - | 关键词选择回调 `(keyword) => void` |
-| `onKeywordStatusChange` | `function` | - | 关键词状态变化回调 `(keyword, status, keywordState) => void` |
-| `showStats` | `boolean` | `true` | 是否显示统计信息 |
-| `showResetButton` | `boolean` | `true` | 是否显示重置按钮 |
-| `isProcessing` | `boolean` | `false` | 是否正在处理中 |
-| `customActions` | `ReactNode` | - | 自定义操作按钮区域 |
-| `allowSelection` | `boolean` | `true` | 是否允许关键词选择 |
+| title | React.ReactNode | - | 组件标题 |
+| keywords | Array<string> | [] | 关键词列表 |
+| selectedTask | Object | null | 选中的任务 |
+| storagePrefix | string | 'keyword' | 存储前缀 |
+| onKeywordSelect | Function | - | 关键词选择回调 |
+| onKeywordStatusChange | Function | - | 关键词状态变化回调 |
+| isProcessing | boolean | false | 是否正在处理 |
+| customActions | React.ReactNode | - | 自定义操作按钮 |
+| showResetButton | boolean | true | 是否显示重置按钮 |
 
-### 导出的常量
+### 关键词状态
 
 ```javascript
-// 关键词状态枚举
 export const KEYWORD_STATUS = {
   PENDING: 'pending',      // 待处理
-  PROCESSING: 'processing', // 处理中  
-  COMPLETED: 'completed'    // 已完成
-}
-
-// 状态标签配置
-export const STATUS_CONFIG = {
-  [KEYWORD_STATUS.PENDING]: { color: 'default', text: '待处理' },
-  [KEYWORD_STATUS.PROCESSING]: { color: 'processing', text: '处理中' },
-  [KEYWORD_STATUS.COMPLETED]: { color: 'success', text: '已完成' },
+  PROCESSING: 'processing', // 处理中
+  COMPLETED: 'completed'   // 已完成
 }
 ```
 
-### 导出的方法
+### Ref 方法
 
-KeywordManager通过ref暴露以下方法：
+| 方法 | 参数 | 说明 |
+|------|------|------|
+| updateKeywordStatus | (keyword, status, data) | 更新关键词状态 |
+| resetAllKeywords | () | 重置所有关键词状态 |
+| getKeywordState | (keyword) | 获取关键词状态 |
 
-```javascript
-// 通过ref调用KeywordManager的方法
-const keywordManagerRef = useRef(null)
+## 使用场景
 
-// 更新关键词状态
-keywordManagerRef.current?.updateKeywordStatus(keyword, status, additionalData)
-
-// 重置所有状态  
-keywordManagerRef.current?.resetAllStates()
-
-// 获取当前选中的关键词
-const selectedKeyword = keywordManagerRef.current?.getSelectedKeyword()
-
-// 获取所有关键词状态
-const keywordStates = keywordManagerRef.current?.getKeywordStates()
-```
-
-## 存储结构
-
-关键词状态存储在浏览器的 `localStorage` 中，结构如下：
-
-```javascript
-// 关键词状态存储键：{storagePrefix}_keywords_{taskId}
-{
-  "keyword1": {
-    "status": "completed",
-    "processedCount": 5,
-    "lastUpdate": "2024-01-01T12:00:00.000Z"
-  },
-  "keyword2": {
-    "status": "pending", 
-    "processedCount": 0,
-    "lastUpdate": null
-  }
-}
-
-// 全局状态存储键：{storagePrefix}_globalState_{taskId}
-{
-  "selectedKeyword": "keyword1",
-  "lastUpdate": "2024-01-01T12:00:00.000Z"
-}
-```
+1. **Google Maps 搜索控制** - 处理地理位置相关搜索
+2. **LinkedIn 搜索控制** - 处理职业社交网络搜索  
+3. **Reddit 社区搜索** - 处理社区内容搜索
+4. **Facebook/Instagram 搜索** - 处理社交媒体搜索
 
 ## 最佳实践
 
-### 1. 合理的存储前缀
-为不同平台使用不同的 `storagePrefix`，避免数据冲突：
-- 谷歌地图: `"googleMaps"`
-- LinkedIn: `"linkedinSearch"`  
-- Facebook: `"facebookSearch"`
-
-### 2. 状态更新
-使用ref方式更新关键词状态：
-
-```javascript
-// 在你的平台控制器中
-const keywordManagerRef = useRef(null)
-
-const updateKeywordStatus = useCallback((keyword, status, additionalData = {}) => {
-  if (keywordManagerRef.current) {
-    keywordManagerRef.current.updateKeywordStatus(keyword, status, additionalData)
-  }
-}, [])
-
-// 使用
-updateKeywordStatus('关键词1', KEYWORD_STATUS.PROCESSING)
-updateKeywordStatus('关键词1', KEYWORD_STATUS.COMPLETED, { processedCount: 10 })
-```
-
-### 3. 错误处理
-在平台特定逻辑中添加适当的错误处理：
-
-```javascript
-try {
-  updateKeywordStatus(keyword, KEYWORD_STATUS.PROCESSING)
-  const results = await processKeyword(keyword)
-  updateKeywordStatus(keyword, KEYWORD_STATUS.COMPLETED, { 
-    processedCount: results.length 
-  })
-} catch (error) {
-  console.error(`处理关键词失败:`, error)
-  updateKeywordStatus(keyword, KEYWORD_STATUS.PENDING)
-}
-```
+1. **状态持久化** - 利用 storage 功能保存处理进度
+2. **错误处理** - 在关键词处理失败时适当回退状态
+3. **用户反馈** - 使用状态指示器提供清晰的进度反馈
+4. **性能优化** - 合理控制并发处理的关键词数量
 
 ## 架构优势
 
