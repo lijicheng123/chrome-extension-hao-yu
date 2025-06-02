@@ -82,7 +82,7 @@ function GoogleMapsControl({ selectedTask, onDataExtracted }) {
           <Button
             {...buttonConfig}
             danger={buttonConfig.type === 'danger'}
-            style={{ borderColor: buttonConfig.type === 'danger' ? 'red' : '' }}
+            style={{ borderColor: buttonConfig.type === 'danger' ? 'red' : '', fontSize: '12px' }}
             size="middle"
             block
           >
@@ -101,7 +101,6 @@ function GoogleMapsControl({ selectedTask, onDataExtracted }) {
           <Space>
             <Space>
               <a
-                className="see-more"
                 href={
                   selectedTask?.id
                     ? `${API_CONFIG.BASE_URL}/web#action=leads.action_mining_task/${selectedTask?.id}`
@@ -112,7 +111,9 @@ function GoogleMapsControl({ selectedTask, onDataExtracted }) {
               >
                 关键词组合
               </a>
-              <Tag color="blue">{googleMapsAdapter.description}</Tag>
+              <Tag color="blue" style={{ fontWeight: 'normal', fontSize: 12 }}>
+                {googleMapsAdapter.description}
+              </Tag>
             </Space>
           </Space>
         }
