@@ -162,18 +162,12 @@ const extractContactInfo = () => {
     }
 
     // 提取地址信息 - 使用更精确的选择器
+    // button[data-item-id="address"]下的直属div下的直属第二个div
     const addressElement = 
-      // 策略1：查找地址按钮
-      findInContainer('button[aria-label*="地址"]', container) ||
-      findInContainer('button[aria-label*="address"]', container) ||
-      // 策略2：查找包含data-item-id="address"的元素
-      findInContainer('[data-item-id="address"]', container)
+      findInContainer('button[data-item-id="address"] > div > div:nth-child(2)', container)
 
     if (addressElement) {
-      contact.address = 
-        addressElement.textContent?.trim() ||
-        addressElement.getAttribute('aria-label')?.replace(/地址[:：]\s*/, '') ||
-        ''
+      contact.address =  addressElement.textContent?.trim()
     }
 
     // 提取Plus Code - 使用更精确的选择器
