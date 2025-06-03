@@ -314,12 +314,27 @@ const KeywordManager = forwardRef(function KeywordManager(
     ],
   )
 
+  // 添加关键词比较和防重复加载
+  const lastLoadedKeywordsRef = useRef([])
+
   // 组件挂载时从storage加载状态
   useEffect(() => {
-    if (keywords.length > 0) {
+    if (keywords.length === 0) return
+
+    // 检查关键词是否真正发生变化
+    const lastKeywords = lastLoadedKeywordsRef.current
+    const hasChanged =
+      lastKeywords.length !== keywords.length ||
+      !lastKeywords.every((keyword, index) => keyword === keywords[index])
+
+    if (hasChanged) {
+      console.log('KeywordManager: 关键词有变化，执行加载状态')
+      lastLoadedKeywordsRef.current = [...keywords]
       loadStateFromStorage()
+    } else {
+      console.log('KeywordManager: 关键词未变化，跳过重复加载')
     }
-  }, [loadStateFromStorage, keywords.length])
+  }, [keywords, loadStateFromStorage])
 
   // 统计信息
   const stats = {

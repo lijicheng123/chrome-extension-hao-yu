@@ -20,11 +20,12 @@ import { useEmailProcessor } from './hooks/useEmailProcessor'
 import { useDecisionEngine } from './hooks/useDecisionEngine'
 import { WINDOW_TYPE } from '../../constants'
 import { API_CONFIG } from '../../constants/api'
-import { isGoogleMapsPage, isLinkedInPage } from '../../utils/platformDetector'
+import { isGoogleMapsPage, isGoogleSearchPage, isLinkedInPage } from '../../utils/platformDetector'
 // UI组件
 import EmailList from './components/EmailList'
 import LoginControl from '../../components/LoginControl'
 import GoogleMapsControl from './components/GoogleMapsControl'
+import GoogleSearchControl from './components/GoogleSearchControl'
 import LinkedInSearchControl from './components/LinkedInSearchControl'
 
 import { setUserConfig } from '../../config/index.mjs'
@@ -71,10 +72,11 @@ function LeadsMining({ windowType }) {
   // 决策引擎
   useDecisionEngine(backgroundState, emailProcessor)
 
-  console.log('aiFirst headless', aiFirst, headless)
-
   // 检查是否为谷歌地图页面
   const isGoogleMaps = isGoogleMapsPage()
+
+  // 检查是否为谷歌搜索页面
+  const isGoogleSearch = isGoogleSearchPage()
 
   // 检查是否为LinkedIn页面
   const isLinkedIn = isLinkedInPage()
@@ -286,6 +288,9 @@ function LeadsMining({ windowType }) {
               onDataExtracted={handleGoogleMapsDataExtracted}
             />
           )}
+
+          {/* 谷歌搜索操控面板 - 仅在谷歌搜索页面显示 */}
+          {isGoogleSearch && <GoogleSearchControl selectedTask={selectedTask} />}
 
           {/* LinkedIn搜索操控面板 - 仅在LinkedIn页面显示 */}
           {isLinkedIn && (

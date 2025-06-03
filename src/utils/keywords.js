@@ -110,14 +110,58 @@ export const generateGoogleMapsKeywords = (task) => {
 
 /**
  * 谷歌搜索关键词生成策略
+ * 生成逻辑：[产品关键词] + [城市/国家] + [商业角色关键词]
  * @param {Object} task - 任务对象
  * @returns {Array<string>} 生成的关键词数组
  */
 export const generateGoogleSearchKeywords = (task) => {
   if (!task) return []
   
-  // TODO: 待实现具体业务逻辑
-  return []
+  const productKeywords = parseKeywords(task.keywords)
+  const cities = parseCities(task.cities)
+  const countries = parseCountries(task.countries_info)
+  const businessRoles = parseBusinessRoleKeywords(task.extra_keywords)
+  
+  const keywords = []
+  
+  // 确定使用城市还是国家（优先城市）
+  const locations = cities.length > 0 ? cities : countries
+  
+  // 生成关键词组合策略：
+  // 1. 产品关键词（基础）
+  // 2. 产品 + 地点
+  // 3. 产品 + 商业角色 
+  // 4. 产品 + 地点 + 商业角色（完整组合）
+  
+  productKeywords.forEach(product => {
+    // 策略1：只有产品关键词
+    keywords.push(product)
+    
+    // 策略2：产品 + 地点
+    if (locations.length > 0) {
+      locations.forEach(location => {
+        keywords.push(`${product} ${location}`)
+      })
+    }
+    
+    // 策略3：产品 + 商业角色
+    if (businessRoles.length > 0) {
+      businessRoles.forEach(businessRole => {
+        keywords.push(`${product} ${businessRole}`)
+      })
+    }
+    
+    // 策略4：产品 + 地点 + 商业角色（完整组合）
+    if (locations.length > 0 && businessRoles.length > 0) {
+      locations.forEach(location => {
+        businessRoles.forEach(businessRole => {
+          keywords.push(`${product} ${location} ${businessRole}`)
+        })
+      })
+    }
+  })
+  
+  return [...new Set(keywords)] // 去重
 }
 
 /**
@@ -309,6 +353,6 @@ export const PLATFORM_KEYWORDS = {
   googleSearch: {
     name: '谷歌搜索',
     keywords: [],
-    description: '根据任务动态生成关键词',
+    description: '关键词组合输入，点击手动搜索',
   },
 } 

@@ -73,7 +73,9 @@
   font-family: 'Cairo', sans-serif;
   font-size: 14px;
 }
-
+.haoyu-adapter-container {
+  z-index: 9 !important;
+}
 .chatgptbox-container,
 #chatgptbox-container {
   min-width: 450px;
