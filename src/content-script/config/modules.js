@@ -13,10 +13,10 @@ export const MODULE_CONFIG = {
   features: {
     selectionTools: true,    // 划词工具
     siteAdapter: true,       // 网站适配
-    contextMenu: true,      // 右键菜单（开发中）
-    sidebar: true,          // 侧边栏（开发中）
-    translation: true,      // 翻译（开发中）
-    mining: true,           // 挖掘（开发中）
+    contextMenu: true,      // 右键菜单
+    sidebar: true,          // 侧边栏
+    translation: true,      // 翻译
+    mining: true,           // 挖掘
   },
 
   // 服务模块（可选启用）

@@ -39,24 +39,31 @@ export class LifecycleManager {
       
       // 按优先级初始化模块
       const initOrder = [
-        'eventManager',
-        'messageService',
-        'componentManager',
-        'siteAdapter',
-        'selectionTools',
-        'contextMenu',
-        'sidebar',
-        'translation',
-        'mining'
+        'eventManager',       // 事件管理器（最高优先级）
+        'componentManager',   // 组件管理器
+        'config',            // 配置模块
+        'utility',           // 工具模块
+        'messageService',    // 消息服务
+        'contextMenu',       // 右键菜单
+        'siteAdapter',       // 网站适配
+        'selectionTools',    // 划词工具
+        'sidebar',           // 侧边栏
+        'translation',       // 翻译
+        'mining'             // 挖掘
       ]
 
       for (const moduleName of initOrder) {
         const module = this.modules.get(moduleName)
         if (module) {
           console.log(`Initializing module: ${moduleName}`)
-          const cleanup = await module.init(config)
-          if (cleanup && typeof cleanup === 'function') {
-            this.cleanupFunctions.push(cleanup)
+          try {
+            const cleanup = await module.init(config)
+            if (cleanup && typeof cleanup === 'function') {
+              this.cleanupFunctions.push(cleanup)
+            }
+          } catch (error) {
+            console.error(`Failed to initialize module ${moduleName}:`, error)
+            throw error
           }
         }
       }

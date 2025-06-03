@@ -22,6 +22,7 @@ export class ContextMenuModule {
     this.menuY = 0
     this.toolbarContainer = null
     this.componentId = null
+    this.isInitialized = false
   }
 
   /**
@@ -29,6 +30,11 @@ export class ContextMenuModule {
    * @param {Object} config - 用户配置
    */
   async init(config) {
+    if (this.isInitialized) {
+      console.warn('ContextMenuModule already initialized')
+      return
+    }
+
     this.config = config
     
     // 初始化右键菜单功能
@@ -37,6 +43,7 @@ export class ContextMenuModule {
     // 注册UI消息处理器
     this.registerUIHandlers()
     
+    this.isInitialized = true
     console.log('ContextMenuModule initialized')
     
     return () => this.cleanup()
@@ -48,6 +55,7 @@ export class ContextMenuModule {
   async destroy() {
     this.cleanup()
     this.config = null
+    this.isInitialized = false
     console.log('ContextMenuModule destroyed')
   }
 
@@ -60,12 +68,11 @@ export class ContextMenuModule {
   }
 
   /**
-   * 初始化右键菜单功能 - 保持原有逻辑
+   * 初始化右键菜单功能
    */
   initContextMenu() {
     // 监听右键事件，记录菜单位置
     const handleContextMenu = (e) => {
-      console.log('contextmenucontextmenucontextmenu', e)
       this.menuX = e.clientX
       this.menuY = e.clientY
     }
@@ -74,17 +81,15 @@ export class ContextMenuModule {
   }
 
   /**
-   * 注册UI消息处理器 - 完全保持原有业务逻辑
+   * 注册UI消息处理器
    */
   registerUIHandlers() {
     uiService.registerHandlers({
       // 创建聊天处理器
       [UI_API.CREATE_CHAT]: async (data) => {
-        console.log('接收到CREATE_CHAT消息', data)
-        
         let prompt = ''
         
-        // 根据不同的工具配置生成提示词 - 保持原逻辑
+        // 根据不同的工具配置生成提示词
         if (data.itemId in toolsConfig) {
           prompt = await toolsConfig[data.itemId].genPrompt(data.selectionText)
         } else if (data.itemId in menuConfig) {
@@ -97,7 +102,7 @@ export class ContextMenuModule {
           }
         }
         
-        // 确定位置 - 保持原逻辑
+        // 确定位置
         const position = data.useMenuPosition
           ? { x: this.menuX, y: this.menuY }
           : { x: window.innerWidth / 2 - 300, y: window.innerHeight / 2 - 200 }
@@ -116,7 +121,6 @@ export class ContextMenuModule {
       
       // 打开批量图片下载器处理器
       [UI_API.OPEN_BATCH_IMAGE_DOWNLOADER]: () => {
-        console.log('接收到OPEN_BATCH_IMAGE_DOWNLOADER消息')
         renderBatchImageDownloader()
         return { success: true }
       },
@@ -124,7 +128,7 @@ export class ContextMenuModule {
   }
 
   /**
-   * 创建右键菜单触发的工具栏 - 保持原有渲染逻辑
+   * 创建右键菜单触发的工具栏
    * @param {Object} data - 菜单数据
    * @param {Object} position - 位置信息
    * @param {string} prompt - 提示词

@@ -140,7 +140,7 @@ async function main() {
 
     // 页面卸载时清理资源
     window.addEventListener('beforeunload', () => {
-      console.log('destroy cause by beforeunload...')
+      console.log('Destroying ContentScript due to beforeunload...')
       app.destroy()
     })
   } catch (error) {
