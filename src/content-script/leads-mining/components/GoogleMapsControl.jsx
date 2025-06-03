@@ -112,7 +112,7 @@ function GoogleMapsControl({ selectedTask, onDataExtracted }) {
                 关键词组合
               </a>
               <Tag color="blue" style={{ fontWeight: 'normal', fontSize: 12 }}>
-                {googleMapsAdapter.description}
+                {googleMapsAdapter.displayName}
               </Tag>
             </Space>
           </Space>

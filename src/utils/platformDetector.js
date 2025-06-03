@@ -8,19 +8,19 @@ export const PLATFORM_CONFIG = {
   googleMaps: {
     id: 'googleMaps',
     name: '谷歌地图',
-    displayName: '好雨AI-谷歌地图',
+    displayName: '谷歌地图版',
     domains: ['google.com', 'google.co.jp', 'google.co.uk', 'google.de', 'google.fr', 'google.cn', 'google.com.hk'],
     pathPatterns: ['/maps', '/place'],
     urlPatterns: ['maps.google'],
-    description: '谷歌地图版'
+    description: '谷歌地图关键词组合管理'
   },
   googleSearch: {
     id: 'googleSearch',
     name: '谷歌搜索',
-    displayName: '好雨AI-谷歌搜索',
+    displayName: '谷歌搜索版',
     domains: ['google.com', 'google.co.jp', 'google.co.uk', 'google.de', 'google.fr', 'google.cn', 'google.com.hk'],
     pathPatterns: ['/search'],
-    description: '谷歌搜索平台'
+    description: '谷歌搜索关键词组合管理'
   },
   linkedin: {
     id: 'linkedin',

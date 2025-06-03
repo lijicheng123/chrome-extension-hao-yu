@@ -174,6 +174,7 @@ export class SiteAdapterModule {
 
     const container = document.createElement('div')
     container.id = 'chatgptbox-container'
+    container.className = 'haoyu-adapter-container'
     
     const componentId = `site-adapter-${this.currentSite}-${Date.now()}`
     
