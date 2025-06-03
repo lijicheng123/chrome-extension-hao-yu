@@ -9,7 +9,7 @@ import { setUserConfig, getUserConfig, isShowMiningPanel } from '../../config/in
 import { message } from 'antd'
 import { renderTranslatePanel } from '../immersive-translate'
 import { TranslationStatusIndicator } from '../immersive-translate/TranslationStatusIndicator.jsx'
-import { renderBatchImageDownloader } from '../index.jsx'
+import { renderBatchImageDownloader } from '../utils/BatchImageDownloader.js'
 
 export const DraggableBar = ({ openToolBar, foldedIcon, setLiving, activeTasks }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 })
