@@ -263,7 +263,7 @@ function GoogleSearchControl({ selectedTask }) {
         onClick={handleStart}
         disabled={!selectedTask}
       >
-        开始自动化
+        开启自动化
       </Button>
     )
   }

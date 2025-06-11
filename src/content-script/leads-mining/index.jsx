@@ -32,6 +32,7 @@ import { setUserConfig } from '../../config/index.mjs'
 
 // 样式
 import style from './index.modules.scss'
+import { isLandingPage } from './utils/googleSearchAutomation'
 
 const { Link: TypographyLink } = Typography
 
@@ -298,7 +299,9 @@ function LeadsMining({ windowType }) {
             // 其他页面的随缘挖掘：显示当前页面的联系方式
             <EmailList
               isShowCurrentPageEmails={true}
-              emailList={isGoogleMaps || isGoogleSearch ? emailList : currentPageEmails}
+              emailList={
+                isGoogleMaps || isGoogleSearch || isLandingPage() ? emailList : currentPageEmails
+              }
               handleDeleteCustomer={handleDeleteCustomer}
               locateEmail={locateEmail}
               style={style}

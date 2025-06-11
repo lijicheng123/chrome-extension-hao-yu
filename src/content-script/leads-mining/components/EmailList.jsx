@@ -164,7 +164,7 @@ const EmailList = ({
     <>
       <Divider orientation="left">
         <Badge count={emailList.length} offset={[2, -2]} size="small">
-          {isShowCurrentPageEmails ? '当页联系方式' : '发现的联系方式'}
+          {isShowCurrentPageEmails ? '当前联系方式' : '发现的联系方式'}
         </Badge>
         <Link
           size="small"

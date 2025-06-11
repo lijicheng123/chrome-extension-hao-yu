@@ -5,6 +5,7 @@ import {
   getPageMarker,
   setPageMarker
 } from '../utils/googleSearchAutomation'
+import { isGoogleSearchPage } from '../../../utils/platformDetector'
 import { 
   PAGE_DEPTH,
   PAGE_MARKER_ACTION
@@ -129,12 +130,18 @@ export const useDecisionEngine = (backgroundState, emailProcessor, taskManager, 
       return; // 如果已经执行过，则跳过后续逻辑
     }
 
+    if (isGoogleSearchPage()) {
+      console.log('当前是Google搜索页面，跳过后续逻辑')
+      return
+    }
+
     const timer = setTimeout(async () => {
       const isLanding = await isLandingPage()
       if (isLanding) {
         handleLandingPage()
         return;
       }
+
       extractCurrentPageEmails({
         forceSubmit: true,
         ai: aiFirst,
@@ -143,7 +150,11 @@ export const useDecisionEngine = (backgroundState, emailProcessor, taskManager, 
     }, 1000); // 延迟1秒执行，确保页面稳定
 
     hasExecuted.current = true; // 标记为已执行
+    console.log('========== 设置了一次 =====hasExecuted.current=====>', hasExecuted.current)
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer)
+      hasExecuted.current = false
+    };
   }, [casualMiningStatus, aiFirst]); // 依赖数组可以保持不变
 };
