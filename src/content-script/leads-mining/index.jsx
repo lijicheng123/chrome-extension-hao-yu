@@ -298,7 +298,7 @@ function LeadsMining({ windowType }) {
           {casualMiningStatus === 'cRunning' ? (
             // 其他页面的随缘挖掘：显示当前页面的联系方式
             <EmailList
-              isShowCurrentPageEmails={true}
+              isShowCurrentPageEmails={isGoogleSearch ? false : true}
               emailList={
                 isGoogleMaps || isGoogleSearch || isLandingPage() ? emailList : currentPageEmails
               }

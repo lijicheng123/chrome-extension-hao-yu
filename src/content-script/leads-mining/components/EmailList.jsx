@@ -177,6 +177,7 @@ const EmailList = ({
         <Button
           title="重新抓取"
           type="link"
+          disabled={!isShowCurrentPageEmails}
           icon={<ReloadOutlined />}
           onClick={extractCurrentPageEmails}
         />
