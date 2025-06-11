@@ -1,7 +1,7 @@
 import Browser from 'webextension-polyfill'
 import { extractPageEmails } from './emailService'
 import { isGoogleCaptchaPage, detectCaptcha } from './captchaDetector'
-import { isGoogleSearchPage, isGoogleMapsPage, isLinkedInPage } from '../../../utils/platformDetector'
+import { isGoogleSearchPage, isGoogleMapsPage, isLinkedInPage, detectCurrentPlatform } from '../../../utils/platformDetector'
 import { delay } from './delayUtils'
 import { scrollToBottom } from './webPageUtils'
 import { findElementBySelectors } from './elementUtils'
@@ -363,6 +363,7 @@ export const clickSearchResultLink = async (linkElement, keyword, taskId) => {
 export const setPageMarker = async (markerData) => {
   try {
     const marker = {
+      platform: markerData.platform || await detectCurrentPlatform(),
       from: markerData.from,
       to: markerData.to,
       action: markerData.action,

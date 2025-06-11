@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { getCurrentPlatform } from './../utils/storageUtils'
+import { getPageMarker } from '../utils/googleSearchAutomation'
 import Browser from 'webextension-polyfill'
 import { isGoogleSearchPage } from '../../../utils/platformDetector'
 export const usePlatformStorageInit = ({ setContactList = () => {} }) => {
@@ -13,7 +13,8 @@ export const usePlatformStorageInit = ({ setContactList = () => {} }) => {
 
     // 定义一个内部 async 函数来处理异步操作
     const init = async () => {
-      const platformId = await getCurrentPlatform() // 使用 await 获取平台 ID
+      const pageMarker = await getPageMarker() // 使用 await 获取平台 ID
+      const platformId = pageMarker?.platform || 'default'
 
       const storageKey = `${platformId}_contact_list`
       console.log('storageKey=====>', storageKey)
@@ -41,9 +42,9 @@ export const usePlatformStorageInit = ({ setContactList = () => {} }) => {
           console.log('进入usePlatformStorageInit syncInitialContacts', contacts)
 
           if (contacts.length > 0) {
-            console.log('初始同步联系方式列表', {
+            console.log('初始同步联系方式列表contacts===>', {
               platform: platformId,
-              contactsCount: contacts.length,
+              contacts,
             })
             setContactList(contacts)
           }
@@ -70,7 +71,10 @@ export const usePlatformStorageInit = ({ setContactList = () => {} }) => {
  */
 export const addContactsToStorage = async (contacts) => {
   try {
-    const platformId = (await getCurrentPlatform()) || 'default'
+    const pageMarker = await getPageMarker()
+    const platformId = pageMarker?.platform || 'default'
+
+    console.log('addContactsToStorage contacts ===>', contacts)
 
     const storageKey = `${platformId}_contact_list`
     // 获取现有联系方式

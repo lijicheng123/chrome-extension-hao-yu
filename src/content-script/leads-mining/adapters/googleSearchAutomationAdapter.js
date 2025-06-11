@@ -2,7 +2,6 @@ import {
   getTaskKeywords
 } from '../../../utils/keywords'
 import { isGoogleSearchPage } from '../../../utils/platformDetector'
-import { setCurrentPlatform } from '../utils/storageUtils'
 import {
   performSearch,
   getSearchResultLinks,
@@ -297,8 +296,6 @@ class GoogleSearchAutomationAdapter {
     }
 
     console.log(`${this.logPrefix} 获取到关键词`, { count: keywords.length, keywords })
-    // 设置平台名称
-    setCurrentPlatform()
     // 触发用户开始事件
     const nextAction = await automationStateManager.handleEvent(EVENT_TYPES.USER_START, {
       task,
@@ -328,7 +325,6 @@ class GoogleSearchAutomationAdapter {
    */
   async resumeAutomation() {
     console.log(`${this.logPrefix} 恢复自动化`)
-    setCurrentPlatform()
     const nextAction = await automationStateManager.handleEvent(EVENT_TYPES.USER_RESUME)
     await this.executeAction(nextAction)
   }
@@ -338,7 +334,6 @@ class GoogleSearchAutomationAdapter {
    */
   async stopAutomation() {
     console.log(`${this.logPrefix} 停止自动化`)
-    setCurrentPlatform('')
     // 清除超时
     if (this.currentTimeoutId) {
       clearTimeout(this.currentTimeoutId)
