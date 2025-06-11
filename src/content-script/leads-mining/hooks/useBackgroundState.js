@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getUserConfig, setUserConfig } from '../../../config/index.mjs'
+import { usePlatformStorageInit } from './usePlatformStorage'
 /**
  * 叫storageState似乎更合适
  * 用于管理任务状态
@@ -14,6 +15,9 @@ export const useBackgroundState = () => {
   useEffect(() => {
     init()
   }, [])
+
+  // 这里监听storage里的contactList的变化，同步的到emailList里
+  usePlatformStorageInit({ setContactList: originalSetEmailList })
 
   const init = async () => {
     const config = await getUserConfig()

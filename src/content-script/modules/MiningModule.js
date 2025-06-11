@@ -1,3 +1,5 @@
+import googleSearchAutomationAdapter from '../leads-mining/adapters/googleSearchAutomationAdapter'
+
 /**
  * 挖掘模块 - 单一职责：处理线索挖掘功能
  * 高内聚：所有挖掘相关的逻辑都在这里  
@@ -7,6 +9,7 @@
 export class MiningModule {
   constructor() {
     this.config = null
+    this.automationInitialized = false
   }
 
   /**
@@ -18,15 +21,38 @@ export class MiningModule {
     
     console.log('MiningModule initialized - delegating rendering to SidebarModule')
     
+    // 初始化自动化功能
+    await this.initializeAutomation()
+    
     return () => this.cleanup()
+  }
+
+  /**
+   * 初始化自动化功能
+   */
+  async initializeAutomation() {
+    if (this.automationInitialized) return
+    
+    try {
+      // 初始化Google搜索自动化（如果有正在进行的任务）
+      await googleSearchAutomationAdapter.initialize()
+      
+      // 注意：目标页面处理逻辑已整合到index.jsx中，不再需要单独的处理器
+      
+      this.automationInitialized = true
+      console.log('MiningModule: 自动化功能初始化完成')
+    } catch (error) {
+      console.error('MiningModule: 自动化功能初始化失败:', error)
+    }
   }
 
   /**
    * 销毁模块
    */
   async destroy() {
-    this.cleanup()
+    await this.cleanup()
     this.config = null
+    this.automationInitialized = false
     console.log('MiningModule destroyed')
   }
 
@@ -41,7 +67,15 @@ export class MiningModule {
   /**
    * 清理资源
    */
-  cleanup() {
-    // 挖掘功能的实际渲染由SidebarModule处理，这里不需要清理
+  async cleanup() {
+    // 正常情况下不做处理，因为刷新后还想按照原来的方式进行下去
+    // try {
+    //   if (googleSearchAutomationAdapter.isAutomating()) {
+    //     await googleSearchAutomationAdapter.stopAutomation()
+    //     console.log('MiningModule: 已停止正在运行的自动化')
+    //   }
+    // } catch (error) {
+    //   console.error('MiningModule: 清理自动化资源失败:', error)
+    // }
   }
 } 

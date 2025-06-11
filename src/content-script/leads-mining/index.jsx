@@ -62,15 +62,8 @@ function LeadsMining({ windowType }) {
   const { extractCurrentPageEmails, currentPageEmails, handleDeleteCustomer, locateEmail } =
     emailProcessor
 
-  useEffect(() => {
-    const [navigationEntry] = performance.getEntriesByType('navigation')
-    if (navigationEntry.type === 'reload') {
-      console.log('页面已刷新')
-    }
-  }, [])
-
-  // 决策引擎
-  useDecisionEngine(backgroundState, emailProcessor)
+  // 决策引擎 - 传入所有必要的参数
+  useDecisionEngine(backgroundState, emailProcessor, taskManager, setEmailList)
 
   // 检查是否为谷歌地图页面
   const isGoogleMaps = isGoogleMapsPage()
@@ -300,16 +293,19 @@ function LeadsMining({ windowType }) {
             />
           )}
 
+          {/* 根据页面类型显示不同的联系方式列表 */}
           {casualMiningStatus === 'cRunning' ? (
+            // 其他页面的随缘挖掘：显示当前页面的联系方式
             <EmailList
               isShowCurrentPageEmails={true}
-              emailList={isGoogleMaps ? emailList : currentPageEmails}
+              emailList={isGoogleMaps || isGoogleSearch ? emailList : currentPageEmails}
               handleDeleteCustomer={handleDeleteCustomer}
               locateEmail={locateEmail}
               style={style}
               extractCurrentPageEmails={handleExtractWithAI}
             />
           ) : (
+            // 其他页面的手动提取：显示本地存储的联系方式
             <EmailList
               isShowCurrentPageEmails={false}
               emailList={emailList}

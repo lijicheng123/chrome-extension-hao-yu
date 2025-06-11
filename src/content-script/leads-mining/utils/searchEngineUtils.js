@@ -2,6 +2,8 @@
  * 搜索引擎辅助工具函数
  */
 
+import { delay as delayFn, getRandomDelay as randomDelayFn } from './delayUtils'
+
 // 常量定义
 export const PAGE_DEPTH_KEY = 'leadsMining_pageDepth'
 export const MAX_PAGE_DEPTH = 1
@@ -52,23 +54,9 @@ export const isDetailPage = () => {
   return depthParam !== null && depthParam > 0
 }
 
-
-/**
- * 创建延时函数
- * @param {number} ms - 延时毫秒数
- * @returns {Promise} 延时Promise
- */
-export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-/**
- * 获取随机延时时间
- * @param {number} min - 最小秒数
- * @param {number} max - 最大秒数
- * @returns {number} 随机毫秒数
- */
-export const getRandomDelay = (min, max) => {
-  return (Math.random() * (max - min) + min) * 1000
-}
+// 重新导出统一的延迟函数
+export const delay = delayFn
+export const getRandomDelay = randomDelayFn
 
 /**
  * 获取默认的延时参数

@@ -5,6 +5,8 @@ import {
 import {
   clearSearchInput,
   inputSearchKeyword,
+  performSearch,
+  extractDataFromLandingPage
 } from '../utils/googleSearchAutomation'
 
 // 获取谷歌搜索平台关键词配置
@@ -18,6 +20,42 @@ const googleSearchAdapter = {
   
   // 从任务中动态获取关键词
   getKeywords: (selectedTask) => getTaskKeywords(selectedTask),
+
+  // 获取存储键（兼容useLeadMiner hook）
+  getStorageKeys: (taskId) => ({
+    extractedDataKey: `googleSearch_extractedData_${taskId}`,
+    miningStateKey: `googleSearch_miningState_${taskId}`,
+    searchStateKey: `googleSearch_searchState_${taskId}`,
+    statisticsKey: `googleSearch_statistics_${taskId}`
+  }),
+
+  // 执行搜索
+  performSearch: async (keyword) => {
+    try {
+      const success = await performSearch(keyword)
+      if (success) {
+        console.log(`GoogleSearchAdapter: Search performed for keyword "${keyword}"`)
+      }
+      return success
+    } catch (error) {
+      console.error(`GoogleSearchAdapter: Error performing search for keyword "${keyword}":`, error)
+      return false
+    }
+  },
+
+  // 从页面提取数据
+  // eslint-disable-next-line no-unused-vars
+  extractDataFromPage: async (keyword, _taskId, _getMiningState) => {
+    try {
+      // 对于Google搜索，这个方法主要用于提取目标页面的信息
+      const extractedData = await extractDataFromLandingPage()
+      console.log(`GoogleSearchAdapter: Extracted ${extractedData.length} items for keyword "${keyword}"`)
+      return extractedData
+    } catch (error) {
+      console.error(`GoogleSearchAdapter: Error extracting data for keyword "${keyword}":`, error)
+      return []
+    }
+  },
 
   // 基础搜索操作
   clearSearchInput: async () => {

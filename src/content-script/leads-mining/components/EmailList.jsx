@@ -1,11 +1,35 @@
 import React from 'react'
-import { Card, Typography, Space, Empty, Divider, Button, Badge, Tooltip } from 'antd'
+import { Card, Typography, Space, Empty, Divider, Button, Badge, Tooltip, Modal } from 'antd'
 import { API_CONFIG } from '../../../constants/api'
 const { Paragraph, Text, Link } = Typography
-import { ReloadOutlined, DownloadOutlined } from '@ant-design/icons'
+import { ReloadOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons'
 import PropTypes from 'prop-types'
 import * as XLSX from 'xlsx'
-import { getPlatformDisplayName, isGoogleMapsPage } from '../../../utils/platformDetector'
+import {
+  getPlatformDisplayName,
+  isGoogleMapsPage,
+  detectCurrentPlatform,
+} from '../../../utils/platformDetector'
+import Browser from 'webextension-polyfill'
+
+/**
+ * 清除storage中的联系方式
+ */
+const clearStorageContacts = async () => {
+  try {
+    const platformId = detectCurrentPlatform() || 'default'
+
+    const storageKey = `${platformId}_contact_list`
+    await Browser.storage.local.set({
+      [storageKey]: [],
+    })
+
+    console.log(`已清除storage中的联系方式`, { platform: platformId })
+  } catch (error) {
+    console.error('清除storage联系方式失败:', error)
+  }
+}
+
 /**
  * 邮箱列表组件
  * 显示发现的邮箱列表
@@ -17,6 +41,19 @@ const EmailList = ({
   style,
   extractCurrentPageEmails,
 }) => {
+  // 手动删除所有联系方式
+  const handleClearContacts = () => {
+    Modal.confirm({
+      title: '确认删除',
+      content: '是否删除本地所有联系方式？删除后只能到好雨AI后台查看',
+      okText: '确认删除',
+      cancelText: '取消',
+      onOk: () => {
+        clearStorageContacts()
+      },
+    })
+  }
+
   // 导出Excel功能
   const exportToExcel = () => {
     if (emailList.length === 0) {
@@ -118,6 +155,9 @@ const EmailList = ({
 
     // 导出文件
     XLSX.writeFile(workbook, fileName)
+
+    // 导出完成后，将storage里的联系方式删除
+    clearStorageContacts()
   }
 
   return (
@@ -146,6 +186,14 @@ const EmailList = ({
           icon={<DownloadOutlined />}
           onClick={exportToExcel}
           disabled={emailList.length === 0}
+        />
+        <Button
+          title="清空联系方式"
+          type="link"
+          icon={<DeleteOutlined />}
+          onClick={handleClearContacts}
+          disabled={emailList.length === 0}
+          danger
         />
       </Divider>
 

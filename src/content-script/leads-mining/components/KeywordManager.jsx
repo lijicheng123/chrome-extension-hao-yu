@@ -44,6 +44,8 @@ const KeywordManager = forwardRef(function KeywordManager(
     isProcessing = false,
     customActions = null,
     allowSelection = true,
+    currentKeywordIndex = null, // 外部传入的当前关键词索引
+    automationMode = false, // 是否为自动化模式
   },
   ref,
 ) {
@@ -336,6 +338,68 @@ const KeywordManager = forwardRef(function KeywordManager(
     }
   }, [keywords, loadStateFromStorage])
 
+  // 在自动化模式下，同步外部传入的当前关键词索引
+  useEffect(() => {
+    if (automationMode && currentKeywordIndex !== null && keywords.length > 0) {
+      const newCurrentKeyword = keywords[currentKeywordIndex]
+      if (newCurrentKeyword && newCurrentKeyword !== selectedKeyword) {
+        console.log('KeywordManager: 同步外部关键词索引', {
+          currentKeywordIndex,
+          newCurrentKeyword,
+          previousKeyword: selectedKeyword,
+        })
+        setSelectedKeyword(newCurrentKeyword)
+
+        // 在自动化模式下，更新关键词状态
+        updateKeywordStatusFromAutomation(currentKeywordIndex)
+      }
+    }
+  }, [automationMode, currentKeywordIndex, keywords, selectedKeyword, updateKeywordStatusFromAutomation])
+
+  // 在自动化模式下，根据索引更新关键词状态
+  const updateKeywordStatusFromAutomation = useCallback(
+    (index) => {
+      if (!automationMode || !keywords.length) return
+
+      const newKeywordStates = { ...keywordStates }
+
+      keywords.forEach((keyword, i) => {
+        if (i < index) {
+          // 之前的关键词标记为已完成
+          if (newKeywordStates[keyword]?.status !== KEYWORD_STATUS.COMPLETED) {
+            newKeywordStates[keyword] = {
+              ...newKeywordStates[keyword],
+              status: KEYWORD_STATUS.COMPLETED,
+              lastUpdate: new Date().toISOString(),
+            }
+          }
+        } else if (i === index) {
+          // 当前关键词标记为处理中
+          if (newKeywordStates[keyword]?.status !== KEYWORD_STATUS.PROCESSING) {
+            newKeywordStates[keyword] = {
+              ...newKeywordStates[keyword],
+              status: KEYWORD_STATUS.PROCESSING,
+              lastUpdate: new Date().toISOString(),
+            }
+          }
+        } else {
+          // 后续关键词保持待处理状态
+          if (!newKeywordStates[keyword]) {
+            newKeywordStates[keyword] = {
+              status: KEYWORD_STATUS.PENDING,
+              processedCount: 0,
+              lastUpdate: null,
+            }
+          }
+        }
+      })
+
+      setKeywordStates(newKeywordStates)
+      saveStateToStorage(newKeywordStates)
+    },
+    [automationMode, keywords, keywordStates, saveStateToStorage],
+  )
+
   // 统计信息
   const stats = {
     total: keywords.length,
@@ -572,12 +636,6 @@ const KeywordManager = forwardRef(function KeywordManager(
           </div>
         )}
       </div>
-
-      {/* {allowSelection && (
-        <Text type="secondary" style={{ fontSize: '12px', marginTop: 8, display: 'block' }}>
-          💡 点击&ldquo;待处理&rdquo;状态的关键词可选中使用
-        </Text>
-      )} */}
     </Card>
   )
 })
@@ -594,6 +652,8 @@ KeywordManager.propTypes = {
   isProcessing: PropTypes.bool,
   customActions: PropTypes.node,
   allowSelection: PropTypes.bool,
+  currentKeywordIndex: PropTypes.number,
+  automationMode: PropTypes.bool,
 }
 
 export default KeywordManager

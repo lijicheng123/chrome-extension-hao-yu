@@ -162,6 +162,7 @@ function useLeadMiner(platformAdapter, selectedTask, onDataExtracted, keywordMan
 
         const taskId = selectedTask?.id || 'default';
         // 将 hook 的 getMiningState 传递给适配器，以便在需要时允许更细粒度的停止点
+        // INFO:谷歌搜索自动化中不会调用这个方法，那里是个空函数
         const extractedItems = await platformAdapter.extractDataFromPage(keyword, taskId, getMiningState);
         
         if (extractedItems && extractedItems.length > 0) {
@@ -172,6 +173,7 @@ function useLeadMiner(platformAdapter, selectedTask, onDataExtracted, keywordMan
             onDataExtracted(extractedItems); // 通知父组件有新数据提取
           }
         } else {
+          // TODO: 谷歌搜索自动化中，这里是否要跳过？待研究
            updateKeywordUIMStatus(keyword, KEYWORD_STATUS.COMPLETED, { processedCount: 0 }); // 即使没有数据也标记为已完成
         }
 

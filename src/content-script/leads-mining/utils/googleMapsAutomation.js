@@ -1,6 +1,10 @@
-import { extractGoogleMapsContacts } from './googleMapsExtractor'
-import { mediumDelay, shortDelay, longDelay } from './delayUtils'
 import { message } from 'antd'
+import { delay } from './delayUtils'
+import { shortDelay, mediumDelay, longDelay } from './delayUtils'
+import { findElementBySelectors } from './elementUtils'
+import { extractGoogleMapsContacts } from './googleMapsExtractor'
+import { extractPageEmails } from './emailService'
+import { waitForElementInContainer, scrollElementIntoView as scrollToView } from './elementUtils'
 
 /**
  * 谷歌地图自动化工具
@@ -12,26 +16,15 @@ import { message } from 'antd'
  * @returns {Element|null} 搜索框元素
  */
 const getGoogleMapsSearchInput = () => {
-  // 尝试多种选择器找到搜索框
   const selectors = [
     'input[id="searchboxinput"]',
+    'input[data-test-id="searchbox-searchbox"]',
+    'input[jsaction*="paste"]',
     'input[placeholder*="搜索"]',
     'input[placeholder*="Search"]',
-    'input[aria-label*="搜索"]',
-    'input[data-test-id="searchbox-input"]',
-    'input[name="q"]',
   ]
   
-  for (const selector of selectors) {
-    const input = document.querySelector(selector)
-    if (input) {
-      console.log(`找到搜索框: ${selector}`)
-      return input
-    }
-  }
-  
-  console.warn('未找到谷歌地图搜索框')
-  return null
+  return findElementBySelectors(selectors, '谷歌地图搜索框')
 }
 
 /**
@@ -39,7 +32,6 @@ const getGoogleMapsSearchInput = () => {
  * @returns {Element|null} 搜索按钮元素
  */
 const getGoogleMapsSearchButton = () => {
-  // 尝试多种选择器找到搜索按钮
   const selectors = [
     'button[id="searchbox-searchbutton"]',
     'button[aria-label*="搜索"]',
@@ -48,16 +40,7 @@ const getGoogleMapsSearchButton = () => {
     '[jsaction*="search"] button',
   ]
   
-  for (const selector of selectors) {
-    const button = document.querySelector(selector)
-    if (button) {
-      console.log(`找到搜索按钮: ${selector}`)
-      return button
-    }
-  }
-  
-  console.warn('未找到谷歌地图搜索按钮')
-  return null
+  return findElementBySelectors(selectors, '谷歌地图搜索按钮')
 }
 
 /**

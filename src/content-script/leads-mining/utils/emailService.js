@@ -2,6 +2,7 @@ import { customerDevService } from '../../../services/api/leadsMining'
 import { extractAllEmails } from './emailExtractor'
 import { detectCaptcha } from './captchaDetector'
 import { optimizeUrl } from './searchEngineUtils'
+import { addContactsToStorage } from './../hooks/usePlatformStorage'
 
 /**
  * 从当前页面提取邮箱
@@ -21,6 +22,11 @@ export const extractPageEmails = async (options) => {
       return []
     }
     const emails = await extractAllEmails(options)
+    // 在这里将联系方式添加到全局存储
+    if (emails.length > 0) {
+      await addContactsToStorage(emails)
+    }
+    
     if (onExtracted && typeof onExtracted === 'function') {
       onExtracted(emails)
     }

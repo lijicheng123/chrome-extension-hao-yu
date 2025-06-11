@@ -52,10 +52,11 @@ import { generateAnswersWithClaudeWebApi } from '../services/apis/claude-web.mjs
 import { generateAnswersWithMoonshotCompletionApi } from '../services/apis/moonshot-api.mjs'
 import { generateAnswersWithMoonshotWebApi } from '../services/apis/moonshot-web.mjs'
 import { isUsingModelName } from '../utils/model-name-convert.mjs'
-import { registerCookieListener } from './syncCookies.mjs'
-import leadsMiningService from '../services/messaging/leadsMining'
+import { registerCookieListener } from './syncCookies.mjs' // eslint-disable-line no-unused-vars
+import leadsMiningService from '../services/messaging/leadsMining' // eslint-disable-line no-unused-vars
 import { ApiBackgroundHandlers } from '../services/messaging/api'
 import { UiBackgroundHandlers } from '../services/messaging/ui'
+import { TabManagerBackgroundHandlers } from '../services/messaging/tabManager'
 import i18nService from '../services/messaging/i18n'
 import { AuthBackgroundHandlers } from '../services/messaging/auth'
 import { fetchOdooUserSessionInfo, clearUserSessionInfo } from './userSessionInfo.mjs'
@@ -320,6 +321,9 @@ ApiBackgroundHandlers.registerHandlers()
 
 // 注册UI处理器
 UiBackgroundHandlers.registerHandlers()
+
+// 注册标签页管理处理器
+TabManagerBackgroundHandlers.registerHandlers()
 
 // 注册i18n处理器
 i18nService.registerHandlers({

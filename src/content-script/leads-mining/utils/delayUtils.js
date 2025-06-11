@@ -42,3 +42,11 @@ export const mediumDelay = () => randomDelay(1000, 2000)
  * @returns {Promise<void>}
  */
 export const longDelay = () => randomDelay(2000, 3000) 
+
+/**
+ * 长延迟 (2-3秒)
+ * @returns {Promise<void>}
+ */
+export const delay = (delayTime) => {
+  return new Promise(resolve => setTimeout(resolve, delayTime))
+}
