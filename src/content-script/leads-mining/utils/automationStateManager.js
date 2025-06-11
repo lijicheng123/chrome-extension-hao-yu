@@ -339,8 +339,8 @@ export class AutomationStateManager {
       currentOperatingUrl: null
     }
     
-    if (extractedData) {
-      updates.extractedInfoCount = this.currentState.extractedInfoCount + 1
+    if (extractedData?.length) {
+      updates.extractedInfoCount = this.currentState.extractedInfoCount + extractedData?.length
     }
     
     await this.updateState(updates)

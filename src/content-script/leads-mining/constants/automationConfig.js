@@ -219,7 +219,6 @@ export const AUTOMATION_STORAGE_KEYS = {
   CURRENT_RESULTS: 'G_S_A_current_results',
   PAGE_MARKER: 'G_S_A_page_marker',
   SELECTED_TASK: 'selectedTask', // 以后提到外边去
-  CURRENT_PLATFORM: 'currentPlatform', // 以后提到外边去
 }
 
 // 选择器定义

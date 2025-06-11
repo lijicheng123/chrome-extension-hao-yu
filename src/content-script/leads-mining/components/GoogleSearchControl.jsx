@@ -170,6 +170,8 @@ function GoogleSearchControl({ selectedTask }) {
     } catch (error) {
       console.error(`${logPrefix} 启动自动化失败`, error)
     }
+    // 通知同步一下
+    syncStateFromStorage()
   }, [selectedTask])
 
   /**
@@ -184,6 +186,8 @@ function GoogleSearchControl({ selectedTask }) {
     } catch (error) {
       console.error(`${logPrefix} 暂停自动化失败`, error)
     }
+    // 通知同步一下
+    syncStateFromStorage()
   }, [])
 
   /**
@@ -198,6 +202,8 @@ function GoogleSearchControl({ selectedTask }) {
     } catch (error) {
       console.error(`${logPrefix} 恢复自动化失败`, error)
     }
+    // 通知同步一下
+    syncStateFromStorage()
   }, [])
 
   /**
@@ -212,6 +218,9 @@ function GoogleSearchControl({ selectedTask }) {
     } catch (error) {
       console.error(`${logPrefix} 停止自动化失败`, error)
     }
+
+    // 通知同步一下
+    syncStateFromStorage()
   }, [])
 
   const renderTitle = () => {
@@ -310,7 +319,7 @@ function GoogleSearchControl({ selectedTask }) {
             <Col span={8}>
               <span style={{ fontSize: '12px', color: '#666' }}>
                 <strong>已提取：</strong>
-                {progress.extractedInfo} 条信息
+                {progress.extractedInfo} 次信息
               </span>
             </Col>
           </Row>
