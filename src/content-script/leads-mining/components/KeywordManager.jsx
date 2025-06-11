@@ -445,18 +445,18 @@ const KeywordManager = forwardRef(function KeywordManager(
       {/* 统计信息 */}
       {showStats && (
         <Row gutter={16} style={{ marginBottom: 16, fontSize: '12px !important' }}>
-          <Col span={6}>
+          <Col span={8}>
             <Text type="secondary">总数: {stats.total}</Text>
           </Col>
-          <Col span={6}>
+          <Col span={8}>
             <Text type="warning">待处理: {stats.pending}</Text>
           </Col>
-          <Col span={6}>
+          <Col span={8}>
             <Text type="success">已完成: {stats.completed}</Text>
           </Col>
-          <Col span={6}>
+          {/* <Col span={6}>
             <Text type="primary">已挖掘: {stats.totalProcessed}</Text>
-          </Col>
+          </Col> */}
         </Row>
       )}
 
