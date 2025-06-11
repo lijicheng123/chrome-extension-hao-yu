@@ -219,9 +219,25 @@ function GoogleSearchControl({ selectedTask }) {
       console.error(`${logPrefix} 停止自动化失败`, error)
     }
 
+    // 将关键词初始化到关键词管理组件，确保用户可以看到关键词列表
+    if (keywordManagerRef.current && selectedTask) {
+      try {
+        console.log(`${logPrefix} 初始化关键词到关键词管理组件`)
+        // 静默重置所有关键词状态为待处理（不显示确认弹窗）
+        const success = await keywordManagerRef.current.resetAllStatesSilently()
+        if (success) {
+          console.log(`${logPrefix} 关键词状态已重置为初始状态`)
+        } else {
+          console.error(`${logPrefix} 重置关键词状态失败`)
+        }
+      } catch (error) {
+        console.error(`${logPrefix} 初始化关键词失败`, error)
+      }
+    }
+
     // 通知同步一下
     syncStateFromStorage()
-  }, [])
+  }, [selectedTask])
 
   const renderTitle = () => {
     const { isProcessing, isPaused, statusText } = uiState

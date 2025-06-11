@@ -276,14 +276,24 @@ export class AutomationStateManager {
    */
   async handleUserStop() {
     if (this.currentState) {
-      await this.updateState({ 
-        status: AUTOMATION_STATUS.COMPLETED,
+      // 重置状态为初始状态，保留关键词列表但重置所有执行状态
+      const resetState = {
+        status: AUTOMATION_STATUS.IDLE,
+        currentKeywordIndex: 0,
+        currentPage: 1,
+        currentResultIndex: 0,
+        currentSerpResults: [],
+        totalResultsCount: 0,
+        processedLinksCount: 0,
+        extractedInfoCount: 0,
+        currentOperatingUrl: null,
         endTime: Date.now()
-      })
-      console.log(`${this.logPrefix} 用户停止自动化`)
+      }
+      
+      await this.updateState(resetState)
+      console.log(`${this.logPrefix} 用户停止自动化，状态已重置为初始状态`)
     }
     
-    await this.clearState()
     return ACTION_TYPES.STOP_AUTOMATION
   }
 

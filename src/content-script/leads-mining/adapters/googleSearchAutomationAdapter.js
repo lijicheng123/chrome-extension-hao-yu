@@ -724,7 +724,7 @@ class GoogleSearchAutomationAdapter {
     // 清除所有结果样式
     clearAllResultStyles()
     
-    console.log(`${this.logPrefix} 自动化已停止`)
+    console.log(`${this.logPrefix} 自动化已停止，状态已重置为初始状态`)
   }
 
   /**

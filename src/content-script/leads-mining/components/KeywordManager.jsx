@@ -250,7 +250,37 @@ const KeywordManager = forwardRef(function KeywordManager(
     ],
   )
 
-  // 重置所有状态
+  // 执行重置状态的核心逻辑
+  const performReset = useCallback(async () => {
+    try {
+      const initialKeywordStates = {}
+      keywords.forEach((keyword) => {
+        initialKeywordStates[keyword] = {
+          status: KEYWORD_STATUS.PENDING,
+          processedCount: 0,
+          lastUpdate: null,
+        }
+      })
+
+      const firstKeyword = keywords[0] || null
+      setKeywordStates(initialKeywordStates)
+      setSelectedKeyword(firstKeyword)
+
+      await saveStateToStorage(initialKeywordStates, firstKeyword)
+
+      if (firstKeyword && onKeywordSelect) {
+        onKeywordSelect(firstKeyword)
+      }
+
+      console.log('关键词状态已重置为初始状态')
+      return true
+    } catch (error) {
+      console.error('重置状态失败:', error)
+      return false
+    }
+  }, [keywords, saveStateToStorage, onKeywordSelect])
+
+  // 重置所有状态（带确认弹窗）
   const resetAllStates = useCallback(async () => {
     Modal.confirm({
       title: '重置关键词状态',
@@ -259,34 +289,20 @@ const KeywordManager = forwardRef(function KeywordManager(
       cancelText: '取消',
       okType: 'danger',
       onOk: async () => {
-        try {
-          const initialKeywordStates = {}
-          keywords.forEach((keyword) => {
-            initialKeywordStates[keyword] = {
-              status: KEYWORD_STATUS.PENDING,
-              processedCount: 0,
-              lastUpdate: null,
-            }
-          })
-
-          const firstKeyword = keywords[0] || null
-          setKeywordStates(initialKeywordStates)
-          setSelectedKeyword(firstKeyword)
-
-          await saveStateToStorage(initialKeywordStates, firstKeyword)
-
-          if (firstKeyword && onKeywordSelect) {
-            onKeywordSelect(firstKeyword)
-          }
-
+        const success = await performReset()
+        if (success) {
           message.success('所有关键词状态已重置！')
-        } catch (error) {
-          console.error('重置状态失败:', error)
+        } else {
           message.error('重置状态失败，请重试')
         }
       },
     })
-  }, [keywords, saveStateToStorage, onKeywordSelect])
+  }, [performReset])
+
+  // 静默重置所有状态（不显示确认弹窗，用于程序内部调用）
+  const resetAllStatesSilently = useCallback(async () => {
+    return await performReset()
+  }, [performReset])
 
   // 暴露方法给父组件
   useImperativeHandle(
@@ -294,6 +310,7 @@ const KeywordManager = forwardRef(function KeywordManager(
     () => ({
       updateKeywordStatus,
       resetAllStates,
+      resetAllStatesSilently,
       getSelectedKeyword: () => selectedKeyword,
       getKeywordStates: () => keywordStates,
       setSelectedKeyword: (keyword) => {
@@ -308,6 +325,7 @@ const KeywordManager = forwardRef(function KeywordManager(
     [
       updateKeywordStatus,
       resetAllStates,
+      resetAllStatesSilently,
       selectedKeyword,
       keywordStates,
       getStorageKeys,
