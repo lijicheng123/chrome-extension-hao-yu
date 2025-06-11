@@ -217,11 +217,11 @@ export const applyResultStyle = (element, status) => {
   injectSerpResultStyles()
   
   // 清除所有状态类
-  element.classList.remove(...ALL_RESULT_STATUS_CLASSES)
+  element.classList?.remove(...ALL_RESULT_STATUS_CLASSES)
   
   // 添加新的状态类
   const statusClass = RESULT_STATUS_CLASSES[status]
-  element.classList.add(statusClass)
+  element.classList?.add(statusClass)
   
   console.log(`已应用结果样式: ${status} -> ${statusClass}`, { element })
 }
