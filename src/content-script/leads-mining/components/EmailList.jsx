@@ -279,9 +279,11 @@ const EmailList = ({
                     <Text strong>{user_email}</Text>
                   </Tooltip>
                 </Paragraph>
-                <Space>
-                  <a onClick={() => locateEmail(emailInfo)}>定位</a>
-                </Space>
+                {isShowCurrentPageEmails && (
+                  <Space>
+                    <a onClick={() => locateEmail(emailInfo)}>定位</a>
+                  </Space>
+                )}
               </div>
             </Card>
           )
