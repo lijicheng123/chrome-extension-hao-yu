@@ -57,8 +57,15 @@ function GoogleSearchControl({ selectedTask }) {
 
   // 定期同步状态
   useEffect(() => {
-    const intervalId = setInterval(syncStateFromStorage, 1000)
-    return () => clearInterval(intervalId)
+    const syncState = () => {
+      if (document.visibilityState === 'visible') {
+        syncStateFromStorage()
+      }
+    }
+    document.addEventListener('visibilitychange', syncState)
+    return () => {
+      document.removeEventListener('visibilitychange', syncState)
+    }
   }, [])
 
   /**
@@ -109,6 +116,7 @@ function GoogleSearchControl({ selectedTask }) {
           currentKeywordIndex: 0,
         })
       }
+      console.log('同步状态完成')
     } catch (error) {
       console.error(`${logPrefix} 同步状态失败`, error)
     }
@@ -210,7 +218,7 @@ function GoogleSearchControl({ selectedTask }) {
     const { isProcessing, isPaused, statusText } = uiState
     return (
       <Space>
-        <h3 style={{ margin: 0, color: '#1890ff' }}>谷歌搜索自动档</h3>
+        <h3 style={{ margin: 0, color: '#1890ff' }}>谷歌搜索获客</h3>
         <Badge
           count={
             <Tag color={isProcessing ? 'processing' : isPaused ? 'warning' : 'default'}>
