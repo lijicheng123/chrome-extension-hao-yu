@@ -2,6 +2,7 @@ import {
   getTaskKeywords
 } from '../../../utils/keywords'
 import { isGoogleSearchPage } from '../../../utils/platformDetector'
+import { TabManagerContentAPI } from '../../../services/messaging/tabManager'
 import {
   performSearch,
   getSearchResultLinks,
@@ -29,6 +30,7 @@ import {
 import { automationStateManager } from '../utils/automationStateManager'
 // import pageMarkerListener from '../utils/pageMarkerListener'
 import Browser from 'webextension-polyfill'
+import { message } from 'antd'
 
 // 获取谷歌搜索平台关键词配置
 // const GOOGLE_SEARCH_CONFIG = getPlatformConfig('googleSearch')
@@ -283,10 +285,23 @@ class GoogleSearchAutomationAdapter {
     console.log(`${this.logPrefix} ========== 页面就绪事件结束 ==========`)
   }
 
+  async checkCanIStart() {
+    const { isSingle, count} = await TabManagerContentAPI.checkSingleTab()
+    if (!isSingle) {
+      message.error(`当前有${count}个标签页，请关闭其他${count - 1}个标签页`, 10)
+      return false
+    }
+    return true
+  }
+
   /**
    * 开始自动化
    */
   async startAutomation(task) {
+    const canIStart = await this.checkCanIStart()
+    if (!canIStart) {
+      return
+    }
     console.log(`${this.logPrefix} 开始自动化`, { task })
     // 获取关键词列表
     const keywords = await this.getKeywordsList(task)
@@ -324,6 +339,10 @@ class GoogleSearchAutomationAdapter {
    * 恢复自动化
    */
   async resumeAutomation() {
+    const canIStart = await this.checkCanIStart()
+    if (!canIStart) {
+      return
+    }
     console.log(`${this.logPrefix} 恢复自动化`)
     const nextAction = await automationStateManager.handleEvent(EVENT_TYPES.USER_RESUME)
     await this.executeAction(nextAction)
