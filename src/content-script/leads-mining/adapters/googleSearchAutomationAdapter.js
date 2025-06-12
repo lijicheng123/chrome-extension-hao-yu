@@ -15,7 +15,8 @@ import {
   clickSearchResultLink,
   checkAndHandleCaptcha,
   hasSearchResults,
-  listenToPageMarkerChanges
+  listenToPageMarkerChanges,
+  clearPageMarker
 } from '../utils/googleSearchAutomation'
 import { 
   AUTOMATION_CONFIG, 
@@ -294,6 +295,11 @@ class GoogleSearchAutomationAdapter {
     return true
   }
 
+  // 停止或者暂停后清空pageMarker
+  async afterStopOrPause() {
+    await clearPageMarker()
+  }
+
   /**
    * 开始自动化
    */
@@ -333,6 +339,7 @@ class GoogleSearchAutomationAdapter {
 
     const nextAction = await automationStateManager.handleEvent(EVENT_TYPES.USER_PAUSE)
     await this.executeAction(nextAction)
+    await this.afterStopOrPause()
   }
 
   /**
@@ -361,6 +368,7 @@ class GoogleSearchAutomationAdapter {
 
     const nextAction = await automationStateManager.handleEvent(EVENT_TYPES.USER_STOP)
     await this.executeAction(nextAction)
+    await this.afterStopOrPause()
   }
 
   /**
