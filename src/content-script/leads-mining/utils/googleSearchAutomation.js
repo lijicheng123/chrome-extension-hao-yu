@@ -333,8 +333,10 @@ export const clickSearchResultLink = async (linkElement, keyword, taskId) => {
       resultUrl: url
     })
     await delay(3000)
-    // 在新标签页中打开链接
-    const newTab = window.open(url, '_blank')
+    // 在新标签页中打开链接，添加 __h_d=1 参数
+    const urlWithParams = new URL(url)
+    urlWithParams.searchParams.set('__h_d', '1') // 谷歌搜索深度1
+    const newTab = window.open(urlWithParams.toString(), '_blank')
     if (newTab) {
       console.log('已在新标签页打开链接')
       return true
@@ -587,7 +589,19 @@ export const isLandingPage = async () => {
   const isGoogleSearch = isGoogleSearchPage()
   const isLinkedIn = isLinkedInPage()
   const isSpecifiedPlatform = isGoogleMaps || isGoogleSearch || isLinkedIn
-  
+  // 这里写： url中的__h_d 为1的才是LandingPage，大于1的不是LandingPage
+  const urlParams = new URLSearchParams(window.location.search)
+  const pageDepth = urlParams.get('_h_d')
+  if (pageDepth) {
+    if (Number(pageDepth) > 1) {
+      return false
+    }
+    if (Number(pageDepth) === 1) {
+      return true
+    }
+  }
+
+
   console.log('平台检查:', {
     currentUrl: window.location.href,
     isGoogleMaps,
