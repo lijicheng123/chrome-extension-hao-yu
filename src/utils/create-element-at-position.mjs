@@ -14,6 +14,6 @@ export function createElementAtPosition(x = 0, y = 0, containerType, zIndex = 21
     element.style.left = containerStyle.left ?? `${x}px`
   }
   element.style.top = containerStyle.top ?? `${y}px`
-  document.documentElement.appendChild(element)
+  document.body.appendChild(element)
   return element
 }

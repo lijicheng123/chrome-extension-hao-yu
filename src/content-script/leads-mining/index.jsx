@@ -27,6 +27,7 @@ import LoginControl from '../../components/LoginControl'
 import GoogleMapsControl from './components/GoogleMapsControl'
 import GoogleSearchControl from './components/GoogleSearchControl'
 import LinkedInSearchControl from './components/LinkedInSearchControl'
+import AIBackgroundCheckButton from './components/AIBackgroundCheckButton'
 
 import { setUserConfig } from '../../config/index.mjs'
 
@@ -293,6 +294,9 @@ function LeadsMining({ windowType }) {
               onDataExtracted={handleLinkedInDataExtracted}
             />
           )}
+
+          {/* AI背调按钮 - 仅在LandingPage显示 */}
+          <AIBackgroundCheckButton />
 
           {/* 根据页面类型显示不同的联系方式列表 */}
           {casualMiningStatus === 'cRunning' ? (

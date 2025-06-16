@@ -29,12 +29,14 @@ export const useDecisionEngine = (backgroundState, emailProcessor, taskManager, 
 
   const hasExecuted = useRef(false); // 使用 useRef 来保存执行状态
 
-  const handleLandingPage = async () => {
+  const handleLandingPage = async (pageMarker) => {
     console.log('========== LandingPage处理开始 ==========')
     console.log('当前是LandingPage，开始进行停留、滚动、提取线索')
     
     // 获取当前页面的标记信息
-    const pageMarker = await getPageMarker()
+    if (!pageMarker) {
+      return
+    }
     console.log('LandingPage获取到页面标记:', pageMarker)
     
     try {
@@ -138,7 +140,8 @@ export const useDecisionEngine = (backgroundState, emailProcessor, taskManager, 
     const timer = setTimeout(async () => {
       const isLanding = await isLandingPage()
       if (isLanding) {
-        handleLandingPage()
+        const pageMarker = await getPageMarker()
+        handleLandingPage(pageMarker)
         return;
       }
 

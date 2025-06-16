@@ -57,6 +57,7 @@ import leadsMiningService from '../services/messaging/leadsMining' // eslint-dis
 import { ApiBackgroundHandlers } from '../services/messaging/api'
 import { UiBackgroundHandlers } from '../services/messaging/ui'
 import { TabManagerBackgroundHandlers } from '../services/messaging/tabManager'
+import { WebAutomationBackgroundHandlers } from '../services/messaging/webAutomation'
 import i18nService from '../services/messaging/i18n'
 import { AuthBackgroundHandlers } from '../services/messaging/auth'
 import { fetchOdooUserSessionInfo, clearUserSessionInfo } from './userSessionInfo.mjs'
@@ -324,6 +325,9 @@ UiBackgroundHandlers.registerHandlers()
 
 // 注册标签页管理处理器
 TabManagerBackgroundHandlers.registerHandlers()
+
+// 注册Web自动化处理器
+WebAutomationBackgroundHandlers.registerHandlers()
 
 // 注册i18n处理器
 i18nService.registerHandlers({

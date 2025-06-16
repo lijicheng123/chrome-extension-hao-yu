@@ -591,7 +591,7 @@ export const isLandingPage = async () => {
   const isSpecifiedPlatform = isGoogleMaps || isGoogleSearch || isLinkedIn
   // 这里写： url中的__h_d 为1的才是LandingPage，大于1的不是LandingPage
   const urlParams = new URLSearchParams(window.location.search)
-  const pageDepth = urlParams.get('_h_d')
+  const pageDepth = urlParams.get('__h_d') // 修正参数名，应该是 __h_d 不是 _h_d
   if (pageDepth) {
     if (Number(pageDepth) > 1) {
       return false

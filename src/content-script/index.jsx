@@ -20,6 +20,9 @@ import { MiningModule } from './modules/MiningModule.js'
 import { UtilityModule } from './modules/UtilityModule.js'
 import { ConfigModule } from './modules/ConfigModule.js'
 
+// 导入Web自动化执行器（自动初始化）
+import './automation/webAutomationExecutor.js'
+
 /**
  * 主应用类 - 统一管理所有模块
  * 负责整个content script的初始化和管理

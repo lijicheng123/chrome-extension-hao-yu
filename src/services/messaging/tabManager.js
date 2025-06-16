@@ -107,6 +107,13 @@ export class TabManagerBackgroundHandlers {
       })
       if (googleSearchTab) {
         await Browser.tabs.update(googleSearchTab.id, { active: true })
+      } else {
+        // 因为没有谷歌搜索页面就不关闭标签页了
+        return {
+          success: true,
+          closedCount: 0,
+          remainingCount: tabs.length
+        }
       }
       
       for (const tab of tabs) {

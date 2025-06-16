@@ -158,7 +158,7 @@ async function generateAnswersWithDoubaoStreamApi(port, question, session) {
       top_p: aiConfig.top_p || 0.9,
     }),
     onMessage(message) {
-      console.debug('sse message', message)
+      console.log('answeransweransweranswer sse message:', message)
       if (finished) return
 
       if (message.trim() === '[DONE]') {
@@ -173,15 +173,15 @@ async function generateAnswersWithDoubaoStreamApi(port, question, session) {
         console.debug('json error', error)
         return
       }
-
+      console.log('answeransweransweranswer data?.choices :', data?.choices)
       // 根据豆包API的响应格式解析数据
-      if (data.result?.choices?.[0]?.delta?.content) {
-        answer += data.result.choices[0].delta.content
+      if (data?.choices?.[0]?.delta?.content) {
+        answer += data.choices[0].delta.content
       }
-
+      console.log('answeransweransweranswer:', answer)
       port.postMessage({ answer: answer, done: false, session: null })
 
-      if (data.result?.choices?.[0]?.finish_reason) {
+      if (data?.choices?.[0]?.finish_reason) {
         finish()
         return
       }
