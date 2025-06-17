@@ -16,7 +16,6 @@ export const WEB_AUTOMATION_API = {
   GET_TASK_STATUS: 'GET_TASK_STATUS',
   PAGE_READY: 'PAGE_READY',
   PAGE_DATA_EXTRACTED: 'PAGE_DATA_EXTRACTED',
-  PAGE_TAB_ACTIVE: 'PAGE_TAB_ACTIVE',
   TASK_COMPLETED: 'TASK_COMPLETED'
 }
 
@@ -25,6 +24,8 @@ export const WEB_AUTOMATION_API = {
  * 提供给content script使用的API
  */
 export class WebAutomationContentAPI {
+    // 存储任务完成回调函数
+  static taskCompletedCallbacks = new Map()
   /**
    * 开始批量任务
    * @param {Array<Object>} taskConfigs - 任务配置数组
@@ -77,14 +78,6 @@ export class WebAutomationContentAPI {
   }
 
   /**
-   * 通知background script当前激活的标签页
-   * @param {string} url - 当前激活的标签页URL
-   */
-  static async notifyPageTabActive(options) {
-    webAutomationService.sendMessage(WEB_AUTOMATION_API.PAGE_TAB_ACTIVE, options)
-  }
-
-  /**
    * 通知页面准备就绪
    * @param {Object} pageInfo - 页面信息
    * @returns {Promise<void>}
@@ -101,6 +94,67 @@ export class WebAutomationContentAPI {
   static async notifyPageDataExtracted(extractedData) {
     webAutomationService.sendMessage(WEB_AUTOMATION_API.PAGE_DATA_EXTRACTED, extractedData)
   }
+  /**
+   * 注册任务完成回调函数
+   * @param {string} taskId - 任务ID
+   * @param {Function} callback - 回调函数
+   */
+  static registerTaskCompletedCallback(taskId, callback) {
+    WebAutomationContentAPI.taskCompletedCallbacks.set(taskId, callback)
+    console.log(`已注册任务完成回调: ${taskId}`)
+  }
+
+  /**
+   * 取消注册任务完成回调函数
+   * @param {string} taskId - 任务ID
+   */
+  static unregisterTaskCompletedCallback(taskId) {
+    WebAutomationContentAPI.taskCompletedCallbacks.delete(taskId)
+    console.log(`已取消注册任务完成回调: ${taskId}`)
+  }
+
+  /**
+   * 处理任务完成广播消息
+   * @param {Object} data - 任务完成数据
+   * @returns {Promise<Object>} 处理结果
+   */
+  static async handleTaskCompleted(data) {
+    console.log('Content script收到任务完成消息:', data)
+    
+    const { taskId } = data
+    
+    // 查找并调用对应的回调函数
+    const callback = WebAutomationContentAPI.taskCompletedCallbacks.get(taskId)
+    if (callback && typeof callback === 'function') {
+      try {
+        await callback(data)
+        console.log(`已调用任务完成回调: ${taskId}`)
+      } catch (error) {
+        console.error(`调用任务完成回调失败: ${taskId}`, error)
+      }
+    } else {
+      console.log(`未找到任务完成回调: ${taskId}`)
+    }
+    
+    return {
+      success: true,
+      message: '任务完成消息已处理'
+    }
+  }
+  /**
+   * 注册Content处理器
+   */
+  static registerHandlers() {
+    webAutomationService.registerHandlers({
+      [WEB_AUTOMATION_API.TASK_COMPLETED]: WebAutomationContentAPI.handleTaskCompleted
+    })
+  }
+  /**
+   * 卸载content处理器
+   */
+  static unregisterHandlers() {
+    console.log('Web自动化Content处理器已卸载')
+  }
 }
 
 /**
@@ -108,103 +162,99 @@ export class WebAutomationContentAPI {
  * 在background script中运行
  */
 export class WebAutomationBackgroundHandlers {
-  // 任务存储
+  // 存储任务状态
   static tasks = new Map()
-
+  
   /**
-   * 开始批量任务
-   * @param {Object} data - 任务数据 
+   * 处理批量任务启动
+   * @param {Object} data - 请求数据
    * @param {Object} sender - 发送者信息
-   * @returns {Promise<Object>} 任务结果
+   * @returns {Promise<Object>} 操作结果
    */
   static async handleStartBatchTask(data, sender) {
+    console.log('开始处理批量自动化任务:', data, '原始标签页:', sender.tab?.id)
+    
     try {
       const { taskConfigs, taskId } = data
       
-      // 创建任务
+      // 创建任务状态，保存原始标签页ID
       const task = {
         id: taskId,
-        configs: taskConfigs,
         status: 'running',
-        progress: 0,
-        totalCount: taskConfigs.length,
-        completedCount: 0,
+        configs: taskConfigs,
         results: [],
-        sourceTab: sender.tab,
-        createdAt: Date.now()
+        startTime: Date.now(),
+        completedCount: 0,
+        totalCount: taskConfigs.length,
+        originalTabId: sender.tab?.id // 保存原始标签页ID
       }
       
       WebAutomationBackgroundHandlers.tasks.set(taskId, task)
       
-      // 异步执行任务处理
+      // 这里不必要等待，因为并行打开+串行自动化处理会自动等待所有页面处理完成
       WebAutomationBackgroundHandlers.processTasksWithPreload(taskId, taskConfigs)
-        .catch(error => {
-          console.error('任务处理失败:', error)
-          task.status = 'failed'
-          task.error = error.message
-        })
       
-      return { success: true, taskId }
+      return {
+        success: true,
+        taskId,
+        message: '批量任务已启动'
+      }
     } catch (error) {
       console.error('启动批量任务失败:', error)
-      return { success: false, error: error.message }
+      return {
+        success: false,
+        error: error.message
+      }
     }
   }
 
   /**
-   * 停止任务
-   * @param {Object} data - 任务数据
+   * 处理任务停止
+   * @param {Object} data - 请求数据
    * @returns {Promise<Object>} 操作结果
    */
   static async handleStopTask(data) {
-    try {
-      const { taskId } = data
-      const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
-      
-      if (!task) {
-        return { success: false, error: '任务不存在' }
-      }
-      
-      task.status = 'stopped'
-      
-      // 关闭相关标签页
-      WebAutomationBackgroundHandlers.closeTaskTabs(taskId)
-      
-      return { success: true }
-    } catch (error) {
-      console.error('停止任务失败:', error)
-      return { success: false, error: error.message }
+    const { taskId } = data
+    const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
+    
+    if (!task) {
+      return { success: false, error: '任务不存在' }
+    }
+    
+    task.status = 'stopped'
+    
+    // TODO: 关闭相关标签页
+    await WebAutomationBackgroundHandlers.closeTaskTabs(taskId)
+    
+    return {
+      success: true,
+      message: '任务已停止'
     }
   }
 
   /**
-   * 获取任务状态
+   * 处理获取任务状态
    * @param {Object} data - 请求数据
    * @returns {Promise<Object>} 任务状态
    */
   static async handleGetTaskStatus(data) {
-    try {
-      const { taskId } = data
-      const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
-      
-      if (!task) {
-        return { success: false, error: '任务不存在' }
+    const { taskId } = data
+    const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
+    
+    if (!task) {
+      return { success: false, error: '任务不存在' }
+    }
+    
+    return {
+      success: true,
+      task: {
+        id: task.id,
+        status: task.status,
+        progress: Math.round((task.completedCount / task.totalCount) * 100),
+        completedCount: task.completedCount,
+        totalCount: task.totalCount,
+        results: task.results
       }
-      
-      return {
-        success: true,
-        task: {
-          id: task.id,
-          status: task.status,
-          progress: task.progress,
-          totalCount: task.totalCount,
-          completedCount: task.completedCount,
-          error: task.error
-        }
-      }
-    } catch (error) {
-      console.error('获取任务状态失败:', error)
-      return { success: false, error: error.message }
     }
   }
 
@@ -212,87 +262,86 @@ export class WebAutomationBackgroundHandlers {
    * 处理页面准备就绪
    * @param {Object} data - 页面信息
    * @param {Object} sender - 发送者信息
-   * @returns {Promise<Object>} 处理结果
    */
   static async handlePageReady(data, sender) {
+    console.log('页面准备就绪:', data, sender.tab?.id)
+    
+    // 找到对应的任务和配置
+    const { taskId, configIndex } = data
+    const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
+    
+    if (!task || task.status !== 'running') {
+      return
+    }
+    
+    const config = task.configs[configIndex]
+    if (!config) {
+      return
+    }
+    
+    // 稍等一下再发送执行指令，确保页面完全准备好
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // 发送执行指令到页面
     try {
-      const { taskId, configIndex, url, title } = data
-      console.log('页面准备就绪:', { taskId, configIndex, url, title })
+      console.log('准备发送执行指令到页面:', sender.tab.id, { config, taskId, configIndex })
       
-      const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
-      if (!task) {
-        console.error('任务不存在:', taskId)
-        return { success: false, error: '任务不存在' }
-      }
-
-      const config = task.configs[configIndex]
-      if (!config) {
-        console.error('配置不存在:', configIndex)
-        return { success: false, error: '配置不存在' }
-      }
-
-      // 等待一会让页面完全加载
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      // 发送自动化执行命令到目标标签页
       const response = await Browser.tabs.sendMessage(sender.tab.id, {
         type: 'EXECUTE_AUTOMATION',
         config,
         taskId,
         configIndex
       })
-
-      console.log('自动化执行响应:', response)
-      return { success: true }
+      
+      console.log('执行指令发送成功，页面响应:', response)
     } catch (error) {
-      console.error('处理页面准备失败:', error)
-      return { success: false, error: error.message }
+      console.error('发送执行指令失败:', error)
+      
+      // 如果发送失败，标记该任务失败
+      const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
+      if (task) {
+        task.results[configIndex] = {
+          success: false,
+          error: `无法与页面通信: ${error.message}`,
+          completedAt: Date.now()
+        }
+        task.completedCount++
+        
+        // 检查是否所有子任务都完成
+        if (task.completedCount >= task.totalCount) {
+          await WebAutomationBackgroundHandlers.handleTaskCompleted(taskId)
+        }
+      }
     }
   }
 
   /**
    * 处理页面数据已提取
    * @param {Object} data - 提取的数据
-   * @returns {Promise<Object>} 处理结果
    */
   static async handlePageDataExtracted(data) {
-    try {
-      const { taskId, configIndex, extractedData, error, url } = data
-      console.log('页面数据提取完成:', { taskId, configIndex, extractedData, error, url })
-      
-      const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
-      if (!task) {
-        return { success: false, error: '任务不存在' }
-      }
-
-      // 记录结果
-      task.results[configIndex] = {
-        success: !error,
-        data: extractedData,
-        error,
-        url,
-        completedAt: Date.now()
-      }
-
-      task.completedCount++
-      task.progress = Math.round((task.completedCount / task.totalCount) * 100)
-
-      console.log('任务进度更新:', {
-        taskId,
-        completedCount: task.completedCount,
-        totalCount: task.totalCount,
-        progress: task.progress
-      })
-
-      // 检查是否所有任务都完成
-      if (task.completedCount >= task.totalCount) {
-        await WebAutomationBackgroundHandlers.handleTaskCompleted(taskId)
-      }
-
-      return { success: true }
-    } catch (error) {
-      console.error('处理页面数据提取失败:', error)
-      return { success: false, error: error.message }
+    console.log('页面数据已提取:', data)
+    
+    const { taskId, configIndex, extractedData, error } = data
+    const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
+    
+    if (!task) {
+      return
+    }
+    
+    // 更新任务结果
+    task.results[configIndex] = {
+      success: !error,
+      data: extractedData,
+      error: error,
+      completedAt: Date.now()
+    }
+    
+    task.completedCount++
+    
+    // 检查是否所有子任务都完成
+    if (task.completedCount >= task.totalCount) {
+      await WebAutomationBackgroundHandlers.handleTaskCompleted(taskId)
     }
   }
 
@@ -354,54 +403,73 @@ export class WebAutomationBackgroundHandlers {
 
   /**
    * 并行打开所有页面
-   * @param {string} taskId - 任务ID  
-   * @param {Array<Object>} taskConfigs - 任务配置数组
+   * @param {string} taskId - 任务ID
+   * @param {Array} taskConfigs - 任务配置
    */
   static async openAllPagesParallel(taskId, taskConfigs) {
-    const openPromises = taskConfigs.map((config, index) => {
-      const targetUrl = `${config.url}${config.url.includes('?') ? '&' : '?'}__h_task=${taskId}&__h_index=${index}&__h_d=2`
-      
-      console.log(`打开页面 ${index}:`, targetUrl)
-      
-      return Browser.tabs.create({
-        url: targetUrl,
-        active: true
-      }).then(tab => {
-        console.log(`页面 ${index} 已打开，标签页ID:`, tab.id)
-        return { index, tab }
-      }).catch(error => {
-        console.error(`打开页面 ${index} 失败:`, error)
-        throw error
-      })
+    console.log('并行打开所有页面...')
+    
+    const openPromises = taskConfigs.map(async (config, index) => {
+      try {
+        // 修改URL参数为__h_开头
+        const urlWithParams = new URL(config.url)
+        urlWithParams.searchParams.set('__h_d', '2') // 页面深度2
+        urlWithParams.searchParams.set('__h_task', taskId)
+        urlWithParams.searchParams.set('__h_index', index.toString())
+        
+        const tab = await Browser.tabs.create({
+          url: urlWithParams.toString(),
+          active: false // 不激活，后台预加载
+        })
+        
+        console.log(`已预加载页面 ${index + 1}: ${config.name}`)
+        return { index, tabId: tab.id, success: true }
+      } catch (error) {
+        console.error(`打开页面失败 ${index + 1}:`, error)
+        return { index, error: error.message, success: false }
+      }
     })
-
-    try {
-      const results = await Promise.all(openPromises)
-      console.log('所有页面已打开:', results.length)
-      return results
-    } catch (error) {
-      console.error('并行打开页面失败:', error)
-      throw error
-    }
+    
+    const results = await Promise.all(openPromises)
+    console.log('所有页面预加载完成:', results)
+    return results
   }
 
   /**
-   * 等待所有页面完成处理
+   * 等待页面处理完成
    * @param {string} taskId - 任务ID
-   * @param {number} totalCount - 总页面数
+   * @param {number} configIndex - 配置索引
    */
-  static async waitForAllPagesCompletion(taskId, totalCount) {
-    const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
-    if (!task) return
-
-    return new Promise((resolve) => {
+  static async waitForPageCompletion(taskId, configIndex) {
+    return new Promise((resolve, reject) => {
+      const maxWaitTime = 60000 // 最大等待60秒
+      const startTime = Date.now()
+      
       const checkCompletion = () => {
-        if (task.completedCount >= totalCount || task.status !== 'running') {
-          resolve()
-        } else {
-          setTimeout(checkCompletion, 1000)
+        const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
+        if (!task) {
+          reject(new Error('任务不存在'))
+          return
         }
+        
+        // 检查是否已完成
+        const result = task.results[configIndex]
+        if (result) {
+          console.log(`页面 ${configIndex} 处理完成:`, result)
+          resolve(result)
+          return
+        }
+        
+        // 检查超时
+        if (Date.now() - startTime > maxWaitTime) {
+          reject(new Error('页面处理超时'))
+          return
+        }
+        
+        // 继续等待
+        setTimeout(checkCompletion, 1000)
       }
+      
       checkCompletion()
     })
   }
@@ -447,33 +515,22 @@ export class WebAutomationBackgroundHandlers {
   static async handleTaskCompleted(taskId) {
     const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
     if (!task) return
-
-    try {
-      console.log('任务完成，开始处理结果:', taskId)
-      
-      task.status = 'completed'
-
-      // 激活原始页面
-      await WebAutomationBackgroundHandlers.activateOriginalPageAndComplete(taskId)
-
-      // 广播任务完成消息给content script
-      webAutomationService.broadcastMessage(WEB_AUTOMATION_API.TASK_COMPLETED, {
-        type: 'request',
-        taskId: task.id,
-        results: task.results
-      })
-
-      console.log('任务完成处理结束:', taskId)
-    } catch (error) {
-      console.error('处理任务完成失败:', error)
-      task.status = 'failed'
-      task.error = error.message
-    }
+    
+    task.status = 'completed'
+    task.endTime = Date.now()
+    
+    console.log('批量任务完成:', task)
+    
+    // 直接通知前端任务完成，不在后台进行AI处理
+    webAutomationService.broadcastMessage(WEB_AUTOMATION_API.TASK_COMPLETED, {
+      taskId,
+      results: task.results
+    })
     
     // 延迟关闭标签页
-    // setTimeout(() => {
-    //   WebAutomationBackgroundHandlers.closeTaskTabs(taskId)
-    // }, 10000)
+    setTimeout(() => {
+      WebAutomationBackgroundHandlers.closeTaskTabs(taskId)
+    }, 10000)
   }
 
   /**
@@ -506,12 +563,12 @@ export class WebAutomationBackgroundHandlers {
       [WEB_AUTOMATION_API.STOP_TASK]: WebAutomationBackgroundHandlers.handleStopTask,
       [WEB_AUTOMATION_API.GET_TASK_STATUS]: WebAutomationBackgroundHandlers.handleGetTaskStatus,
       [WEB_AUTOMATION_API.PAGE_READY]: WebAutomationBackgroundHandlers.handlePageReady,
-      [WEB_AUTOMATION_API.PAGE_DATA_EXTRACTED]: WebAutomationBackgroundHandlers.handlePageDataExtracted,
-      [WEB_AUTOMATION_API.PAGE_TAB_ACTIVE]: WebAutomationBackgroundHandlers.activateOriginalPageAndComplete,
+      [WEB_AUTOMATION_API.PAGE_DATA_EXTRACTED]: WebAutomationBackgroundHandlers.handlePageDataExtracted
     })
     
     console.log('Web自动化处理器已注册')
   }
 }
+
 
 export default webAutomationService 

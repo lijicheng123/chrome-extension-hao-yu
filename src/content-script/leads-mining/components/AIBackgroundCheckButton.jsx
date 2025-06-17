@@ -11,8 +11,8 @@ import Browser from 'webextension-polyfill'
 import { WebAutomationContentAPI } from '../../../services/messaging/webAutomation'
 import { isLandingPage } from '../utils/googleSearchAutomation'
 import { submitEmails } from '../utils/emailService'
-import { MAX_Z_INDEX } from '../../../config/ui-config.mjs'
 import { initSession } from '../../../services/init-session.mjs'
+import { MAX_Z_INDEX } from '../../../config/ui-config.mjs'
 
 const { Text } = Typography
 
@@ -57,7 +57,6 @@ const AIBackgroundCheckButton = () => {
       name: '智能手机HS编码查询',
       url: 'https://hsbianma.com/search?keywords=%E6%99%BA%E8%83%BD%E6%89%8B%E6%9C%BA',
       actions: [
-        { type: 'activate_tab' },
         { type: 'wait', duration: 3000 },
         { type: 'scroll_to_bottom', config: { scrollStep: 500, scrollDelay: 1000 } },
       ],
@@ -69,7 +68,6 @@ const AIBackgroundCheckButton = () => {
       name: '小米公司信息',
       url: 'https://www.mi.com/us/about/',
       actions: [
-        { type: 'activate_tab' },
         { type: 'wait', duration: 3000 },
         { type: 'scroll_to_bottom', config: { scrollStep: 500, scrollDelay: 1000 } },
       ],
@@ -98,13 +96,20 @@ const AIBackgroundCheckButton = () => {
     return result
   }, [])
 
-  // 调用AI生成开发信
-  const callAIForEmailGeneration = useCallback(
+  // 调用AI生成开发信 - 参考emailExtractor.js的方式
+  const generateEmailWithAI = useCallback(
     async (results, isRegenerate = false) => {
+      const validResults = results.filter((r) => r.success && r.data)
+
+      if (validResults.length === 0) {
+        throw new Error('没有有效的提取结果')
+      }
+
+      // 构建AI提示词
       const prompt = `你的任务是根据提供的多个网页内容、网页链接和title撰写一封英语开发信，要求控制在300个英文单词内。
 
 网页信息：
-${results
+${validResults
   .map(
     (result, index) => `
 网页 ${index + 1} 信息：
@@ -123,20 +128,28 @@ ${JSON.stringify(result.data, null, 2)}
 请写下你的英语开发信。`
 
       const port = Browser.runtime.connect()
-      showMessage('loading', `AI正在${isRegenerate ? '重新' : ''}生成开发信...`, 0)
+      showMessage('loading', `${isRegenerate ? '重新生成' : '生成'}开发信中...`, 0)
 
       return new Promise((resolve, reject) => {
+        let fullAnswer = ''
+
         const messageListener = (msg) => {
           if (msg.error) {
-            hideMessage()
-            showMessage('error', `${isRegenerate ? '重新' : ''}生成失败: ${msg.error}`)
             reject(new Error(msg.error))
             return
           }
+
+          if (msg.answer !== undefined) {
+            fullAnswer = msg.answer
+
+            // 实时更新显示内容（流式效果）
+            if (!msg.done && isRegenerate) {
+              setEditableResult(fullAnswer)
+            }
+          }
+
           if (msg.done) {
-            hideMessage()
-            showMessage('success', `开发信${isRegenerate ? '重新' : ''}生成完成`)
-            resolve(msg.answer)
+            resolve(fullAnswer)
           }
         }
 
@@ -151,15 +164,19 @@ ${JSON.stringify(result.data, null, 2)}
             temperature: 0.7,
             top_k: 0.9,
             top_p: 0.9,
-            stream: false, // 使用非流式响应，简化处理
+            stream: true, // 使用流式响应
             assistantPrefix: null,
           },
         })
 
-        port.postMessage({ session })
+        const postMessage = async ({ session, stop }) => {
+          port.postMessage({ session, stop })
+        }
+
+        postMessage({ session })
       })
     },
-    [showMessage, hideMessage],
+    [showMessage],
   )
 
   // 处理任务完成 - 使用useCallback避免重复调用
@@ -168,19 +185,25 @@ ${JSON.stringify(result.data, null, 2)}
       const { taskId, results } = data
       console.log('====handleTaskCompleted====>', taskId, currentTaskId.current)
 
-      if (taskId === currentTaskId.current && results) {
+      if (taskId === currentTaskId.current) {
         // 保存原始任务结果用于重新生成
         originalTaskResults.current = results
+        setModalVisible(true)
 
         try {
-          // 直接调用AI生成开发信
-          const emailContent = await callAIForEmailGeneration(
-            results.filter((r) => r.success && r.data),
-          )
+          // 使用AI生成开发信
+          const aiResult = await generateEmailWithAI(results, false)
 
-          setEditableResult(emailContent)
-          setModalVisible(true)
+          // 处理AI返回的结果
+          if (typeof aiResult === 'object' && aiResult.email_content) {
+            setEditableResult(aiResult.email_content)
+          } else {
+            setEditableResult(aiResult)
+          }
+
           setIsRunning(false)
+          hideMessage()
+          showMessage('success', 'AI开发信生成完成')
 
           // 开始倒计时自动提交（只有在用户未接管时）
           setUserTookControl(false) // 重置用户接管状态
@@ -188,35 +211,16 @@ ${JSON.stringify(result.data, null, 2)}
 
           clearInterval(statusCheckTimer.current)
         } catch (error) {
-          console.error('AI生成开发信失败:', error)
+          console.error('生成开发信失败:', error)
+          hideMessage()
+          showMessage('error', `生成开发信失败: ${error.message}`)
           setIsRunning(false)
           clearInterval(statusCheckTimer.current)
         }
       }
     },
-    [callAIForEmailGeneration],
+    [generateEmailWithAI, hideMessage, showMessage],
   )
-
-  // 监听任务完成消息
-  useEffect(() => {
-    const messageListener = (message) => {
-      console.log('====messageListener 收到消息====>', message)
-
-      if (message.namespace === 'WEB_AUTOMATION' && message.type === 'request') {
-        console.log('====messageListener 进入条件====>', message)
-
-        if (message.action === 'TASK_COMPLETED') {
-          console.log('====收到TASK_COMPLETED====>', message)
-          handleTaskCompleted(message.data)
-        }
-      }
-    }
-
-    Browser.runtime.onMessage.addListener(messageListener)
-    return () => {
-      Browser.runtime.onMessage.removeListener(messageListener)
-    }
-  }, [handleTaskCompleted])
 
   // 开始AI背调任务
   const handleStartTask = async () => {
@@ -230,6 +234,9 @@ ${JSON.stringify(result.data, null, 2)}
       showMessage('loading', '正在启动AI背调任务...', 0)
       const taskId = Date.now().toString()
       currentTaskId.current = taskId
+
+      // 注册任务完成回调
+      WebAutomationContentAPI.registerTaskCompletedCallback(taskId, handleTaskCompleted)
 
       const result = await WebAutomationContentAPI.startBatchTask(taskConfigs, taskId)
       console.log('====handleStartTask====>', result)
@@ -344,15 +351,16 @@ ${JSON.stringify(result.data, null, 2)}
     setIsRegenerating(true)
 
     try {
-      const emailContent = await callAIForEmailGeneration(
-        originalTaskResults.current.filter((r) => r.success && r.data),
-        true, // isRegenerate = true
-      )
+      const regeneratedResult = await generateEmailWithAI(originalTaskResults.current, true)
 
-      setEditableResult(emailContent)
+      setEditableResult(regeneratedResult)
+      hideMessage()
+      showMessage('success', '开发信重新生成完成')
       setIsRegenerating(false)
     } catch (error) {
       console.error('重新生成开发信失败:', error)
+      hideMessage()
+      showMessage('error', '重新生成失败，请重试')
       setIsRegenerating(false)
     }
   }
@@ -443,6 +451,11 @@ ${JSON.stringify(result.data, null, 2)}
 
   // 重置状态
   const resetState = () => {
+    // 取消注册任务完成回调
+    if (currentTaskId.current) {
+      WebAutomationContentAPI.unregisterTaskCompletedCallback(currentTaskId.current)
+    }
+
     setIsRunning(false)
     setTaskStatus(null)
     setEditableResult('')
@@ -465,8 +478,10 @@ ${JSON.stringify(result.data, null, 2)}
 
   // 组件卸载时清理
   useEffect(() => {
+    WebAutomationContentAPI.registerHandlers()
     return () => {
       resetState()
+      WebAutomationContentAPI.unregisterHandlers()
     }
   }, [])
 
@@ -517,7 +532,6 @@ ${JSON.stringify(result.data, null, 2)}
           </Space>
         </Space>
       </Card>
-
       {/* 结果展示和编辑Modal - 使用最高z-index */}
       <Modal
         title="AI生成的开发信"
@@ -565,6 +579,21 @@ ${JSON.stringify(result.data, null, 2)}
             <Text type="warning" style={{ fontSize: '12px' }}>
               {countdown}秒后将自动提交，如需编辑请点击下方文本框
             </Text>
+          )}
+
+          {isRegenerating && (
+            <div
+              style={{
+                padding: 8,
+                background: '#e6f7ff',
+                borderRadius: 4,
+                border: '1px solid #91d5ff',
+              }}
+            >
+              <Text style={{ fontSize: '12px', color: '#1890ff' }}>
+                🤖 AI正在重新生成中，请稍候...
+              </Text>
+            </div>
           )}
 
           <div>
