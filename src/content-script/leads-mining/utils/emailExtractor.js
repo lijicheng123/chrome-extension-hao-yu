@@ -4,6 +4,39 @@ import { initSession } from '../../../services/init-session.mjs'
 import { message } from 'antd'
 import { isGoogleMapsPage } from '../../../utils/platformDetector'
 import { extractGoogleMapsContacts } from './googleMapsExtractor'
+import TurndownService from 'turndown'
+import sanitizeHtml from 'sanitize-html';
+function cleanHTML(html) {
+  const dom = sanitizeHtml(html, {
+    // 使用 exclusiveFilter 来过滤掉特定的元素
+    exclusiveFilter: function(frame) {
+      // 过滤掉 id="chatgptbox-sidebar-container" 的元素
+      if (frame.attribs && frame.attribs.id === 'chatgptbox-sidebar-container') {
+        return true; // 返回 true 表示移除这个元素及其内容
+      }
+      
+      // 过滤掉 class="chatgptbox-toolbar-container-not-queryable" 的元素
+      if (frame.attribs && frame.attribs.class === 'chatgptbox-toolbar-container-not-queryable') {
+        return true; // 返回 true 表示移除这个元素及其内容
+      }
+      
+      // 过滤掉包含 chatgptbox 相关 class 的元素（更宽泛的过滤）
+      if (frame.attribs && frame.attribs.class && 
+          (frame.attribs.class.includes('chatgptbox-') || 
+           frame.attribs.class.includes('chatgpt-box-'))) {
+        return true;
+      }
+
+      if (frame.tag === 'a' && frame.attribs.href?.length > 100) {
+        return true
+      }
+      
+      return false; // 保留其他元素
+    }
+  });
+  return dom;
+}
+
 // zindex 最大
 message.config({
   zIndex: 2147483647,
@@ -12,6 +45,18 @@ message.config({
 export function getPageText() {
   const bodyText = document.body.innerText
   return bodyText
+}
+
+function getPageMarkdown() {
+  var turndownService = new TurndownService()
+  const html = cleanHTML(document.body.innerHTML)
+  console.log('htmlhtmlhtmlhtml:', html)
+  const markdown = turndownService.turndown(html).split('\n')
+  .map(line => line.trim().replace(/\s{2,}/g, '\n'))
+  .filter(line => line !== '') // 可选：去除空行
+  .join('\n');
+  
+  return markdown
 }
 
 /**
