@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { Button, message, Card, Typography, Space, Modal, Input } from 'antd'
+import { Button, message, Card, Typography, Space, Modal, Input, Alert, Spin } from 'antd'
 import {
   RobotOutlined,
   LoadingOutlined,
@@ -17,7 +17,7 @@ import { MAX_Z_INDEX } from '../../../config/ui-config.mjs'
 const { Text } = Typography
 
 /**
- * AI背调按钮组件
+ * AI阅读按钮组件
  * 只在LandingPage页面显示，点击后执行批量网页自动化
  */
 const AIBackgroundCheckButton = () => {
@@ -222,7 +222,7 @@ ${JSON.stringify(result.data, null, 2)}
     [generateEmailWithAI, hideMessage, showMessage],
   )
 
-  // 开始AI背调任务
+  // 开始AI阅读任务
   const handleStartTask = async () => {
     if (isRunning) return
 
@@ -231,7 +231,7 @@ ${JSON.stringify(result.data, null, 2)}
     setUserTookControl(false)
 
     try {
-      showMessage('loading', '正在启动AI背调任务...', 0)
+      showMessage('loading', '正在启动AI阅读任务...', 0)
       const taskId = Date.now().toString()
       currentTaskId.current = taskId
 
@@ -242,14 +242,14 @@ ${JSON.stringify(result.data, null, 2)}
       console.log('====handleStartTask====>', result)
       if (result.success) {
         hideMessage()
-        showMessage('success', 'AI背调任务已启动，正在处理...')
+        showMessage('success', 'AI阅读任务已启动，正在处理...')
         // 开始定期检查任务状态
         startStatusCheck()
       } else {
         throw new Error(result.error || '启动任务失败')
       }
     } catch (error) {
-      console.error('启动AI背调任务失败:', error)
+      console.error('启动AI阅读任务失败:', error)
       hideMessage()
       showMessage('error', `启动任务失败: ${error.message}`)
       setIsRunning(false)
@@ -396,21 +396,21 @@ ${JSON.stringify(result.data, null, 2)}
 
       const emailData = {
         user_email: `ai-background-check@${hostname}`, // 占位邮箱
-        user_name: `AI背调-${hostname}`,
+        user_name: `AI阅读-${hostname}`,
         company_name: hostname,
-        user_function: 'AI背调结果',
+        // user_function: 'AI阅读结果',
         email_content: emailContent,
         thread_type: 'ai_background_check',
         leads_source_url: currentUrl,
         leads_target_url: currentUrl,
         task_id: currentTaskId.current,
-        leads_keywords: 'AI背调',
-        tag_names: ['AI背调', 'AI生成开发信'],
+        leads_keywords: 'AI阅读',
+        tag_names: ['AI阅读', 'AI生成开发信'],
       }
 
       const submitResult = await submitEmails([emailData], {
         taskId: currentTaskId.current,
-        searchTerm: 'AI背调',
+        searchTerm: 'AI阅读',
         onSuccess: (emails) => {
           console.log('提交成功:', emails)
         },
@@ -436,7 +436,11 @@ ${JSON.stringify(result.data, null, 2)}
 
   // 关闭当前页面
   const handleClosePage = () => {
-    window.close()
+    try {
+      window.close()
+    } catch (e) {
+      showMessage('error', '从正常渠道进入才能关闭！')
+    }
   }
 
   // 重新打开弹窗
@@ -492,10 +496,10 @@ ${JSON.stringify(result.data, null, 2)}
 
   return (
     <>
-      <Card title="AI背调功能" size="small" style={{ marginBottom: 16 }}>
+      <Card size="small" style={{ marginBottom: 16 }}>
         <Space direction="vertical" style={{ width: '100%' }}>
           <Text type="secondary" style={{ fontSize: '12px' }}>
-            自动分析多个网页并生成定制化开发信
+            可自动阅读分析多个网页并生成定制化开发信
           </Text>
 
           {taskStatus && (
@@ -515,7 +519,7 @@ ${JSON.stringify(result.data, null, 2)}
               size="middle"
               style={{ flex: 1 }}
             >
-              {isRunning ? '停止背调' : '开始AI背调'}
+              {isRunning ? '停止阅读' : '开始AI阅读'}
             </Button>
             <Button icon={<EditOutlined />} onClick={handleReOpenModal} size="middle">
               编辑开发信
@@ -527,14 +531,14 @@ ${JSON.stringify(result.data, null, 2)}
               size="middle"
               title="完成并关闭页面"
             >
-              完成
+              完成并关闭
             </Button>
           </Space>
         </Space>
       </Card>
       {/* 结果展示和编辑Modal - 使用最高z-index */}
       <Modal
-        title="AI生成的开发信"
+        title="AI开发信"
         open={modalVisible}
         onCancel={handleCloseModal}
         footer={[
@@ -575,49 +579,37 @@ ${JSON.stringify(result.data, null, 2)}
         }}
       >
         <Space direction="vertical" style={{ width: '100%' }}>
-          {countdown > 0 && !userTookControl && (
-            <Text type="warning" style={{ fontSize: '12px' }}>
-              {countdown}秒后将自动提交，如需编辑请点击下方文本框
-            </Text>
-          )}
-
-          {isRegenerating && (
-            <div
-              style={{
-                padding: 8,
-                background: '#e6f7ff',
-                borderRadius: 4,
-                border: '1px solid #91d5ff',
-              }}
-            >
-              <Text style={{ fontSize: '12px', color: '#1890ff' }}>
-                🤖 AI正在重新生成中，请稍候...
-              </Text>
-            </div>
-          )}
-
           <div>
-            <Text strong style={{ fontSize: '14px' }}>
-              开发信内容：
-            </Text>
-            <Input.TextArea
-              value={editableResult}
-              onChange={(e) => {
-                setEditableResult(e.target.value)
-                if (!isEditing) {
-                  handleUserTakeControl()
-                }
-              }}
-              onFocus={handleUserTakeControl}
-              placeholder="AI生成的开发信将显示在这里..."
-              rows={8}
-              style={{ fontSize: '14px', marginTop: 8 }}
+            <Alert
+              message="AI仅根据你提供的信息和网页内容生成，效果不一定稳定，请务必认真阅读后再保存或者发送"
+              type="warning"
+              showIcon
             />
+            <Spin spinning={isRegenerating || isRunning} tip="AI正在生成中，请稍候...">
+              <Input.TextArea
+                value={editableResult}
+                onChange={(e) => {
+                  setEditableResult(e.target.value)
+                  if (!isEditing) {
+                    handleUserTakeControl()
+                  }
+                }}
+                onFocus={handleUserTakeControl}
+                placeholder="AI生成的开发信将显示在这里..."
+                rows={16}
+                style={{ fontSize: '14px', marginTop: 8 }}
+              />
+            </Spin>
           </div>
 
           {userTookControl && (
             <Text type="info" style={{ fontSize: '12px' }}>
               您已接管编辑，请手动提交
+            </Text>
+          )}
+          {countdown > 0 && !userTookControl && (
+            <Text type="warning" style={{ fontSize: '12px' }}>
+              {countdown}秒后将自动提交，如需编辑请点击下方文本框
             </Text>
           )}
         </Space>
