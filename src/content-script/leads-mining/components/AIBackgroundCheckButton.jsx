@@ -13,6 +13,8 @@ import { isLandingPage } from '../utils/googleSearchAutomation'
 import { submitEmails } from '../utils/emailService'
 import { initSession } from '../../../services/init-session.mjs'
 import { MAX_Z_INDEX } from '../../../config/ui-config.mjs'
+import getCommonAnalysisLinks from './../utils/getCommonAnalysisLinks'
+import { getPageMarkdown } from './../utils/emailExtractor'
 
 const { Text } = Typography
 
@@ -158,7 +160,7 @@ ${JSON.stringify(result.data, null, 2)}
         const session = initSession({
           question: prompt,
           conversationRecords: [],
-          modelName: 'doubao-1-5-lite-32k-250115',
+          modelName: 'doubao-1-5-pro-256k-250115',
           aiConfig: {
             responseFormat: 'text',
             temperature: 0.7,
@@ -183,7 +185,7 @@ ${JSON.stringify(result.data, null, 2)}
   const handleTaskCompleted = useCallback(
     async (data) => {
       const { taskId, results } = data
-      console.log('====handleTaskCompleted====>', taskId, currentTaskId.current)
+      console.log('====handleTaskCompleted results====>', taskId, currentTaskId.current, results)
 
       if (taskId === currentTaskId.current) {
         // 保存原始任务结果用于重新生成
@@ -222,9 +224,119 @@ ${JSON.stringify(result.data, null, 2)}
     [generateEmailWithAI, hideMessage, showMessage],
   )
 
+  const getPageInfoByAI = useCallback(async () => {
+    const content = getPageMarkdown()
+    const prompt = `你是一名外贸业务员，现在正则开发客户，你需要从网页信息里提取公司名称、邮箱、社媒等联系方式，以及一个了解公司（关于我们、关于公司、关于等），一个了解产品（产品列表页、产品分类等），以及一个可能有公司联系方式（联系我们）的链接，如果有就放进数组里，如果没有就不要放进数组，比如小米公司：
+          {
+            company: 'Xiaomi',
+            twitter: 'https://x.com/xiaomisupport/',
+            youtube: 'https://www.youtube.com/channel/UCR59Xjv9bcmjeeUuUZn7dkg',
+            facebook: 'https://www.facebook.com/XiaomiSupportGlobal/',
+            tiktok: 'https://www.tiktok.com/@xiaomi.northamerica',
+            instagram: 'https://www.instagram.com/xiaomi.northamerica/',
+            linkedin: 'https://www.linkedin.com/company/xiaomi-technology/',
+            email: 'suport@xiaomi.com',
+            links: [
+              {
+                name: 'about us',
+                url: 'https://www.mi.com/us/about/',
+              },
+              {
+                name: 'products',
+                url: 'https://www.mi.com/products'
+              },
+              {
+                name: 'contact us',
+                url: 'https://www.mi.com/contact-us'
+              }
+            ]
+          }
+            网页内容是：${content}
+            请根据上面信息返回你获取到的信息，注意如果没有的信息就不要填写，绝对不能捏造！
+
+    `
+    const port = Browser.runtime.connect()
+    return new Promise((resolve, reject) => {
+      let fullAnswer = ''
+
+      const messageListener = (msg) => {
+        if (msg.error) {
+          reject(new Error(msg.error))
+          return
+        }
+
+        if (msg.answer !== undefined) {
+          fullAnswer = msg.answer
+        }
+
+        if (msg.done) {
+          resolve(`{${fullAnswer}`)
+        }
+      }
+
+      port.onMessage.addListener(messageListener)
+
+      const session = initSession({
+        question: prompt,
+        conversationRecords: [],
+        modelName: 'doubao-1-5-pro-256k-250115',
+        aiConfig: {
+          responseFormat: 'text',
+          temperature: 0.1,
+          top_k: 0.9,
+          top_p: 0.9,
+          stream: false,
+          assistantPrefix: '{',
+        },
+      })
+
+      const postMessage = async ({ session, stop }) => {
+        port.postMessage({ session, stop })
+      }
+
+      postMessage({ session })
+    })
+  }, [])
+
+  const getAnalysisLinks = useCallback(async ({ ai = false } = {}) => {
+    let links = []
+    if (ai !== true) {
+      links = getCommonAnalysisLinks()
+    } else {
+      const data = await getPageInfoByAI()
+      console.log('datasss:', data)
+      const pageData = JSON.parse(data) || {}
+      links = pageData.links || []
+    }
+    return links.map((item) => {
+      return {
+        ...item,
+        actions: [
+          { type: 'wait', duration: 3000 },
+          {
+            type: 'scroll_to_bottom',
+            config: { scrollStep: 800, scrollDelay: 1000, timeout: 5000 },
+          },
+        ],
+        dataExtraction: {
+          type: 'page_content',
+        },
+      }
+    })
+  }, [])
+
   // 开始AI阅读任务
   const handleStartTask = async () => {
     if (isRunning) return
+    showMessage('loading', '正在读取本页内容...', 0)
+    const willOpenLinks = (await getAnalysisLinks({ ai: true })) || {}
+    console.log('willOpenLinks:data:', willOpenLinks)
+
+    showMessage('loading', '读取完成!', 0)
+    if (willOpenLinks.length < 1) {
+      showMessage('warning', '当前页面没有识别目标链接')
+      return
+    }
 
     setIsRunning(true)
     setTaskStatus(null)
@@ -238,7 +350,7 @@ ${JSON.stringify(result.data, null, 2)}
       // 注册任务完成回调
       WebAutomationContentAPI.registerTaskCompletedCallback(taskId, handleTaskCompleted)
 
-      const result = await WebAutomationContentAPI.startBatchTask(taskConfigs, taskId)
+      const result = await WebAutomationContentAPI.startBatchTask(willOpenLinks, taskId)
       console.log('====handleStartTask====>', result)
       if (result.success) {
         hideMessage()

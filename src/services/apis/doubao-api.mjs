@@ -57,7 +57,7 @@ async function generateAnswersWithDoubaoNonStreamApi(port, question, session) {
     // 构建请求体，使用aiConfig中的参数
     const requestBody = {
       provider_id: 1,
-      model: 'doubao-1-5-lite-32k-250115', // 默认使用豆包模型
+      model: 'doubao-1-5-pro-256k-250115', // 默认使用豆包模型
       messages: prompt,
     }
 
@@ -149,7 +149,7 @@ async function generateAnswersWithDoubaoStreamApi(port, question, session) {
     },
     body: JSON.stringify({
       provider_id: 1,
-      model: 'doubao-1-5-lite-32k-250115',
+      model: 'doubao-1-5-pro-256k-250115',
       messages: prompt,
       stream: true,
       // 使用aiConfig中的参数

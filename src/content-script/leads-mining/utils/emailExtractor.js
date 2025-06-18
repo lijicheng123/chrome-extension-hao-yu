@@ -47,10 +47,9 @@ export function getPageText() {
   return bodyText
 }
 
-function getPageMarkdown() {
+export function getPageMarkdown() {
   var turndownService = new TurndownService()
   const html = cleanHTML(document.body.innerHTML)
-  console.log('htmlhtmlhtmlhtml:', html)
   const markdown = turndownService.turndown(html).split('\n')
   .map(line => line.trim().replace(/\s{2,}/g, '\n'))
   .filter(line => line !== '') // 可选：去除空行
@@ -171,7 +170,7 @@ user_facebook: Facebook个人资料，url格式
       const session = initSession({
         question: prompt + "\n\n网页信息：\n" + JSON.stringify(pageInfo, null, 2),
         conversationRecords: [],
-        modelName: 'doubao-1-5-lite-32k-250115', // 使用豆包模型
+        modelName: 'doubao-1-5-pro-256k-250115', // 使用豆包模型
         aiConfig: {
           responseFormat: 'json_array', // 指定返回JSON数组格式
           temperature: 0.01, // 低温度确保结果稳定

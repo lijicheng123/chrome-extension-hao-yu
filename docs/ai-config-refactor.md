@@ -44,7 +44,7 @@ if (aiConfig.assistantPrefix) {
 // 构建请求体，使用aiConfig中的参数
 const requestBody = {
   provider_id: 1,
-  model: 'doubao-1-5-lite-32k-250115',
+  model: 'doubao-1-5-pro-256k-250115',
   messages: prompt,
   temperature: aiConfig.temperature || 0.7,
   top_k: aiConfig.top_k || 0.9,
@@ -80,7 +80,7 @@ const useStream = session.aiConfig?.stream !== undefined
 const session = initSession({
   question: prompt + "\n\n网页信息：\n" + JSON.stringify(pageInfo, null, 2),
   conversationRecords: [],
-  modelName: 'doubao-1-5-lite-32k-250115',
+  modelName: 'doubao-1-5-pro-256k-250115',
   aiConfig: {
     responseFormat: 'json_array', // 指定返回JSON数组格式
     temperature: 0.01, // 低温度确保结果稳定
@@ -97,7 +97,7 @@ const session = initSession({
 const session = {
   question: prompt,
   conversationRecords: [],
-  modelName: 'doubao-1-5-lite-32k-250115',
+  modelName: 'doubao-1-5-pro-256k-250115',
   aiConfig: {
     responseFormat: 'text', // 指定返回纯文本格式
     temperature: 0.1, // 较低的温度确保翻译一致性
@@ -138,7 +138,7 @@ const session = {
 ```javascript
 const session = initSession({
   question: '请介绍一下人工智能',
-  modelName: 'doubao-1-5-lite-32k-250115',
+  modelName: 'doubao-1-5-pro-256k-250115',
   aiConfig: {
     responseFormat: 'text',
     temperature: 0.7,
@@ -151,7 +151,7 @@ const session = initSession({
 ```javascript
 const session = initSession({
   question: '请列出三个编程语言',
-  modelName: 'doubao-1-5-lite-32k-250115',
+  modelName: 'doubao-1-5-pro-256k-250115',
   aiConfig: {
     responseFormat: 'json_array',
     temperature: 0.1,
@@ -165,7 +165,7 @@ const session = initSession({
 ```javascript
 const session = initSession({
   question: '请生成用户信息',
-  modelName: 'doubao-1-5-lite-32k-250115',
+  modelName: 'doubao-1-5-pro-256k-250115',
   aiConfig: {
     responseFormat: 'json_object',
     temperature: 0.3,
@@ -179,7 +179,7 @@ const session = initSession({
 ```javascript
 const session = initSession({
   question: '写一首诗',
-  modelName: 'doubao-1-5-lite-32k-250115',
+  modelName: 'doubao-1-5-pro-256k-250115',
   aiConfig: {
     responseFormat: 'text',
     temperature: 0.9,

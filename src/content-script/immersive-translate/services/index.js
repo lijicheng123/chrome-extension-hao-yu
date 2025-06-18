@@ -285,7 +285,7 @@ class AIModelService extends TranslationService {
       const session = {
         question: prompt,
         conversationRecords: [],
-        modelName: 'doubao-1-5-lite-32k-250115', // 使用豆包模型
+        modelName: 'doubao-1-5-pro-256k-250115', // 使用豆包模型
         aiConfig: {
           responseFormat: 'text', // 指定返回纯文本格式
           temperature: 0.1, // 较低的温度确保翻译一致性

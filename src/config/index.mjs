@@ -622,7 +622,7 @@ export const isShowMiningPanel = (config) => {
 export function isUsingDoubaoApiModel(configOrSession) {
   return (
     configOrSession.modelName === 'doubaoApi' ||
-    configOrSession.modelName === 'doubao-1-5-lite-32k-250115' ||
+    configOrSession.modelName === 'doubao-1-5-pro-256k-250115' ||
     configOrSession.modelName?.startsWith('doubao-')
   )
 }
