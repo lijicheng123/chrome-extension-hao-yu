@@ -15,6 +15,7 @@ import { initSession } from '../../../services/init-session.mjs'
 import { MAX_Z_INDEX } from '../../../config/ui-config.mjs'
 import getCommonAnalysisLinks from './../utils/getCommonAnalysisLinks'
 import { getPageMarkdown } from './../utils/emailExtractor'
+import { formatToHttpsLink } from '../../../utils/format-url'
 
 const { Text } = Typography
 
@@ -311,6 +312,7 @@ ${JSON.stringify(result.data, null, 2)}
     return links.map((item) => {
       return {
         ...item,
+        url: formatToHttpsLink(item.url),
         actions: [
           { type: 'wait', duration: 3000 },
           {
