@@ -358,17 +358,46 @@ export class WebAutomationBackgroundHandlers {
     
     // 第二步：串行激活并处理每个页面（像人类操作）
     for (let index = 0; index < taskConfigs.length; index++) {
+      // 在每次循环开始时检查任务状态
+      const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
+      if (!task || task.status === 'completed' || task.status === 'stopped') {
+        console.log(`任务 ${taskId} 已完成或停止，跳过剩余页面处理`)
+        break
+      }
+      
       const config = taskConfigs[index]
       const tab = openedTabs[index]
       
       if (!tab || !tab.success) {
         console.error(`页面 ${index + 1} 打开失败，跳过处理`)
+        // 标记失败并更新计数
+        if (task) {
+          task.results[index] = {
+            success: false,
+            error: '页面打开失败',
+            completedAt: Date.now()
+          }
+          task.completedCount++
+          
+          // 检查是否所有子任务都完成
+          if (task.completedCount >= task.totalCount) {
+            await WebAutomationBackgroundHandlers.handleTaskCompleted(taskId)
+            break
+          }
+        }
         continue
       }
       
       console.log(`开始处理任务 ${index + 1}/${taskConfigs.length}: ${config.name}`)
       
       try {
+        // 再次检查任务状态
+        const currentTask = WebAutomationBackgroundHandlers.tasks.get(taskId)
+        if (!currentTask || currentTask.status !== 'running') {
+          console.log(`任务 ${taskId} 状态已变更，停止处理页面 ${index}`)
+          break
+        }
+        
         // 激活当前页面
         await Browser.tabs.update(tab.tabId, { active: true })
         console.log(`已激活页面 ${index + 1}: ${config.name}`)
@@ -378,26 +407,38 @@ export class WebAutomationBackgroundHandlers {
         
         console.log(`任务 ${index + 1} 完成`)
         
-        // 关闭当前页面
-        await Browser.tabs.remove(tab.tabId).catch(console.error)
-        
       } catch (error) {
         console.error(`处理任务 ${index + 1} 失败:`, error)
         
         // 标记失败
-        const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
-        if (task) {
-          task.results[index] = {
+        const taskForUpdate = WebAutomationBackgroundHandlers.tasks.get(taskId)
+        if (taskForUpdate) {
+          taskForUpdate.results[index] = {
             success: false,
             error: error.message,
             completedAt: Date.now()
           }
-          task.completedCount++
+          taskForUpdate.completedCount++
         }
+      } finally {
+        // 不管成功还是失败，都关闭当前页面
+        try {
+          await Browser.tabs.remove(tab.tabId)
+          console.log(`任务 ${index + 1} 关闭页面`)
+        } catch (closeError) {
+          console.error(`关闭页面失败:`, closeError)
+        }
+      }
+      
+      // 检查任务是否在此循环中完成
+      const finalTask = WebAutomationBackgroundHandlers.tasks.get(taskId)
+      if (finalTask && (finalTask.status === 'completed' || finalTask.completedCount >= finalTask.totalCount)) {
+        console.log(`任务 ${taskId} 已完成，停止后续页面处理`)
+        break
       }
     }
     
-    // 所有页面处理完成，激活原始LandingPage并处理最终结果
+    // 所有页面处理完成或提前终止，激活原始LandingPage并处理最终结果
     await WebAutomationBackgroundHandlers.activateOriginalPageAndComplete(taskId)
   }
 
@@ -442,19 +483,42 @@ export class WebAutomationBackgroundHandlers {
    */
   static async waitForPageCompletion(taskId, configIndex) {
     return new Promise((resolve, reject) => {
-      const maxWaitTime = 60000 // 最大等待60秒
+      const maxWaitTime = 30000 // 最大等待30秒
       const startTime = Date.now()
+      let timer = null
       
       const checkCompletion = () => {
         const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
         if (!task) {
+          clearTimeout(timer)
           reject(new Error('任务不存在'))
           return
         }
         
-        // 检查是否已完成
+        // 先检查任务整体状态，如果已完成则直接返回
+        if (task.status === 'completed' || task.status === 'stopped') {
+          console.log(`任务 ${taskId} 已完成，停止等待页面 ${configIndex}`)
+          // 如果任务已完成，检查是否有该页面的结果
+          const result = task.results[configIndex]
+          clearTimeout(timer)
+
+          if (result) {
+            resolve(result)
+          } else {
+            // 如果没有结果，标记为超时失败
+            resolve({
+              success: false,
+              error: '页面处理超时或任务提前完成',
+              completedAt: Date.now()
+            })
+          }
+          return
+        }
+        
+        // 检查是否已完成当前页面
         const result = task.results[configIndex]
         if (result) {
+          clearTimeout(timer)
           console.log(`页面 ${configIndex} 处理完成:`, result)
           resolve(result)
           return
@@ -462,12 +526,14 @@ export class WebAutomationBackgroundHandlers {
         
         // 检查超时
         if (Date.now() - startTime > maxWaitTime) {
+          console.log(`页面 ${configIndex} 处理超时`)
+          clearTimeout(timer)
           reject(new Error('页面处理超时'))
           return
         }
         
         // 继续等待
-        setTimeout(checkCompletion, 1000)
+        timer = setTimeout(checkCompletion, 1000)
       }
       
       checkCompletion()
@@ -482,7 +548,23 @@ export class WebAutomationBackgroundHandlers {
     try {
       const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
       
-      if (task && task.originalTabId) {
+      // 检查任务是否已经完成
+      if (!task) {
+        console.log(`任务 ${taskId} 不存在，跳过激活原始页面`)
+        return
+      }
+      
+      if (task.status === 'completed') {
+        console.log(`任务 ${taskId} 已完成，仅激活原始页面`)
+        // 仅激活原始页面，不重复调用handleTaskCompleted
+        if (task.originalTabId) {
+          await Browser.tabs.update(task.originalTabId, { active: true })
+          console.log('已激活原始页面:', task.originalTabId)
+        }
+        return
+      }
+      
+      if (task.originalTabId) {
         // 激活原始页面
         await Browser.tabs.update(task.originalTabId, { active: true })
         console.log('已激活原始页面:', task.originalTabId)
@@ -515,6 +597,12 @@ export class WebAutomationBackgroundHandlers {
   static async handleTaskCompleted(taskId) {
     const task = WebAutomationBackgroundHandlers.tasks.get(taskId)
     if (!task) return
+    
+    // 防止重复调用
+    if (task.status === 'completed') {
+      console.log(`任务 ${taskId} 已经完成，忽略重复调用`)
+      return
+    }
     
     task.status = 'completed'
     task.endTime = Date.now()
