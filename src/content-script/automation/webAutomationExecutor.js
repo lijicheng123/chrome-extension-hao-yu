@@ -1,9 +1,9 @@
-import Browser from 'webextension-polyfill'
-import { WebAutomationContentAPI } from '../../services/messaging/webAutomation'
+import { WebAutomationContentAPI } from '../../services/messaging/webAutomation.js'
 
 /**
  * Web自动化执行器
- * 在目标页面执行具体的自动化操作
+ * 负责在content script中执行自动化任务
+ * 生命周期由WebAutomationModule管理
  */
 export class WebAutomationExecutor {
   constructor() {
@@ -18,67 +18,43 @@ export class WebAutomationExecutor {
   async init() {
     if (this.isInitialized) return
 
-    // 检查是否为自动化任务页面
-    const urlParams = new URLSearchParams(window.location.search)
-    const taskId = urlParams.get('__h_task')
-    const configIndex = urlParams.get('__h_index')
-
-    console.log('检查自动化参数:', { 
-      url: window.location.href,
-      taskId, 
-      configIndex,
-      allParams: Object.fromEntries(urlParams)
-    })
-
-    if (!taskId || configIndex === null) {
-      console.log('不是自动化任务页面，跳过初始化')
-      return // 不是自动化任务页面
-    }
-
-    console.log('初始化Web自动化执行器:', { taskId, configIndex })
-
-    // 注册消息监听器
-    this.registerMessageListener()
-
-    // 通知后台页面已准备就绪
-    await WebAutomationContentAPI.notifyPageReady({
-      taskId,
-      configIndex: parseInt(configIndex),
-      url: window.location.href,
-      title: document.title
-    })
-
+    console.log('初始化WebAutomationExecutor，等待任务信息...')
     this.isInitialized = true
   }
 
   /**
-   * 注册消息监听器
+   * 处理初始化自动化任务消息（由WebAutomationContentAPI调用）
+   * @param {Object} data - 初始化数据
    */
-  registerMessageListener() {
-    Browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      console.log('收到消息:', message)
-      
-      if (message.type === 'EXECUTE_AUTOMATION') {
-        console.log('开始执行自动化任务:', message)
-        
-        // 异步执行
-        this.executeAutomation(message)
-          .then(() => {
-            console.log('自动化任务执行完成')
-            sendResponse({ success: true })
-          })
-          .catch(error => {
-            console.error('自动化任务执行失败:', error)
-            sendResponse({ success: false, error: error.message })
-          })
-        
-        return true // 表示会异步响应
-      }
-      
-      return false // 表示不处理这个消息
-    })
+  handleInitializeAutomation(data) {
+    console.log('初始化自动化任务:', data)
     
-    console.log('消息监听器已注册')
+    // 保存任务信息
+    this.currentTask = { 
+      taskId: data.taskId, 
+      configIndex: data.configIndex 
+    }
+    this.config = data.config
+    
+    // 通知background页面准备就绪
+    WebAutomationContentAPI.notifyPageReady({
+      taskId: data.taskId,
+      configIndex: data.configIndex,
+      url: window.location.href,
+      title: document.title
+    })
+  }
+
+  /**
+   * 处理执行自动化任务消息（由WebAutomationContentAPI调用）
+   * @param {Object} data - 执行数据
+   */
+  async handleExecuteAutomation(data) {
+    console.log('开始执行自动化任务:', data)
+    
+    // 执行自动化
+    await this.executeAutomation(data)
+    console.log('自动化任务执行完成')
   }
 
   /**
@@ -153,7 +129,6 @@ export class WebAutomationExecutor {
    */
   async activateTab() {
     try {
-      debugger
       await WebAutomationContentAPI.notifyPageTabActive({ url: window.location.href})
       window.focus()
       // 如果有标签页切换API，可以在这里调用
@@ -339,34 +314,4 @@ export class WebAutomationExecutor {
   delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
-
-
-}
-
-// 创建全局实例
-const webAutomationExecutor = new WebAutomationExecutor()
-
-// TODO:注意，不能影响页面性能
-
-function initializeWhenReady() {
-  console.log('准备初始化WebAutomationExecutor')
-  webAutomationExecutor.init()
-}
-
-if (document.readyState === 'loading') {
-  console.log('页面还在加载中，等待DOMContentLoaded事件')
-  document.addEventListener('DOMContentLoaded', initializeWhenReady)
-} else {
-  console.log('页面已加载完成，立即初始化')
-  initializeWhenReady()
-}
-
-// 再等待一段时间确保页面完全准备好
-setTimeout(() => {
-  console.log('延迟初始化检查')
-  if (!webAutomationExecutor.isInitialized) {
-    initializeWhenReady()
-  }
-}, 3000)
-
-export default webAutomationExecutor 
+} 

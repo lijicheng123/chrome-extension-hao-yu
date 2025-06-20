@@ -16,7 +16,10 @@ export const WEB_AUTOMATION_API = {
   GET_TASK_STATUS: 'GET_TASK_STATUS',
   PAGE_READY: 'PAGE_READY',
   PAGE_DATA_EXTRACTED: 'PAGE_DATA_EXTRACTED',
-  TASK_COMPLETED: 'TASK_COMPLETED'
+  TASK_COMPLETED: 'TASK_COMPLETED',
+  // 新增：用于统一消息架构的API
+  INITIALIZE_AUTOMATION: 'INITIALIZE_AUTOMATION',
+  EXECUTE_AUTOMATION: 'EXECUTE_AUTOMATION'
 }
 
 /**
@@ -141,19 +144,54 @@ export class WebAutomationContentAPI {
       message: '任务完成消息已处理'
     }
   }
+
+  /**
+   * 处理初始化自动化任务消息
+   * @param {Object} data - 初始化数据
+   * @returns {Object} 处理结果
+   */
+  static async handleInitializeAutomation(data) {
+    console.log('Content收到初始化自动化任务消息:', data)
+    
+    // 通知webAutomationExecutor初始化
+    if (window.webAutomationExecutor) {
+      window.webAutomationExecutor.handleInitializeAutomation(data)
+    }
+    
+    return { success: true }
+  }
+
+  /**
+   * 处理执行自动化任务消息
+   * @param {Object} data - 执行数据
+   * @returns {Object} 处理结果
+   */
+  static async handleExecuteAutomation(data) {
+    console.log('Content收到执行自动化任务消息:', data)
+    
+    // 通知webAutomationExecutor执行
+    if (window.webAutomationExecutor) {
+      try {
+        await window.webAutomationExecutor.handleExecuteAutomation(data)
+        return { success: true }
+      } catch (error) {
+        console.error('执行自动化任务失败:', error)
+        return { success: false, error: error.message }
+      }
+    }
+    
+    return { success: false, error: 'webAutomationExecutor未初始化' }
+  }
+
   /**
    * 注册Content处理器
    */
   static registerHandlers() {
     webAutomationService.registerHandlers({
-      [WEB_AUTOMATION_API.TASK_COMPLETED]: WebAutomationContentAPI.handleTaskCompleted
+      [WEB_AUTOMATION_API.TASK_COMPLETED]: WebAutomationContentAPI.handleTaskCompleted,
+      [WEB_AUTOMATION_API.INITIALIZE_AUTOMATION]: WebAutomationContentAPI.handleInitializeAutomation,
+      [WEB_AUTOMATION_API.EXECUTE_AUTOMATION]: WebAutomationContentAPI.handleExecuteAutomation
     })
-  }
-  /**
-   * 卸载content处理器
-   */
-  static unregisterHandlers() {
-    console.log('Web自动化Content处理器已卸载')
   }
 }
 
@@ -164,6 +202,10 @@ export class WebAutomationContentAPI {
 export class WebAutomationBackgroundHandlers {
   // 存储任务状态
   static tasks = new Map()
+  // 存储标签页到任务的映射
+  static tabTaskMap = new Map() // tabId -> {taskId, configIndex, config}
+  // 存储任务的标签页监听器
+  static taskTabListeners = new Map() // taskId -> {onUpdated, onRemoved}
   
   /**
    * 处理批量任务启动
@@ -191,6 +233,9 @@ export class WebAutomationBackgroundHandlers {
       
       WebAutomationBackgroundHandlers.tasks.set(taskId, task)
       
+      // 为这个任务注册标签页监听器
+      WebAutomationBackgroundHandlers.registerTaskTabListeners(taskId)
+      
       // 这里不必要等待，因为并行打开+串行自动化处理会自动等待所有页面处理完成
       WebAutomationBackgroundHandlers.processTasksWithPreload(taskId, taskConfigs)
       
@@ -209,6 +254,64 @@ export class WebAutomationBackgroundHandlers {
   }
 
   /**
+   * 为特定任务注册标签页监听器
+   * @param {string} taskId - 任务ID
+   */
+  static registerTaskTabListeners(taskId) {
+    const onUpdated = (tabId, changeInfo, tab) => {
+      // 只处理这个任务相关的标签页
+      const taskInfo = WebAutomationBackgroundHandlers.tabTaskMap.get(tabId)
+      if (!taskInfo || taskInfo.taskId !== taskId) return
+      
+      if (changeInfo.status === 'complete') {
+        console.log(`任务 ${taskId} 的标签页 ${tabId} 加载完成，发送任务信息:`, taskInfo)
+        
+        // 使用统一的消息服务发送初始化消息
+        webAutomationService.sendMessageToTab(tabId, WEB_AUTOMATION_API.INITIALIZE_AUTOMATION, {
+          taskId: taskInfo.taskId,
+          configIndex: taskInfo.configIndex,
+          config: taskInfo.config,
+          originalUrl: taskInfo.originalUrl,
+          currentUrl: tab.url
+        })
+      }
+    }
+
+    const onRemoved = (tabId) => {
+      const taskInfo = WebAutomationBackgroundHandlers.tabTaskMap.get(tabId)
+      if (taskInfo && taskInfo.taskId === taskId) {
+        WebAutomationBackgroundHandlers.tabTaskMap.delete(tabId)
+      }
+    }
+
+    // 注册监听器
+    Browser.tabs.onUpdated.addListener(onUpdated)
+    Browser.tabs.onRemoved.addListener(onRemoved)
+    
+    // 保存监听器引用，用于后续清理
+    WebAutomationBackgroundHandlers.taskTabListeners.set(taskId, {
+      onUpdated,
+      onRemoved
+    })
+    
+    console.log(`已为任务 ${taskId} 注册标签页监听器`)
+  }
+
+  /**
+   * 清理特定任务的标签页监听器
+   * @param {string} taskId - 任务ID
+   */
+  static unregisterTaskTabListeners(taskId) {
+    const listeners = WebAutomationBackgroundHandlers.taskTabListeners.get(taskId)
+    if (listeners) {
+      Browser.tabs.onUpdated.removeListener(listeners.onUpdated)
+      Browser.tabs.onRemoved.removeListener(listeners.onRemoved)
+      WebAutomationBackgroundHandlers.taskTabListeners.delete(taskId)
+      console.log(`已清理任务 ${taskId} 的标签页监听器`)
+    }
+  }
+
+  /**
    * 处理任务停止
    * @param {Object} data - 请求数据
    * @returns {Promise<Object>} 操作结果
@@ -223,7 +326,17 @@ export class WebAutomationBackgroundHandlers {
     
     task.status = 'stopped'
     
-    // TODO: 关闭相关标签页
+    // 清理任务相关的标签页映射
+    for (const [tabId, taskInfo] of WebAutomationBackgroundHandlers.tabTaskMap.entries()) {
+      if (taskInfo.taskId === taskId) {
+        WebAutomationBackgroundHandlers.tabTaskMap.delete(tabId)
+      }
+    }
+    
+    // 清理任务的标签页监听器
+    WebAutomationBackgroundHandlers.unregisterTaskTabListeners(taskId)
+    
+    // 关闭相关标签页
     await WebAutomationBackgroundHandlers.closeTaskTabs(taskId)
     
     return {
@@ -286,14 +399,14 @@ export class WebAutomationBackgroundHandlers {
     try {
       console.log('准备发送执行指令到页面:', sender.tab.id, { config, taskId, configIndex })
       
-      const response = await Browser.tabs.sendMessage(sender.tab.id, {
-        type: 'EXECUTE_AUTOMATION',
+      // 使用统一的消息服务发送执行消息
+      webAutomationService.sendMessageToTab(sender.tab.id, WEB_AUTOMATION_API.EXECUTE_AUTOMATION, {
         config,
         taskId,
         configIndex
       })
       
-      console.log('执行指令发送成功，页面响应:', response)
+      console.log('执行指令已通过统一消息服务发送')
     } catch (error) {
       console.error('发送执行指令失败:', error)
       
@@ -452,15 +565,18 @@ export class WebAutomationBackgroundHandlers {
     
     const openPromises = taskConfigs.map(async (config, index) => {
       try {
-        // 修改URL参数为__h_开头
-        const urlWithParams = new URL(config.url)
-        urlWithParams.searchParams.set('__h_d', '2') // 页面深度2
-        urlWithParams.searchParams.set('__h_task', taskId)
-        urlWithParams.searchParams.set('__h_index', index.toString())
-        
+        // 直接打开原始URL，不添加任何参数
         const tab = await Browser.tabs.create({
-          url: urlWithParams.toString(),
+          url: config.url,
           active: false // 不激活，后台预加载
+        })
+        
+        // 将任务信息存储在background内存中
+        WebAutomationBackgroundHandlers.tabTaskMap.set(tab.id, {
+          taskId,
+          configIndex: index,
+          config,
+          originalUrl: config.url
         })
         
         console.log(`已预加载页面 ${index + 1}: ${config.name}`)
@@ -569,15 +685,21 @@ export class WebAutomationBackgroundHandlers {
         await Browser.tabs.update(task.originalTabId, { active: true })
         console.log('已激活原始页面:', task.originalTabId)
       } else {
-        // 如果没有原始标签页ID，则查找非自动化页面
+        // 如果没有原始标签页ID，则查找第一个非任务标签页
         const tabs = await Browser.tabs.query({})
-        const landingTab = tabs.find(tab => 
-          tab.url && !tab.url.includes('__h_d=2')
-        )
+        const nonTaskTab = tabs.find(tab => {
+          // 检查是否是任务相关的标签页
+          for (const [tabId] of WebAutomationBackgroundHandlers.tabTaskMap.entries()) {
+            if (tabId === tab.id) {
+              return false // 是任务标签页，跳过
+            }
+          }
+          return true // 不是任务标签页
+        })
         
-        if (landingTab) {
-          await Browser.tabs.update(landingTab.id, { active: true })
-          console.log('已激活找到的页面:', landingTab.id)
+        if (nonTaskTab) {
+          await Browser.tabs.update(nonTaskTab.id, { active: true })
+          console.log('已激活找到的页面:', nonTaskTab.id)
         }
       }
       
@@ -609,6 +731,16 @@ export class WebAutomationBackgroundHandlers {
     
     console.log('批量任务完成:', task)
     
+    // 清理任务相关的标签页映射
+    for (const [tabId, taskInfo] of WebAutomationBackgroundHandlers.tabTaskMap.entries()) {
+      if (taskInfo.taskId === taskId) {
+        WebAutomationBackgroundHandlers.tabTaskMap.delete(tabId)
+      }
+    }
+    
+    // 清理任务的标签页监听器
+    WebAutomationBackgroundHandlers.unregisterTaskTabListeners(taskId)
+    
     // 直接通知前端任务完成，不在后台进行AI处理
     webAutomationService.broadcastMessage(WEB_AUTOMATION_API.TASK_COMPLETED, {
       taskId,
@@ -627,16 +759,20 @@ export class WebAutomationBackgroundHandlers {
    */
   static async closeTaskTabs(taskId) {
     try {
-      const tabs = await Browser.tabs.query({})
-      const taskTabs = tabs.filter(tab => 
-        tab.url && tab.url.includes(`__h_task=${taskId}`)
-      )
-      
-      for (const tab of taskTabs) {
-        await Browser.tabs.remove(tab.id).catch(console.error)
+      // 查找所有属于这个任务的标签页
+      const taskTabIds = []
+      for (const [tabId, taskInfo] of WebAutomationBackgroundHandlers.tabTaskMap.entries()) {
+        if (taskInfo.taskId === taskId) {
+          taskTabIds.push(tabId)
+        }
       }
       
-      console.log(`已关闭任务 ${taskId} 的 ${taskTabs.length} 个标签页`)
+      // 关闭标签页
+      for (const tabId of taskTabIds) {
+        await Browser.tabs.remove(tabId).catch(console.error)
+      }
+      
+      console.log(`已关闭任务 ${taskId} 的 ${taskTabIds.length} 个标签页`)
     } catch (error) {
       console.error('关闭标签页失败:', error)
     }
