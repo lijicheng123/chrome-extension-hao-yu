@@ -19,9 +19,7 @@ import { TranslationModule } from './modules/TranslationModule.js'
 import { MiningModule } from './modules/MiningModule.js'
 import { UtilityModule } from './modules/UtilityModule.js'
 import { ConfigModule } from './modules/ConfigModule.js'
-
-// 导入Web自动化执行器（自动初始化）
-import './automation/webAutomationExecutor.js'
+import { WebAutomationModule } from './modules/WebAutomationModule.js'
 
 /**
  * 主应用类 - 统一管理所有模块
@@ -112,6 +110,9 @@ class ContentScriptApp {
     if (isModuleEnabled('features', 'mining')) {
       lifecycleManager.registerModule('mining', new MiningModule())
     }
+
+    // Web自动化模块（必须启用，处理自动化消息）
+    lifecycleManager.registerModule('webAutomation', new WebAutomationModule())
 
     console.log('已注册的模块:', Array.from(lifecycleManager.modules.keys()))
   }
