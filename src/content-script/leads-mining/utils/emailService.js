@@ -48,7 +48,9 @@ export const extractPageEmails = async (options) => {
  */
 const buildSubmitData = (emailData, { taskId, searchTerm }) => {
   const hostname = window.location.hostname
-  const currentUrl = optimizeUrl(window.location.href)
+  const leads_source_url = optimizeUrl(window.location.href)
+  const company_website = emailData.website || window.location.origin
+  const priority = emailData.priority || '1' // 优先级 3非常高 2 高 1 中 0 低
 
   // 基础数据模板
   const baseData = {
@@ -71,7 +73,7 @@ const buildSubmitData = (emailData, { taskId, searchTerm }) => {
     // company_country_id: 233,
     // company_state_id: 13,
     // company_phone: '010-12345678',
-    // company_website: 'https://www.example.com',
+    company_website,
     
     // 线索信息
     thread_type: 'lead',
@@ -81,11 +83,10 @@ const buildSubmitData = (emailData, { taskId, searchTerm }) => {
     // state_id: 13,
     // street: '朝阳区建国路88号',
     // street2: '2号楼',
-    priority: '2',
+    priority,
     
     // 来源信息
-    leads_source_url: currentUrl,
-    leads_target_url: currentUrl,
+    leads_source_url,
     task_id: taskId,
     leads_keywords: searchTerm,
   }
