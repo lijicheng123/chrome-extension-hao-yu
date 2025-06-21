@@ -44,6 +44,7 @@ export class LifecycleManager {
         'config',            // 配置模块
         'utility',           // 工具模块
         'messageService',    // 消息服务
+        'webAutomation',     // Web自动化模块（需要早期初始化，处理消息）
         'contextMenu',       // 右键菜单
         'siteAdapter',       // 网站适配
         'selectionTools',    // 划词工具
