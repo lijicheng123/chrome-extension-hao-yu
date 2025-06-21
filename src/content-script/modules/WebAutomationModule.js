@@ -1,5 +1,5 @@
 import { WebAutomationContentAPI } from '../../services/messaging/webAutomation.js'
-import { WebAutomationExecutor } from '../automation/webAutomationExecutor.js'
+import { WebAutomationExecutor } from '../utils/webAutomationExecutor.js'
 
 /**
  * Web自动化模块

@@ -3,7 +3,7 @@ import { getUserConfig, getPreferredLanguageKey } from '../config/index.mjs'
 import { changeLanguage } from 'i18next'
 import '../_locales/i18n-react'
 import { injectCSSVariables } from '../config/ui-config.mjs'
-import { isModuleEnabled } from './config/modules.js'
+import { isModuleEnabled } from '../config/modules.js'
 
 // 核心管理器
 import { lifecycleManager } from './core/LifecycleManager.js'
