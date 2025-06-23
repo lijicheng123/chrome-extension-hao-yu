@@ -455,50 +455,6 @@ export const listenToPageMarkerChanges = (callback, filter = {}) => {
 }
 
 /**
- * 等待页面标记变化（基于监听）
- * @param {Object} filter 过滤条件 { to?, action? }
- * @param {number} timeout 超时时间（毫秒）
- * @returns {Promise<Object|null>} 返回匹配的标记或null（超时）
- */
-export const waitForPageMarkerChange = (filter = {}, timeout = AUTOMATION_CONFIG.PAGE_TIMEOUT) => {
-  return new Promise((resolve) => {
-    let timeoutId
-    let unsubscribe
-    
-    // 设置超时
-    timeoutId = setTimeout(() => {
-      if (unsubscribe) unsubscribe()
-      console.log('等待页面标记变化超时')
-      resolve(null)
-    }, timeout)
-    
-    // 监听标记变化
-    // eslint-disable-next-line no-unused-vars
-    unsubscribe = listenToPageMarkerChanges((newMarker, _oldMarker) => {
-      clearTimeout(timeoutId)
-      unsubscribe()
-      console.log('页面标记变化等待完成:', newMarker)
-      resolve(newMarker)
-    }, filter)
-  })
-}
-
-/**
- * 检查当前页面是否为目标页面（需要提取信息的页面）
- * @returns {Promise<boolean>} 是否为目标页面
- */
-export const isTargetPage = async () => {
-  // 检查是否有页面标记
-  const marker = await getPageMarker()
-  if (!marker) return false
-  
-  // 检查是否为Google搜索页面（不是目标页面）
-  if (isGoogleSearchPage()) return false
-  
-  return true
-}
-
-/**
  * 在目标页面提取信息
  * @returns {Promise<Array>} 提取的联系人信息
  */
@@ -552,23 +508,6 @@ export const checkAndHandleCaptcha = () => {
   return false
 }
 
-/**
- * 获取当前页码
- * @returns {number} 当前页码
- */
-export const getCurrentPageNumber = () => {
-  // 尝试从URL参数获取
-  const urlParams = new URLSearchParams(window.location.search)
-  const start = urlParams.get('start')
-  
-  if (start) {
-    // Google搜索每页通常10个结果，start=0是第1页，start=10是第2页
-    return Math.floor(parseInt(start) / 10) + 1
-  }
-  
-  // 如果没有start参数，通常是第1页
-  return 1
-}
 
 /**
  * 检查搜索是否有结果
