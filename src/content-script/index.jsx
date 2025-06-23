@@ -107,9 +107,9 @@ class ContentScriptApp {
       lifecycleManager.registerModule('translation', new TranslationModule())
     }
 
-    if (isModuleEnabled('features', 'mining')) {
-      lifecycleManager.registerModule('mining', new MiningModule())
-    }
+    // if (isModuleEnabled('features', 'mining')) {
+    //   lifecycleManager.registerModule('mining', new MiningModule())
+    // }
 
     // Web自动化模块（必须启用，处理自动化消息）
     lifecycleManager.registerModule('webAutomation', new WebAutomationModule())

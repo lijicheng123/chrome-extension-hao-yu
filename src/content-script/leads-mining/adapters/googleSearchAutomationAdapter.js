@@ -67,29 +67,25 @@ class GoogleSearchAutomationAdapter {
   async initialize() {
     console.log(`${this.logPrefix} ========== 初始化适配器开始 ==========`)
     
-    // 注入SERP结果样式
-    injectSerpResultStyles()
-    console.log(`${this.logPrefix} ✓ SERP结果样式已注入`)
-    
-    // // 确保页面监听器已启动
-    // if (pageMarkerListener) {
-    //   console.log(`${this.logPrefix} ✓ 页面监听器已启动`)
-    // }
-    const keywords = await this.getKeywordsList()
-    // 初始化状态管理器
-    console.log(`${this.logPrefix} 开始初始化状态管理器...`)
-    await automationStateManager.initialize({ keywords })
-    console.log(`${this.logPrefix} ✓ 状态管理器初始化完成`)
-    
-    // 初始化页面标记监听器
-    this.initPageMarkerListener()
-    
     // 如果在Google搜索页面且有恢复状态，触发页面就绪事件
     const isGoogleSearch = isGoogleSearchPage()
     console.log(`${this.logPrefix} 检查页面类型: isGoogleSearchPage = ${isGoogleSearch}`)
     
     if (isGoogleSearch) {
+      // 注入SERP结果样式
+      injectSerpResultStyles()
+      console.log(`${this.logPrefix} ✓ SERP结果样式已注入`)
+
+      const keywords = await this.getKeywordsList()
+      // 初始化状态管理器
+      console.log(`${this.logPrefix} 开始初始化状态管理器...`)
+      await automationStateManager.initialize({ keywords })
+
+      // 初始化页面标记监听器
+      this.initPageMarkerListener()
+
       console.log(`${this.logPrefix} 在Google搜索页面，触发页面就绪事件...`)
+
       await this.handlePageReady()
     } else {
       console.log(`${this.logPrefix} 不在Google搜索页面，跳过页面就绪处理`)
