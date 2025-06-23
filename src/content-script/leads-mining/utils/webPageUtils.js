@@ -6,19 +6,21 @@ import { getMatchedSearchEngine } from './searchEngineConfig'
  */
 export async function scrollToBottom() {
   return new Promise((resolve) => {
-    const distance = 200 // 每次滚动的距离
-    const delay = 150 // 每次滚动的延迟
     const timer = setInterval(() => {
-      window.scrollBy(0, distance)
+      // 1. 每次滚动的距离是随机的 (例如：在800px到1500px之间)
+      const randomDistance = 800 + Math.random() * 700; 
+      window.scrollBy(0, randomDistance);
+
+      // 2. 检查是否已滚动到底部
       if (
         document.documentElement.scrollTop + window.innerHeight >=
-        document.documentElement.scrollHeight
+        document.documentElement.scrollHeight - 1 // 留一点点容差
       ) {
-        clearInterval(timer)
-        resolve()
+        clearInterval(timer);
+        resolve();
       }
-    }, delay)
-  })
+    }, 200 + Math.random() * 300); // 3. 每次滚动的延迟也是随机的 (例如：在200ms到500ms之间)
+  });
 }
 
 /**
