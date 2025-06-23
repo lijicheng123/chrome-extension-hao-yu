@@ -9,7 +9,6 @@ import {
 } from '@ant-design/icons'
 import Browser from 'webextension-polyfill'
 import { WebAutomationContentAPI } from '../../../services/messaging/webAutomation'
-import { isLandingPage } from '../utils/googleSearchAutomation'
 import { submitEmails } from '../utils/emailService'
 import { initSession } from '../../../services/init-session.mjs'
 import { MAX_Z_INDEX } from '../../../config/ui-config.mjs'
@@ -52,11 +51,6 @@ const AIBackgroundCheckButton = () => {
       messageHideRef.current()
       messageHideRef.current = null
     }
-  }, [])
-
-  const isLanding = useMemo(async () => {
-    const result = await isLandingPage()
-    return result
   }, [])
 
   // 调用AI生成开发信 - 参考emailExtractor.js的方式
@@ -498,11 +492,6 @@ ${JSON.stringify(result.data, null, 2)}
       WebAutomationContentAPI.unregisterHandlers()
     }
   }, [])
-
-  // 只在LandingPage显示
-  if (!isLanding) {
-    return null
-  }
 
   return (
     <>

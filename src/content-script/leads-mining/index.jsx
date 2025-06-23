@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import {
   Form,
   Select,
@@ -47,6 +47,12 @@ function LeadsMining({ windowType }) {
   // 使用自定义Hooks
   const taskManager = useTaskManager()
   const { selectedTask, handleTaskSelect, fetchTaskList, taskList } = taskManager
+
+  const isLanding = useMemo(async () => {
+    const result = await isLandingPage()
+    debugger
+    return result
+  }, [])
 
   // 使用background状态管理
   const backgroundState = useBackgroundState()
@@ -296,7 +302,7 @@ function LeadsMining({ windowType }) {
           )}
 
           {/* AI背调按钮 - 仅在LandingPage显示 */}
-          <AIBackgroundCheckButton />
+          {isLanding === true && <AIBackgroundCheckButton />}
 
           {/* 根据页面类型显示不同的联系方式列表 */}
           {casualMiningStatus === 'cRunning' ? (
@@ -304,7 +310,7 @@ function LeadsMining({ windowType }) {
             <EmailList
               isShowCurrentPageEmails={isGoogleSearch ? false : true}
               emailList={
-                isGoogleMaps || isGoogleSearch || isLandingPage() ? emailList : currentPageEmails
+                isGoogleMaps || isGoogleSearch || isLanding ? emailList : currentPageEmails
               }
               handleDeleteCustomer={handleDeleteCustomer}
               locateEmail={locateEmail}
