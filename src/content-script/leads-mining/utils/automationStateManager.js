@@ -55,15 +55,14 @@ export class AutomationStateManager {
       this.currentState = result[AUTOMATION_STORAGE_KEYS.AUTOMATION_STATE] || null
       
       if (this.currentState) {
-        console.log(`${this.logPrefix} ✓ 状态已加载`, {
-          status: this.currentState.status,
-          currentKeywordIndex: this.currentState.currentKeywordIndex,
-          currentPage: this.currentState.currentPage,
-          currentResultIndex: this.currentState.currentResultIndex,
-          keywordsLength: this.currentState.keywords?.length || 0,
-          serpResultsLength: this.currentState.currentSerpResults?.length || 0,
-          totalResultsCount: this.currentState.totalResultsCount || 0
-        })
+              console.log(`${this.logPrefix} ✓ 状态已加载`, {
+        status: this.currentState.status,
+        currentKeywordIndex: this.currentState.currentKeywordIndex,
+        currentPage: this.currentState.currentPage,
+        currentResultIndex: this.currentState.currentResultIndex,
+        keywordsLength: this.currentState.keywords?.length || 0,
+        totalResultsCount: this.currentState.totalResultsCount || 0
+      })
       } else {
         if (keywords?.length > 0) {
           this.currentState = this.createInitialState({ keywords })
@@ -127,7 +126,6 @@ export class AutomationStateManager {
       currentOperationStartTime: Date.now(),
       
       // 临时数据
-      currentSerpResults: [],
       currentOperatingUrl: null,
       openedTabIds: [],
       
@@ -282,7 +280,6 @@ export class AutomationStateManager {
         currentKeywordIndex: 0,
         currentPage: 1,
         currentResultIndex: 0,
-        currentSerpResults: [],
         totalResultsCount: 0,
         processedLinksCount: 0,
         extractedInfoCount: 0,
@@ -318,7 +315,6 @@ export class AutomationStateManager {
     
     console.log(`${this.logPrefix} 更新状态...`)
     await this.updateState({ 
-      currentSerpResults: serpResults,
       totalResultsCount: serpResults.length,
       currentResultIndex: 0
     })
@@ -405,9 +401,7 @@ export class AutomationStateManager {
       currentResultIndex: state.currentResultIndex,
       totalResults: state.totalResultsCount,
       currentPage: state.currentPage,
-      maxPages: state.maxPagesPerKeyword,
-      hasSerpResults: !!(state.currentSerpResults && state.currentSerpResults.length > 0),
-      serpResultsLength: state.currentSerpResults?.length || 0
+      maxPages: state.maxPagesPerKeyword
     })
 
     // 1. 检查是否暂停
@@ -422,8 +416,8 @@ export class AutomationStateManager {
       return ACTION_TYPES.SHOW_RESULTS
     }
 
-    // 3. 检查是否需要搜索新关键词（只有在没有SERP结果时才搜索）
-    if (!state.currentSerpResults || state.currentSerpResults.length === 0) {
+    // 3. 检查是否需要搜索新关键词（当totalResultsCount为0时才搜索）
+    if (state.totalResultsCount === 0) {
       console.log(`${this.logPrefix} ✓ 决策: 无SERP结果，需要搜索关键词 -> SEARCH_KEYWORD`)
       return ACTION_TYPES.SEARCH_KEYWORD
     }
@@ -491,7 +485,6 @@ export class AutomationStateManager {
       currentKeywordIndex: newIndex,
       currentPage: 1,
       currentResultIndex: 0,
-      currentSerpResults: [],
       totalResultsCount: 0
     })
     
@@ -519,7 +512,6 @@ export class AutomationStateManager {
     await this.updateState({
       currentPage: this.currentState.currentPage + 1,
       currentResultIndex: 0,
-      currentSerpResults: [],
       totalResultsCount: 0
     })
     

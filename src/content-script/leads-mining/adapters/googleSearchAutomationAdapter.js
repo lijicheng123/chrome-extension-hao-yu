@@ -200,8 +200,8 @@ class GoogleSearchAutomationAdapter {
   async updateResultStyleByIndex(index, status) {
     console.log(`${this.logPrefix} 更新索引 ${index} 的结果样式为: ${status}`)
     
-    const state = automationStateManager.getState()
-    const serpResults = state?.currentSerpResults || []
+    // 每次都从页面重新提取serpResults
+    const serpResults = this.extractSerpResults()
     
     if (index >= 0 && index < serpResults.length) {
       const result = serpResults[index]
@@ -226,11 +226,10 @@ class GoogleSearchAutomationAdapter {
     console.log(`${this.logPrefix} 获取当前状态:`, {
       hasState: !!state,
       status: state?.status,
-      currentKeywordIndex: state?.currentKeywordIndex,
-      currentPage: state?.currentPage,
-      currentResultIndex: state?.currentResultIndex,
-      serpResultsCount: state?.currentSerpResults?.length || 0,
-      totalResultsCount: state?.totalResultsCount || 0
+              currentKeywordIndex: state?.currentKeywordIndex,
+        currentPage: state?.currentPage,
+        currentResultIndex: state?.currentResultIndex,
+        totalResultsCount: state?.totalResultsCount || 0
     })
     
     if (!state || !state.status || state.status === AUTOMATION_STATUS.IDLE) {
@@ -496,7 +495,8 @@ class GoogleSearchAutomationAdapter {
   async executeOpenNextLink() {
     const state = automationStateManager.getState()
     const currentIndex = state.currentResultIndex
-    const serpResults = state.currentSerpResults || []
+    // 每次都从页面重新提取serpResults
+    const serpResults = this.extractSerpResults()
     
     console.log(`${this.logPrefix} 执行打开下一个链接`, { 
       currentIndex, 
@@ -518,13 +518,13 @@ class GoogleSearchAutomationAdapter {
       
       // 设置当前操作URL
       await automationStateManager.setCurrentOperatingUrl(targetUrl)
-      
       // 应用处理中样式到当前结果
       applyResultStyle(result.element, RESULT_STATUS.CLICKING)
       
       // 点击链接打开新标签页
       const keyword = automationStateManager.getCurrentKeyword()
       const taskId = state.taskId
+
       await clickSearchResultLink(result, keyword, taskId)
       
       console.log(`${this.logPrefix} 已点击链接`, { targetUrl, index: currentIndex })
@@ -574,8 +574,8 @@ class GoogleSearchAutomationAdapter {
   async clearAllClickingStyles() {
     console.log(`${this.logPrefix} 清除所有结果的处理中样式`)
     
-    const state = automationStateManager.getState()
-    const serpResults = state?.currentSerpResults || []
+    // 每次都从页面重新提取serpResults
+    const serpResults = this.extractSerpResults()
     
          serpResults.forEach((result, index) => {
        if (result.element && result.element.style) {
@@ -599,7 +599,8 @@ class GoogleSearchAutomationAdapter {
     console.log(`${this.logPrefix} 更新当前结果样式`, { status })
     
     const state = automationStateManager.getState()
-    const serpResults = state?.currentSerpResults || []
+    // 每次都从页面重新提取serpResults
+    const serpResults = this.extractSerpResults()
     const currentIndex = state?.currentResultIndex || 0
     
     if (currentIndex < serpResults.length) {
