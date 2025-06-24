@@ -14,7 +14,7 @@ export const usePlatformStorageInit = ({ setContactList = () => {} }) => {
     // 定义一个内部 async 函数来处理异步操作
     const init = async () => {
       const pageMarker = await getPageMarker() // 使用 await 获取平台 ID
-      const platformId = pageMarker?.platform || 'default'
+      const platformId = pageMarker?.data?.platform || 'default'
 
       const storageKey = `${platformId}_contact_list`
       console.log('storageKey=====>', storageKey)
@@ -72,7 +72,7 @@ export const usePlatformStorageInit = ({ setContactList = () => {} }) => {
 export const addContactsToStorage = async (contacts) => {
   try {
     const pageMarker = await getPageMarker()
-    const platformId = pageMarker?.platform || 'default'
+    const platformId = pageMarker?.data?.platform || 'default'
 
     console.log('addContactsToStorage contacts ===>', contacts)
 

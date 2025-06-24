@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react'
 import { 
   isLandingPage, 
   extractDataFromLandingPage,
-  getPageMarker,
-  setPageMarker
+  getPageMarker
 } from '../utils/googleSearchAutomation'
 import { isGoogleSearchPage } from '../../../utils/platformDetector'
 import { 
@@ -12,7 +11,6 @@ import {
 } from '../constants/automationConfig'
 import { message } from 'antd'
 import { TabManagerContentAPI } from '../../../services/messaging/tabManager'
-import { delay } from '../utils/delayUtils'
 /**
  * 决策引擎Hook
  * 负责自动化挖掘的决策逻辑，包括：
@@ -74,6 +72,7 @@ export const useDecisionEngine = (backgroundState, emailProcessor, taskManager, 
         if (success) {
           console.log('提交成功')
           message.success('提交成功')
+          console.log('这是AI获取到的内容：', contactsWithTaskId)
           finalExtractedData = contactsWithTaskId
         } else {
           console.log('提交失败')
@@ -81,45 +80,47 @@ export const useDecisionEngine = (backgroundState, emailProcessor, taskManager, 
       } else {
         console.log('LandingPage未提取到线索')
       }
-      console.log('LandingPage提取完成，通知SERP继续处理下一个链接')
-        
-      await setPageMarker({
-        from: PAGE_DEPTH.LANDING_PAGE,    // 来自LandingPage
-        to: PAGE_DEPTH.SERP,              // 发给SERP页面
-        action: PAGE_MARKER_ACTION.NEXT,  // 要求继续下一个操作
-        keyword: pageMarker.keyword,
-        taskId: pageMarker.taskId,
-        resultUrl: pageMarker.resultUrl,
+      console.log('LandingPage提取完成，先关闭其他标签页再通知SERP继续处理下一个链接')
+      
+      // 构造要发送给SERP的消息
+      const serpMessage = {
+        action: PAGE_MARKER_ACTION.NEXT || 'next',
         data: {
+          keyword: pageMarker.keyword,
+          taskId: pageMarker.taskId,
+          resultUrl: pageMarker.resultUrl,
+          timestamp: Date.now(),
           extractedData: finalExtractedData,
           extractedCount: finalExtractedData ? finalExtractedData.length : 0
         }
-      })
-
-      await delay(1000)
-      // 常规处理：关闭非Google搜索标签页
-      TabManagerContentAPI.closeNonGoogleSearchTabs()
+      }
+      
+      // 关闭非Google搜索标签页，并在清空缓存后发送消息给SERP
+      TabManagerContentAPI.closeNonGoogleSearchTabs({ serpMessage })
       
     } catch (error) {
       console.error('LandingPage处理失败:', error)
       
       // 如果有页面标记且来自SERP，仍然需要通知SERP继续
       if (pageMarker && pageMarker.from === PAGE_DEPTH.SERP) {
-        console.log('LandingPage处理失败，但仍通知SERP继续处理下一个链接')
+        console.log('LandingPage处理失败，但仍先关闭其他标签页再通知SERP继续处理下一个链接')
         
-        await setPageMarker({
-          from: PAGE_DEPTH.LANDING_PAGE,
-          to: PAGE_DEPTH.SERP,
+        // 构造要发送给SERP的消息
+        const serpMessage = {
           action: PAGE_MARKER_ACTION.NEXT,
-          keyword: pageMarker.keyword,
-          taskId: pageMarker.taskId,
-          resultUrl: pageMarker.resultUrl,
           data: {
+            keyword: pageMarker.keyword,
+            taskId: pageMarker.taskId,
+            resultUrl: pageMarker.resultUrl,
+            timestamp: Date.now(),
             extractedData: null,
             extractedCount: 0,
             error: error.message
           }
-        })
+        }
+        
+        // 关闭非Google搜索标签页，并在清空缓存后发送消息给SERP
+        TabManagerContentAPI.closeNonGoogleSearchTabs({ serpMessage })
       }
     }
     
@@ -127,6 +128,15 @@ export const useDecisionEngine = (backgroundState, emailProcessor, taskManager, 
   }
 
   useEffect(() => {
+    console.log('========== useDecisionEngine useEffect 触发 ==========')
+    console.log('当前状态:', {
+      hasExecuted: hasExecuted.current,
+      casualMiningStatus,
+      aiFirst,
+      isGoogleSearch: isGoogleSearchPage(),
+      currentUrl: window.location.href
+    })
+    
     if (hasExecuted.current || casualMiningStatus !== 'cRunning') {
       console.log('已经执行过，或者casualMiningStatus不是cRunning，跳过后续逻辑')
       return; // 如果已经执行过，则跳过后续逻辑
@@ -137,14 +147,28 @@ export const useDecisionEngine = (backgroundState, emailProcessor, taskManager, 
       return
     }
 
+    console.log('设置定时器，1秒后执行LandingPage检查...')
     const timer = setTimeout(async () => {
+      console.log('========== 定时器执行，开始检查LandingPage ==========')
+      
       const isLanding = await isLandingPage()
+      console.log('LandingPage检查结果:', isLanding)
+      
       if (isLanding) {
+        console.log('确认是LandingPage，获取页面标记...')
         const pageMarker = await getPageMarker()
-        handleLandingPage(pageMarker)
+        console.log('获取到的页面标记:', pageMarker)
+        
+        if (pageMarker) {
+          console.log('页面标记有效，开始处理LandingPage...')
+          handleLandingPage(pageMarker)
+        } else {
+          console.log('❌ 页面标记为空，跳过LandingPage处理')
+        }
         return;
       }
 
+      console.log('不是LandingPage，执行常规邮箱提取...')
       extractCurrentPageEmails({
         forceSubmit: true,
         ai: aiFirst,

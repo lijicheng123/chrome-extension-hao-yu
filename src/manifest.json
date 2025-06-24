@@ -61,7 +61,10 @@
     {
       "resources": [
         "logo.png",
-        "imgs/*"
+        "imgs/*",
+        "*.js",
+        "hot/*.js",
+        "hot/*.json"
       ],
       "matches": [
         "<all_urls>"

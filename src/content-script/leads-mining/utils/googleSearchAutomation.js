@@ -1,13 +1,13 @@
 import Browser from 'webextension-polyfill'
 import { extractPageEmails } from './emailService'
 import { isGoogleCaptchaPage, detectCaptcha } from './captchaDetector'
-import { isGoogleSearchPage, isGoogleMapsPage, isLinkedInPage, detectCurrentPlatform } from '../../../utils/platformDetector'
+import { isGoogleSearchPage, isGoogleMapsPage, isLinkedInPage } from '../../../utils/platformDetector'
 import { delay } from './delayUtils'
 import { scrollToBottom } from './webPageUtils'
 import { findElementBySelectors } from './elementUtils'
+import { TabManagerContentAPI } from '../../../services/messaging/tabManager'
 import { 
   AUTOMATION_CONFIG, 
-  AUTOMATION_STORAGE_KEYS, 
   RESULT_STATUS, 
   RESULT_STATUS_CLASSES,
   ALL_RESULT_STATUS_CLASSES,
@@ -322,26 +322,25 @@ export const clickSearchResultLink = async (linkElement, keyword, taskId) => {
     // 主要是url为主，保留linkElement.href是为了以后a标签扔进来直接用
     const url = linkElement.href || linkElement.url
     console.log(`准备打开链接: ${url}`)
-    
-    // 在新标签页打开前，设置页面标记（SERP -> LANDING_PAGE）
-    await setPageMarker({
-      from: PAGE_DEPTH.SERP,        // 来自搜索结果页
-      to: PAGE_DEPTH.LANDING_PAGE,  // 发给目标页面
-      action: PAGE_MARKER_ACTION.EXTRACT, // 要求提取信息
-      keyword,
-      taskId,
-      resultUrl: url
+    // 通过background打开标签页
+    const result = await TabManagerContentAPI.openTabByBackground({
+      url,
+      pageDepth: 1, // LandingPage深度为1
+      timestamp: Date.now(),
+      extraData: {
+        keyword,
+        taskId,
+        from: PAGE_DEPTH.SERP,
+        to: PAGE_DEPTH.LANDING_PAGE,
+        action: PAGE_MARKER_ACTION.EXTRACT
+      }
     })
-    await delay(3000)
-    // 在新标签页中打开链接，添加 __h_d=1 参数
-    const urlWithParams = new URL(url)
-    urlWithParams.searchParams.set('__h_d', '1') // 谷歌搜索深度1
-    const newTab = window.open(urlWithParams.toString(), '_blank')
-    if (newTab) {
-      console.log('已在新标签页打开链接')
+    
+    if (result.success) {
+      console.log('已通过background创建新标签页:', result.tabId)
       return true
     } else {
-      console.error('无法打开新标签页，可能被浏览器阻止')
+      console.error('创建新标签页失败:', result.error)
       return false
     }
   } catch (error) {
@@ -350,109 +349,7 @@ export const clickSearchResultLink = async (linkElement, keyword, taskId) => {
   }
 }
 
-/**
- * 设置页面标记（新的结构）
- * @param {Object} markerData 标记数据
- * @param {number} markerData.from 来源层级（谁写进的）
- * @param {number} markerData.to 目标层级（给谁用的）
- * @param {string} markerData.action 要执行的动作
- * @param {string} markerData.keyword 当前关键词
- * @param {string} markerData.taskId 任务ID
- * @param {string} markerData.resultUrl 结果URL
- * @param {number} markerData.timestamp 时间戳
- * @param {Object} markerData.data 额外数据
- */
-export const setPageMarker = async (markerData) => {
-  try {
-    const marker = {
-      platform: markerData.platform || await detectCurrentPlatform(),
-      from: markerData.from,
-      to: markerData.to,
-      action: markerData.action,
-      keyword: markerData.keyword,
-      taskId: markerData.taskId,
-      resultUrl: markerData.resultUrl,
-      timestamp: Date.now(),
-      data: markerData.data || {}
-    }
-    
-    console.log('准备设置页面标记:', {
-      storageKey: AUTOMATION_STORAGE_KEYS.PAGE_MARKER,
-      marker
-    })
-    
-    await Browser.storage.local.set({
-      [AUTOMATION_STORAGE_KEYS.PAGE_MARKER]: marker
-    })
-    
-    console.log('✓ 页面标记已设置成功')
-    
-    // 验证是否真的设置成功
-    const verification = await Browser.storage.local.get([AUTOMATION_STORAGE_KEYS.PAGE_MARKER])
-    console.log('验证页面标记存储:', verification)
-    
-  } catch (error) {
-    console.error('❌ 设置页面标记失败:', error)
-  }
-}
 
-/**
- * 获取页面标记
- * @returns {Promise<Object|null>} 页面标记数据
- */
-export const getPageMarker = async () => {
-  try {
-    const result = await Browser.storage.local.get([AUTOMATION_STORAGE_KEYS.PAGE_MARKER])
-    return result[AUTOMATION_STORAGE_KEYS.PAGE_MARKER] || null
-  } catch (error) {
-    console.error('获取页面标记失败:', error)
-    return null
-  }
-}
-
-/**
- * 清除页面标记
- */
-export const clearPageMarker = async () => {
-  try {
-    await Browser.storage.local.remove([AUTOMATION_STORAGE_KEYS.PAGE_MARKER])
-    console.log('页面标记已清除')
-  } catch (error) {
-    console.error('清除页面标记失败:', error)
-  }
-}
-
-/**
- * 监听页面标记变化
- * @param {Function} callback 回调函数，接收 (newMarker, oldMarker) 参数
- * @param {Object} filter 过滤条件 { to?, action? }
- * @returns {Function} 取消监听的函数
- */
-export const listenToPageMarkerChanges = (callback, filter = {}) => {
-  const listener = (changes, areaName) => {
-    if (areaName !== 'local') return
-    
-    const markerChange = changes[AUTOMATION_STORAGE_KEYS.PAGE_MARKER]
-    if (!markerChange) return
-    
-    const newMarker = markerChange.newValue
-    const oldMarker = markerChange.oldValue
-    
-    // 应用过滤条件
-    if (filter.to && newMarker && newMarker.to !== filter.to) return
-    if (filter.action && newMarker && newMarker.action !== filter.action) return
-    
-    console.log('页面标记变化监听触发:', { newMarker, oldMarker, filter })
-    callback(newMarker, oldMarker)
-  }
-  
-  Browser.storage.onChanged.addListener(listener)
-  
-  // 返回取消监听的函数
-  return () => {
-    Browser.storage.onChanged.removeListener(listener)
-  }
-}
 
 /**
  * 在目标页面提取信息
@@ -523,24 +420,12 @@ export const hasSearchResults = () => {
 export const isLandingPage = async () => {
   console.log('========== 检查是否为LandingPage开始 ==========')
   
-  // 检查是否为指定平台页面
+  // 检查1: 是否为指定平台页面（排除）
   const isGoogleMaps = isGoogleMapsPage()
   const isGoogleSearch = isGoogleSearchPage()
   const isLinkedIn = isLinkedInPage()
   const isSpecifiedPlatform = isGoogleMaps || isGoogleSearch || isLinkedIn
-  // 这里写： url中的__h_d 为1的才是LandingPage，大于1的不是LandingPage
-  const urlParams = new URLSearchParams(window.location.search)
-  const pageDepth = urlParams.get('__h_d') // 修正参数名，应该是 __h_d 不是 _h_d
-  if (pageDepth) {
-    if (Number(pageDepth) > 1) {
-      return false
-    }
-    if (Number(pageDepth) === 1) {
-      return true
-    }
-  }
-
-
+  
   console.log('平台检查:', {
     currentUrl: window.location.href,
     isGoogleMaps,
@@ -554,34 +439,238 @@ export const isLandingPage = async () => {
     return false
   }
   
-  // 检查是否有页面标记
-  console.log('检查页面标记...')
-  const marker = await getPageMarker()
-  console.log('页面标记结果:', marker)
+  // 检查2: 获取当前页面的TabID和页面深度信息
+  console.log('检查当前页面Tab信息...')
+  const tabInfo = await TabManagerContentAPI.getCurrentPageTabInfo()
+  console.log('Tab信息结果:', tabInfo)
   
-  if (!marker) {
-    console.log('❌ 非指定平台页面，但没有页面标记，跳过自动处理')
+  if (!tabInfo.success) {
+    console.log('❌ 没有找到Tab信息，跳过自动处理')
     return false
   }
   
-  // 检查是否为目标页面（to=LANDING_PAGE且action=EXTRACT）
-  const isValidMarker = marker.to === PAGE_DEPTH.LANDING_PAGE && marker.action === PAGE_MARKER_ACTION.EXTRACT
+  // 检查3: 验证页面深度
+  if (tabInfo.pageDepth !== 1) {
+    console.log('❌ 页面深度不匹配，期望1，实际:', tabInfo.pageDepth)
+    return false
+  }
   
-  console.log('页面标记验证:', {
-    markerTo: marker.to,
-    expectedTo: PAGE_DEPTH.LANDING_PAGE,
-    markerAction: marker.action,
-    expectedAction: PAGE_MARKER_ACTION.EXTRACT,
-    isValidMarker
+  // 检查4: 验证时间窗口（1分钟）
+  const currentTime = Date.now()
+  const timeDiff = currentTime - tabInfo.timestamp
+  const timeWindow = 60000 // 1分钟
+  const isWithinTimeWindow = timeDiff <= timeWindow
+  
+  console.log('时间窗口检查:', {
+    currentTime,
+    timestamp: tabInfo.timestamp,
+    timeDiff,
+    timeWindow,
+    isWithinTimeWindow
   })
   
-  if (!isValidMarker) {
-    console.log('❌ 页面标记不匹配，跳过自动处理')
+  if (!isWithinTimeWindow) {
+    console.log('❌ 超出时间窗口，可能是过期的页面')
     return false
   }
   
-  console.log('✓ 检测到是LandingPage!')
+  // 检查5: 验证额外数据
+  const extraData = tabInfo.extraData || {}
+  const isValidData = extraData.to === PAGE_DEPTH.LANDING_PAGE && 
+                      extraData.action === PAGE_MARKER_ACTION.EXTRACT
+  
+  console.log('额外数据验证:', {
+    extraDataTo: extraData.to,
+    expectedTo: PAGE_DEPTH.LANDING_PAGE,
+    extraDataAction: extraData.action,
+    expectedAction: PAGE_MARKER_ACTION.EXTRACT,
+    isValidData
+  })
+  
+  if (!isValidData) {
+    console.log('❌ 额外数据不匹配，跳过自动处理')
+    return false
+  }
+  
+  console.log('✓ 检测到是LandingPage!', {
+    tabId: tabInfo.tabId,
+    pageDepth: tabInfo.pageDepth,
+    keyword: extraData.keyword,
+    taskId: extraData.taskId
+  })
+  
   console.log('========== 检查是否为LandingPage结束 ==========')
-
   return true
+}
+
+/**
+ * 发送消息到SERP页面（使用统一的TabManagerService）
+ * @param {Object} messageData 消息数据
+ * @param {string} messageData.action 动作类型
+ * @param {Object} messageData.data 消息数据
+ * @returns {Promise<boolean>} 发送是否成功
+ */
+export const sendToSERPMessage = async (messageData) => {
+  try {
+    // 通过统一的tabManagerService发送到SERP页面
+    const result = await TabManagerContentAPI.sendToSERPMessage(messageData)
+    console.log('SERP消息通过统一服务发送结果:', result)
+    return result.success
+  } catch (error) {
+    console.error('通过统一服务发送SERP消息失败:', error)
+    return false
+  }
+}
+
+/**
+ * 监听来自LandingPage的消息
+ * @param {Function} callback 回调函数，接收 (message) 参数
+ * @param {Object} filter 过滤条件 { action? }
+ * @returns {Function} 取消监听的函数
+ */
+export const listenLandingPageMessage = (callback, filter = {}) => {
+  console.log('设置LandingPage消息监听器，过滤条件:', filter)
+  
+  const listener = (message, sender) => {
+    console.log('监听器收到消息:', {
+      messageType: message.type,
+      messageAction: message.action,
+      filterAction: filter.action,
+      message,
+      sender
+    })
+    
+    // 只处理来自LandingPage的消息
+    if (message.type !== 'LANDING_PAGE_MESSAGE') {
+      console.log('❌ 消息类型不匹配，跳过:', message.type)
+      return
+    }
+    
+    console.log('✓ 收到LANDING_PAGE_MESSAGE消息:', message, 'filter:', filter)
+    
+    // 应用过滤条件
+    if (filter.action && message.action !== filter.action) {
+      console.log('❌ 消息动作不匹配，跳过:', {
+        messageAction: message.action,
+        filterAction: filter.action
+      })
+      return
+    }
+    
+    console.log('✓ LandingPage消息通过过滤器，触发回调:', message)
+    callback(message, sender)
+  }
+  
+  Browser.runtime.onMessage.addListener(listener)
+  console.log('✓ LandingPage消息监听器已注册')
+  
+  // 返回取消监听的函数
+  return () => {
+    Browser.runtime.onMessage.removeListener(listener)
+    console.log('❌ LandingPage消息监听器已移除')
+  }
+}
+
+/**
+ * TODO:似乎不用了，考虑删除set和getPageMarker
+ * 设置页面标记（通过消息传递到SERP）
+ * @param {Object} markerData 标记数据
+ * @param {string} markerData.action 要执行的动作
+ * @param {string} markerData.keyword 当前关键词
+ * @param {string} markerData.taskId 任务ID
+ * @param {string} markerData.resultUrl 结果URL
+ * @param {Object} markerData.data 额外数据
+ */
+export const setPageMarker = async (markerData) => {
+  console.log('========== 设置页面标记开始 ==========')
+  console.log('输入的markerData:', markerData)
+  
+  try {
+    const message = {
+      action: markerData.action,
+      data: {
+        keyword: markerData.keyword,
+        taskId: markerData.taskId,
+        resultUrl: markerData.resultUrl,
+        timestamp: Date.now(),
+        ...markerData.data
+      }
+    }
+    
+    console.log('构造的完整消息:', message)
+    console.log('准备发送到SERP的消息 - action:', message.action)
+    
+    const success = await sendToSERPMessage(message)
+    
+    if (success) {
+      console.log('✓ SERP消息发送成功，消息内容:', message)
+    } else {
+      console.error('❌ SERP消息发送失败，消息内容:', message)
+    }
+    
+  } catch (error) {
+    console.error('❌ 发送SERP消息失败:', error)
+  }
+  
+  console.log('========== 设置页面标记结束 ==========')
+}
+
+/**
+ * 获取页面标记（从当前Tab信息中获取）
+ * @returns {Promise<Object|null>} 页面标记数据
+ */
+export const getPageMarker = async () => {
+  try {
+    const tabInfo = await TabManagerContentAPI.getCurrentPageTabInfo()
+    if (tabInfo.success && tabInfo.extraData) {
+      // 将extraData转换为兼容的页面标记格式
+      const extraData = tabInfo.extraData
+      return {
+        from: extraData.from,
+        to: extraData.to,
+        action: extraData.action,
+        keyword: extraData.keyword,
+        taskId: extraData.taskId,
+        resultUrl: extraData.resultUrl || window.location.href,
+        timestamp: tabInfo.timestamp,
+        data: extraData
+      }
+    }
+    return null
+  } catch (error) {
+    console.error('获取页面标记失败:', error)
+    return null
+  }
+}
+
+/**
+ * 监听页面标记变化（通过LandingPage消息监听）
+ * @param {Function} callback 回调函数，接收 (newMarker, oldMarker) 参数
+ * @param {Object} filter 过滤条件 { action? }
+ * @returns {Function} 取消监听的函数
+ */
+export const listenToPageMarkerChanges = (callback, filter = {}) => {
+  return listenLandingPageMessage((message) => {
+    console.log('页面标记变化监听触发:', { message, filter })
+    // 将消息转换为兼容的标记格式
+    const newMarker = {
+      from: PAGE_DEPTH.LANDING_PAGE,
+      to: PAGE_DEPTH.SERP,
+      action: message.action,
+      keyword: message.data?.keyword,
+      taskId: message.data?.taskId,
+      resultUrl: message.data?.resultUrl,
+      timestamp: message.timestamp,
+      data: message.data
+    }
+    callback(newMarker, null) // oldMarker设为null，因为消息传递机制不保存历史
+  }, filter)
+}
+
+/**
+ * 清除页面标记（在新的消息机制下，这是个空操作）
+ */
+export const clearPageMarker = async () => {
+  console.log('clearPageMarker: 在消息传递机制下，无需清除')
+  // 在消息传递机制下，不需要清除操作，因为消息是实时传递的
 }

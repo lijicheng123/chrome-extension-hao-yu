@@ -32,6 +32,7 @@ import { automationStateManager } from '../utils/automationStateManager'
 // import pageMarkerListener from '../utils/pageMarkerListener'
 import Browser from 'webextension-polyfill'
 import { message } from 'antd'
+import { delay } from '../utils/delayUtils'
 
 // 获取谷歌搜索平台关键词配置
 // const GOOGLE_SEARCH_CONFIG = getPlatformConfig('googleSearch')
@@ -99,20 +100,21 @@ class GoogleSearchAutomationAdapter {
    */
   initPageMarkerListener() {
     console.log(`${this.logPrefix} 初始化页面标记监听器...`)
+    console.log(`${this.logPrefix} PAGE_MARKER_ACTION.NEXT值:`, PAGE_MARKER_ACTION.NEXT)
     
-    // 监听页面标记变化，只关注发给SERP的消息
+    // 监听来自LandingPage的消息
     this.pageMarkerListener = listenToPageMarkerChanges((newMarker, oldMarker) => {
       console.log(`${this.logPrefix} 页面标记变化检测:`, { newMarker, oldMarker })
       
-      // 只处理发给SERP页面的标记
-      if (newMarker && newMarker.to === PAGE_DEPTH.SERP) {
+      // 处理来自LandingPage的标记
+      if (newMarker && newMarker.from === PAGE_DEPTH.LANDING_PAGE) {
         this.handlePageMarkerChange(newMarker, oldMarker)
       }
     }, {
-      to: PAGE_DEPTH.SERP // 只监听发给SERP的标记
+      action: PAGE_MARKER_ACTION.NEXT // 只监听NEXT动作
     })
     
-    console.log(`${this.logPrefix} ✓ 页面标记监听器已启动`)
+    console.log(`${this.logPrefix} ✓ 页面标记监听器已启动，监听动作:`, PAGE_MARKER_ACTION.NEXT)
   }
 
   /**
@@ -503,9 +505,23 @@ class GoogleSearchAutomationAdapter {
       totalResults: serpResults.length 
     })
     if (currentIndex >= serpResults.length) {
-      console.log(`${this.logPrefix} 当前页面所有链接已处理完成`)
-      const nextAction = automationStateManager.decideNextAction()
-      await this.executeAction(nextAction)
+      console.log(`${this.logPrefix} 当前页面所有链接已处理完成，检查是否需要翻页`)
+      
+      // 直接检查是否有下一页，避免递归调用
+      if (hasNextPage()) {
+        console.log(`${this.logPrefix} 发现有下一页，执行翻页`)
+        // 重置isExecutingAction，允许执行翻页动作
+        this.isExecutingAction = false
+        await this.executeAction(ACTION_TYPES.GO_NEXT_PAGE)
+      } else {
+        console.log(`${this.logPrefix} 没有下一页，处理当前关键词结束`)
+        // 重置isExecutingAction，允许执行后续动作
+        this.isExecutingAction = false
+        const nextAction = await automationStateManager.handlePageEnd()
+        if (nextAction) {
+          await this.executeAction(nextAction)
+        }
+      }
       return
     }
 
@@ -525,6 +541,7 @@ class GoogleSearchAutomationAdapter {
       const keyword = automationStateManager.getCurrentKeyword()
       const taskId = state.taskId
 
+      await delay(3000)
       await clickSearchResultLink(result, keyword, taskId)
       
       console.log(`${this.logPrefix} 已点击链接`, { targetUrl, index: currentIndex })
@@ -807,6 +824,20 @@ class GoogleSearchAutomationAdapter {
     if (this.pageMarkerListener) {
       this.pageMarkerListener()
       this.pageMarkerListener = null
+    }
+  }
+
+  /**
+   * 获取当前TabID
+   * @returns {Promise<number>} 当前TabID
+   */
+  async getCurrentTabId() {
+    try {
+      const tabInfo = await TabManagerContentAPI.getCurrentPageTabInfo()
+      return tabInfo.tabId
+    } catch (error) {
+      console.error(`${this.logPrefix} 获取当前TabID失败:`, error)
+      return null
     }
   }
 
