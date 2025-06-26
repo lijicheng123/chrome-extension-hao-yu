@@ -91,7 +91,16 @@ export class ContextMenuModule {
         
         // 根据不同的工具配置生成提示词
         if (data.itemId in toolsConfig) {
-          prompt = await toolsConfig[data.itemId].genPrompt(data.selectionText)
+          const userConfig = await getUserConfig()
+          const customPrompt = userConfig.selectionToolsPrompts?.[data.itemId]
+          
+          if (customPrompt) {
+            // 使用自定义prompt
+            prompt = customPrompt.replace('{{selection}}', data.selectionText)
+          } else {
+            // 使用默认genPrompt
+            prompt = await toolsConfig[data.itemId].genPrompt(data.selectionText)
+          }
         } else if (data.itemId in menuConfig) {
           const menuItem = menuConfig[data.itemId]
           if (menuItem.genPrompt) {

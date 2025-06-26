@@ -65,6 +65,9 @@ function Setting() {
   return (
     <div className="container-page-mode">
       <Tabs
+        style={{
+          width: '100%',
+        }}
         activeKey={tabIndex.toString()}
         onChange={(key) => setTabIndex(parseInt(key))}
         className="popup-tabs"

@@ -170,7 +170,14 @@ function FloatingToolbar(props) {
     for (const key in toolsConfig) {
       if (config.activeSelectionTools.includes(key)) {
         const toolConfig = toolsConfig[key]
-        pushTool(key, t(toolConfig.label), toolConfig.genPrompt)
+
+        // 检查是否有自定义prompt，如果有则使用自定义prompt，否则使用默认genPrompt
+        const customPrompt = config.selectionToolsPrompts?.[key]
+        const genPromptFunction = customPrompt
+          ? async (selection) => customPrompt.replace('{{selection}}', selection)
+          : toolConfig.genPrompt
+
+        pushTool(key, t(toolConfig.label), genPromptFunction)
       }
     }
     for (const tool of config.customSelectionTools) {

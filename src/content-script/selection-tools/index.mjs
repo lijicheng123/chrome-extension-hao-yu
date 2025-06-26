@@ -36,6 +36,31 @@ const createGenPrompt =
     return `${prefix}${fullMessage}:\n'''\n${selection}\n'''`
   }
 
+// 每个工具的默认prompt模板
+export const defaultPromptTemplates = {
+  explain:
+    'You are an expert teacher. Explain the following content in simple terms and highlight the key points:\n{{selection}}',
+  translate:
+    'You are a professional translator. Translate the following text to the target language (auto-detect), preserving meaning, tone, and formatting. Only provide the translated result:\n{{selection}}',
+  translateToEn:
+    'You are a professional translator. Translate the following text into English, preserving meaning, tone, and formatting. Only provide the translated result:\n{{selection}}',
+  translateToZh:
+    'You are a professional translator. Translate the following text into Chinese, preserving meaning, tone, and formatting. Only provide the translated result:\n{{selection}}',
+  translateBidi:
+    'You are a professional translator. Translate the following text to the target language (auto-detect), preserving meaning, tone, and formatting. If the text is already in the target language, translate it into English instead. Only provide the translated result:\n{{selection}}',
+  immersiveTranslate: 'Immersive Translation (无需修改)',
+  summary:
+    'You are a professional summarizer. Summarize the following content in a few sentences, focusing on the key points:\n{{selection}}',
+  polish:
+    'Act as a skilled editor. Correct grammar and word choice in the following text, improve readability and flow while preserving the original meaning, and return only the polished version:\n{{selection}}',
+  sentiment:
+    'You are an expert in sentiment analysis. Analyze the following content and provide a brief summary of the overall emotional tone, labeling it with a short descriptive word or phrase:\n{{selection}}',
+  divide:
+    'You are a skilled editor. Divide the following text into clear, easy-to-read and easy-to-understand paragraphs:\n{{selection}}',
+  code: 'You are a senior software engineer and system architect. Break down the following code step by step, explain how each part works and why it was designed that way, note any potential issues, and summarize the overall purpose:\n{{selection}}',
+  ask: 'Analyze the following content carefully and provide a concise answer or opinion with a short explanation:\n{{selection}}',
+}
+
 export const config = {
   explain: {
     icon: <ChatText />,

@@ -1,5 +1,8 @@
 import { useTranslation } from 'react-i18next'
-import { config as toolsConfig } from '../../content-script/selection-tools/index.mjs'
+import {
+  config as toolsConfig,
+  defaultPromptTemplates,
+} from '../../content-script/selection-tools/index.mjs'
 import PropTypes from 'prop-types'
 import { useState } from 'react'
 import { defaultConfig } from '../../config/index.mjs'
@@ -23,6 +26,7 @@ export function SelectionTools({ config, updateConfig }) {
   const [errorMessage, setErrorMessage] = useState('')
   const [editingTool, setEditingTool] = useState(defaultTool)
   const [editingIndex, setEditingIndex] = useState(-1)
+  const [expandedPrompts, setExpandedPrompts] = useState({})
 
   const editingComponent = (
     <div style={{ display: 'flex', flexDirection: 'column', '--spacing': '4px' }}>
@@ -97,21 +101,97 @@ export function SelectionTools({ config, updateConfig }) {
 
   return (
     <>
-      {config.selectionTools.map((key) => (
-        <label key={key}>
-          <input
-            type="checkbox"
-            checked={config.activeSelectionTools.includes(key)}
-            onChange={(e) => {
-              const checked = e.target.checked
-              const activeSelectionTools = config.activeSelectionTools.filter((i) => i !== key)
-              if (checked) activeSelectionTools.push(key)
-              updateConfig({ activeSelectionTools })
+      {config.selectionTools.map((key) => {
+        const isExpanded = expandedPrompts[key]
+        const customPrompt = config.selectionToolsPrompts?.[key] || ''
+        const defaultPrompt = defaultPromptTemplates[key] || ''
+        const currentPrompt = customPrompt || defaultPrompt
+
+        return (
+          <div
+            key={key}
+            style={{
+              marginBottom: '16px',
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px',
+              padding: '12px',
             }}
-          />
-          {t(toolsConfig[key].label)}
-        </label>
-      ))}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                checked={config.activeSelectionTools.includes(key)}
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  const activeSelectionTools = config.activeSelectionTools.filter((i) => i !== key)
+                  if (checked) activeSelectionTools.push(key)
+                  updateConfig({ activeSelectionTools })
+                }}
+              />
+              <span style={{ flexGrow: 1 }}>{t(toolsConfig[key].label)}</span>
+              <button
+                type="button"
+                onClick={() => setExpandedPrompts((prev) => ({ ...prev, [key]: !prev[key] }))}
+                style={{
+                  background: 'none',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                {isExpanded ? '收起' : '编辑Prompt'}
+              </button>
+            </div>
+
+            {isExpanded && (
+              <div style={{ marginTop: '12px' }}>
+                <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                  Prompt模板 (使用{`{{selection}}`}表示选中的文本):
+                </div>
+                <textarea
+                  value={currentPrompt}
+                  onChange={(e) => {
+                    const newPrompts = { ...config.selectionToolsPrompts }
+                    newPrompts[key] = e.target.value
+                    updateConfig({ selectionToolsPrompts: newPrompts })
+                  }}
+                  style={{
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: '8px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    resize: 'vertical',
+                  }}
+                  placeholder={`默认: ${defaultPrompt}`}
+                />
+                <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newPrompts = { ...config.selectionToolsPrompts }
+                      newPrompts[key] = defaultPrompt
+                      updateConfig({ selectionToolsPrompts: newPrompts })
+                    }}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '12px',
+                      border: '1px solid #ccc',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    恢复默认
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
       {config.customSelectionTools.map(
         (tool, index) =>
           tool.name &&
