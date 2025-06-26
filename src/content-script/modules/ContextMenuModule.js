@@ -91,15 +91,33 @@ export class ContextMenuModule {
         
         // 根据不同的工具配置生成提示词
         if (data.itemId in toolsConfig) {
-          const userConfig = await getUserConfig()
-          const customPrompt = userConfig.selectionToolsPrompts?.[data.itemId]
+          // 导入新的配置系统
+                     const { getPromptFromConfig, MODULES, SELECTION_TOOLS_PROMPT_TYPES } = await import('../../config/promptConfig.js')
           
-          if (customPrompt) {
-            // 使用自定义prompt
-            prompt = customPrompt.replace('{{selection}}', data.selectionText)
+          // 检查是否有对应的prompt类型映射
+          const promptType = SELECTION_TOOLS_PROMPT_TYPES[data.itemId.toUpperCase()]
+          
+          if (promptType) {
+            // 使用新的配置系统获取prompt
+            const customPrompt = await getPromptFromConfig(MODULES.SELECTION_TOOLS, promptType)
+            if (customPrompt) {
+              prompt = customPrompt.replace('{{selection}}', data.selectionText)
+            } else {
+              // fallback到原来的逻辑
+              prompt = await toolsConfig[data.itemId].genPrompt(data.selectionText)
+            }
           } else {
-            // 使用默认genPrompt
-            prompt = await toolsConfig[data.itemId].genPrompt(data.selectionText)
+            // 对于未迁移的工具，继续使用旧逻辑
+            const userConfig = await getUserConfig()
+            const customPrompt = userConfig.selectionToolsPrompts?.[data.itemId]
+            
+            if (customPrompt) {
+              // 使用自定义prompt
+              prompt = customPrompt.replace('{{selection}}', data.selectionText)
+            } else {
+              // 使用默认genPrompt
+              prompt = await toolsConfig[data.itemId].genPrompt(data.selectionText)
+            }
           }
         } else if (data.itemId in menuConfig) {
           const menuItem = menuConfig[data.itemId]

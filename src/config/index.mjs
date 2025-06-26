@@ -448,6 +448,10 @@ export const defaultConfig = {
   kimiMoonShotRefreshToken: '',
   kimiMoonShotAccessToken: '',
 
+  // prompt configurations
+  leadsMiningPrompts: {},
+  selectionToolsPrompts: {},
+
   // unchangeable
 
   userLanguage: getNavigatorLanguage(),

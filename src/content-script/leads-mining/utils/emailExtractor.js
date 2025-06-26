@@ -6,6 +6,7 @@ import { isGoogleMapsPage } from '../../../utils/platformDetector'
 import { extractGoogleMapsContacts } from './googleMapsExtractor'
 import TurndownService from 'turndown'
 import sanitizeHtml from 'sanitize-html';
+import { getPromptFromConfig, MODULES, LEADS_MINING_PROMPT_TYPES } from '../../../config/promptConfig.js'
 function cleanHTML(html) {
   const dom = sanitizeHtml(html, {
     // 使用 exclusiveFilter 来过滤掉特定的元素
@@ -110,121 +111,9 @@ export const extractAllEmails = async (options) => {
       content: pageContent
     }
 
-    // 根据是否需要提取链接来构建不同的prompt
-    const basePrompt = options?.extractLinks 
-      ? `你是一名外贸业务员，正在开发客户。请从网页信息中提取：
-1. 联系人信息用于商业开发 
-2. 公司相关的重要链接（关于我们、产品页面、联系我们等）
-
-返回格式为包含以下字段的JSON数组：
-- 联系人信息字段：
-  user_email: 必填真实邮箱
-  user_name: 优先取姓名，否则用邮箱前缀
-  user_function: 优先根据页面内容提取，否则合理推测，如果不确定则置空
-  user_phone: 座机，国际格式
-  user_mobile: 手机，国际格式
-  company_name: 从URL/meta/内容中提取
-  company_website: 优先官网链接，其次页脚/搜索推断，否则用当前页面域名地址，url格式
-  linkedin_site: LinkedIn主页，url格式
-  tag_names: 根据内容生成1-3标签，无法确定则空
-  user_street/user_street2/user_city/user_state/user_zip/user_country: 提取地址信息
-  user_website: 用户个人网站,url格式
-  user_linkedin: LinkedIn个人资料，url格式
-  user_facebook: Facebook个人资料，url格式
-  twitter: Twitter/X个人资料，url格式
-  youtube: YouTube频道，url格式
-  tiktok: TikTok账号，url格式
-  instagram: Instagram账号，url格式
-
-- 公司链接信息字段：
-  links: 数组，包含重要的公司页面链接
-    - name: 链接名称（如"about us", "products", "contact us"等）
-    - url: 完整的URL地址
-
-规则：
-- 不确定的字段留空，不填"未知"
-- 合并重复联系人，不同公司分开
-- 如果没有邮箱但有重要链接信息，可以返回包含空邮箱和links的对象
-- links数组只包含真实存在的重要链接，如果没有就为空数组
-
-示例输出：
-[{
-  "user_email": "john.doe@example.com",
-  "user_name": "John Doe", 
-  "user_function": "Marketing Director",
-  "user_phone": "+1 555 123 4567",
-  "user_mobile": "",
-  "company_name": "Example Inc.",
-  "company_website": "https://www.example.com",
-  "linkedin_site": "https://www.linkedin.com/company/example-inc",
-  "tag_names": ["Marketing", "SaaS"],
-  "user_street": "123 Main St",
-  "user_city": "New York",
-  "user_state": "NY",
-  "user_country": "United States",
-  "twitter": "https://x.com/example_inc",
-  "youtube": "https://www.youtube.com/channel/example", 
-  "facebook": "https://www.facebook.com/example.inc",
-  "tiktok": "",
-  "instagram": "https://www.instagram.com/example_inc",
-  "links": [
-    {
-      "name": "about us",
-      "url": "https://www.example.com/about"
-    },
-    {
-      "name": "products", 
-      "url": "https://www.example.com/products"
-    },
-    {
-      "name": "contact us",
-      "url": "https://www.example.com/contact"
-    }
-  ]
-}]`
-      : `你是外贸业务员，从网页提取联系人信息用于商业开发。目标：返回标准化JSON数组，无有效邮箱则返回[]。
-
-字段说明：
-user_email: 必填真实邮箱
-user_name: 优先取姓名，否则用邮箱前缀
-user_function: 优先根据页面内容提取，否则合理推测，如果不确定则置空
-user_phone: 座机，国际格式
-user_mobile: 手机，国际格式
-company_name: 从URL/meta/内容中提取
-company_website: 优先官网链接，其次页脚/搜索推断，否则用当前页面域名地址，url格式
-linkedin_site: LinkedIn主页，url格式
-tag_names: 根据内容生成1-3标签，无法确定则空
-user_street/user_street2/user_city/user_state/user_zip/user_country: 提取地址信息
-user_website: 用户个人网站,url格式
-user_linkedin: LinkedIn个人资料，url格式
-user_facebook: Facebook个人资料，url格式
-
-规则：
-- 不确定的字段留空，不填"未知"
-- 合并重复联系人，不同公司分开
-- 无有效邮箱返回[]
-
-示例输出：
-[{
-  "user_email": "john.doe@example.com",
-  "user_name": "John Doe",
-  "user_function": "Marketing Director",
-  "user_phone": "+1 555 123 4567",
-  "user_mobile": "",
-  "company_name": "Example Inc.",
-  "company_website": "https://www.example.com",
-  "linkedin_site": "https://www.linkedin.com/in/johndoe",
-  "tag_names": ["Marketing", "SaaS"],
-  "user_street": "123 Main St",
-  "user_street2": "Suite 400",
-  "user_city": "New York",
-  "user_state": "NY",
-  "user_zip": "10001",
-  "user_country": "United States",
-  "user_website": "https://www.website.com",
-  "user_linkedin": "https://www.linkedin.com/in/johndoe",
-  "user_facebook": ""
-}]`
+    // 根据是否需要提取链接来选择不同的 prompt
+    const promptType = options?.extractLinks ? LEADS_MINING_PROMPT_TYPES.CONTACT_EXTRACTION_WITH_LINKS : LEADS_MINING_PROMPT_TYPES.CONTACT_EXTRACTION
+    const basePrompt = await getPromptFromConfig(MODULES.LEADS_MINING, promptType)
 
     const port = Browser.runtime.connect()
     message.loading('AI正在提取线索信息...')

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Button, message, Card, Typography, Space, Modal, Input, Alert, Spin } from 'antd'
 import {
   RobotOutlined,
@@ -15,6 +15,11 @@ import { MAX_Z_INDEX } from '../../../config/ui-config.mjs'
 import getCommonAnalysisLinks from './../utils/getCommonAnalysisLinks'
 import { extractAllEmails } from './../utils/emailExtractor'
 import { formatToHttpsLink } from '../../../utils/format-url'
+import {
+  getPromptFromConfig,
+  MODULES,
+  LEADS_MINING_PROMPT_TYPES,
+} from '../../../config/promptConfig.js'
 
 const { Text } = Typography
 
@@ -62,8 +67,14 @@ const AIBackgroundCheckButton = () => {
         throw new Error('没有有效的提取结果')
       }
 
-      // 构建AI提示词
-      const prompt = `你的任务是根据提供的多个网页内容、网页链接和title撰写一封英语开发信，要求控制在300个英文单词内。
+      // 获取用户配置的开发信生成 Prompt
+      const promptTemplate = await getPromptFromConfig(
+        MODULES.LEADS_MINING,
+        LEADS_MINING_PROMPT_TYPES.EMAIL_GENERATION,
+      )
+
+      // 构建完整的 AI 提示词
+      const prompt = `${promptTemplate}
 
 网页信息：
 ${validResults
@@ -73,16 +84,7 @@ ${validResults
 ${JSON.stringify(result.data, null, 2)}
 `,
   )
-  .join('\n')}
-
-在撰写开发信时，请遵循以下指南：
-1. 使用正式且友好的语气。
-2. 在开头简要介绍自己或公司，并提及与网页相关的主题。
-3. 正文中适当引用多个网页内容来吸引对方兴趣，同时给出相应网页链接方便对方查看。
-4. 语言表达要简洁明了，避免复杂的句子结构和生僻词汇。
-5. 结尾表达期待回复等友好的结束语。
-
-请写下你的英语开发信。`
+  .join('\n')}`
 
       const port = Browser.runtime.connect()
       showMessage('loading', `${isRegenerate ? '重新生成' : '生成'}开发信中...`, 0)

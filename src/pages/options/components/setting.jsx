@@ -12,11 +12,14 @@ import { GeneralPart } from '../../../popup/sections/GeneralPart'
 import { AdvancedPart } from '../../../popup/sections/AdvancedPart'
 import { ModulesPart } from '../../../popup/sections/ModulesPart'
 import { BlacklistSettingsPart } from '../../../popup/sections/BlacklistSettingsPart'
+import PromptsConfig from './prompts-config'
 
 function Setting() {
   const { t, i18n } = useTranslation()
   const [config, setConfig] = useState(defaultConfig)
-  const [tabIndex, setTabIndex] = useState(0)
+  const [tabIndex, setTabIndex] = useState(
+    () => Number.parseInt(localStorage.getItem('sider-config-tab'), 10) || 0,
+  )
 
   const updateConfig = async (value) => {
     setConfig({ ...config, ...value })
@@ -32,6 +35,11 @@ function Setting() {
     })
   }, [])
 
+  const updateTabIndex = (newTabIndex) => {
+    setTabIndex(newTabIndex)
+    localStorage.setItem('sider-config-tab', newTabIndex)
+  }
+
   const tabItems = [
     {
       key: '0',
@@ -39,6 +47,11 @@ function Setting() {
       children: (
         <GeneralPart config={config} updateConfig={updateConfig} setTabIndex={setTabIndex} />
       ),
+    },
+    {
+      key: '1',
+      label: 'AI Prompt',
+      children: <PromptsConfig />,
     },
     // {
     //   key: '1',
@@ -50,6 +63,7 @@ function Setting() {
       label: t('Modules'),
       children: <ModulesPart config={config} updateConfig={updateConfig} />,
     },
+
     {
       key: '3',
       label: t('Advanced'),
@@ -69,7 +83,7 @@ function Setting() {
           width: '100%',
         }}
         activeKey={tabIndex.toString()}
-        onChange={(key) => setTabIndex(parseInt(key))}
+        onChange={(activeKey) => updateTabIndex(Number.parseInt(activeKey, 10))}
         className="popup-tabs"
         items={tabItems}
       />
