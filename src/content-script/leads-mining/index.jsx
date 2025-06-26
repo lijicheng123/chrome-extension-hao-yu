@@ -50,7 +50,6 @@ function LeadsMining({ windowType }) {
 
   const isLanding = useMemo(async () => {
     const result = await isLandingPage()
-    debugger
     return result
   }, [])
 
